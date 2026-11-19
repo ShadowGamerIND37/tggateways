@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS merchants (
   brand_color TEXT NOT NULL DEFAULT '#2563eb',
   payment_timeout_minutes INTEGER NOT NULL DEFAULT 10,
   api_key_last_used_at TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  suspended_reason TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

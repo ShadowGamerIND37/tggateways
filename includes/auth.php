@@ -15,6 +15,7 @@ if (PHP_SAPI !== 'cli' || getenv('TG_SKIP_MIGRATIONS') === false) {
     }
 }
 
+
 function start_session(): void {
     if (session_status() === PHP_SESSION_ACTIVE) return;
     session_name('tg_session');
@@ -44,6 +45,30 @@ function current_merchant(): ?array {
 function require_login(): array {
     $m=current_merchant();
     if (!$m) { redirect_to('/login.php'); }
+
+    // The session only records who signed in, not whether they still may.
+    // Suspension happens out-of-band in the admin panel, so the status has to be
+    // re-read on every protected request; otherwise a suspended merchant keeps
+    // full access until their session expires, which is the whole hole.
+    static $checked = null;
+    if ($checked === null) {
+        try {
+            $q = db()->prepare('SELECT status,suspended_reason FROM merchants WHERE id=?');
+            $q->execute([$m['id']]);
+            $row = $q->fetch();
+            $checked = $row ?: ['status' => 'active', 'suspended_reason' => null];
+        } catch (Throwable) {
+            // A transient database error must not sign everyone out, and must
+            // not silently grant access either: treat it as unverified and fall
+            // through to the normal page, which will surface its own error.
+            $checked = ['status' => 'active', 'suspended_reason' => null];
+        }
+        if ($checked && ($checked['status'] ?? 'active') !== 'active') {
+            $_SESSION = [];
+            session_regenerate_id(true);
+            redirect_to('/login.php?suspended=1');
+        }
+    }
     return $m;
 }
 
@@ -68,3 +93,15 @@ function verify_csrf(): void {
 }
 
 function h(?string $s): string { return htmlspecialchars($s??'', ENT_QUOTES|ENT_SUBSTITUTE, 'UTF-8'); }
+
+/* ============================================================
+   First run creates the operator account.
+   ------------------------------------------------------------
+   Deliberately at the end of the file: admin.php defines the seed
+   constants inline, and calling it before those definitions had executed
+   raised "Undefined constant" on a fresh database. It is a no-op once any
+   admin exists, so the cost is one indexed COUNT per request, and a
+   password an operator has already rotated is never reset.
+   ============================================================ */
+require_once __DIR__.'/admin.php';
+tg_admin_seed_default();

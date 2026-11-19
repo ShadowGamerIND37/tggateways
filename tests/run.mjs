@@ -118,6 +118,18 @@ function mkdirSyncSafe(dir) {
  * Execute request steps sequentially. Each step is its own PHP process (like a
  * real request, because handlers exit()), sharing a session id between calls.
  */
+/** Extracts a cookie value the response tried to set, or null. */
+function setCookie(response, name) {
+  const headers = response.headers || [];
+  for (const header of headers) {
+    // Match the name at the start of the value, after the "Set-Cookie: "
+    // prefix or a "; " separator. Anchoring with ^ alone misses the prefix.
+    const m = new RegExp(`(?:^Set-Cookie:\\s*|;\\s*)${name}=([^;]*)`, 'i').exec(header);
+    if (m && m[1] !== '') return m[1];
+  }
+  return null;
+}
+
 function requests(steps, sessionId = `sess_${crypto.randomUUID()}`) {
   let current = sessionId;
   return steps.map((step) => {
@@ -140,6 +152,7 @@ function request(step, sessionId = `sess_${crypto.randomUUID()}`) {
     headers: step.headers || {},
     query: step.query || {},
     post: step.post || {},
+    cookies: step.cookies || {},
     files: step.files || [],
     body: step.body ?? '',
     script: step.script,
@@ -783,6 +796,379 @@ steps = requests([
   { method: 'POST', script: path.join(root, 'tickets.php'), post: { csrf: shortAuth.csrf, action: 'create', topic: 'api', subject: 'x', message: 'short' } },
 ], shortAuth.session);
 check('Invalid ticket is rejected with a message', /4–200 characters|at least 10 characters/.test(steps[0].body || ''));
+
+// ============================================================
+// Admin panel
+// ------------------------------------------------------------
+// The panel is only worth having if its gates actually hold, so these
+// checks are about refusal as much as success: an unauthenticated visit
+// must bounce, a merchant session must not be enough, the seeded owner
+// must exist exactly once, and the last owner must not be able to
+// delete or demote themselves.
+// ============================================================
+section('Admin panel');
+
+const adminSeed = JSON.parse(php(`<?php
+require 'includes/db.php';
+$pdo = db();
+$row = $pdo->query("SELECT id,email,role,status,must_change_password FROM admins ORDER BY id LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+echo json_encode(['rows' => (int)$pdo->query('SELECT COUNT(*) FROM admins')->fetchColumn(), 'row' => $row ?: null]);
+`, baseEnv()));
+check('First run seeds exactly one administrator',
+  adminSeed.rows === 1 && adminSeed.row?.email === 'admin', JSON.stringify(adminSeed));
+check('The seeded administrator is a flagged owner',
+  adminSeed.row?.role === 'owner' && adminSeed.row?.status === 'active'
+  && Number(adminSeed.row?.must_change_password) === 1,
+  JSON.stringify(adminSeed.row));
+
+const seedPasswordOk = JSON.parse(php(`<?php
+require 'includes/db.php';
+$hash = (string)db()->query('SELECT password FROM admins ORDER BY id LIMIT 1')->fetchColumn();
+echo json_encode(['admin_admin' => password_verify('admin', $hash), 'wrong' => password_verify('notadmin', $hash)]);
+`, baseEnv()));
+check('The default credential is admin/admin', seedPasswordOk.admin_admin === true && seedPasswordOk.wrong === false);
+
+// Re-running the seeder must not add a second account or reset a changed password.
+const reseed = JSON.parse(php(`<?php
+require 'includes/db.php';
+require 'includes/admin.php';
+require 'includes/crypto.php';
+$pdo = db();
+$pdo->exec("UPDATE admins SET password='" . password_hash('rotated-secret', PASSWORD_DEFAULT) . "' WHERE id=(SELECT MIN(id) FROM admins)");
+tg_admin_seed_default();
+$hash = (string)$pdo->query('SELECT password FROM admins ORDER BY id LIMIT 1')->fetchColumn();
+echo json_encode(['count' => (int)$pdo->query('SELECT COUNT(*) FROM admins')->fetchColumn(), 'kept_rotation' => password_verify('rotated-secret', $hash)]);
+`, baseEnv()));
+check('Seeding runs once and never resets a rotated password',
+  reseed.count === 1 && reseed.kept_rotation === true, JSON.stringify(reseed));
+// Put the documented default back for the remainder of the section.
+php(`<?php
+require 'includes/db.php';
+db()->prepare('UPDATE admins SET password=?, must_change_password=1 WHERE id=(SELECT MIN(id) FROM admins)')
+    ->execute([password_hash('admin', PASSWORD_DEFAULT)]);
+`, baseEnv());
+
+// --- The gate ---
+const adminGate = requests([{ method: 'GET', script: path.join(root, 'admin/index.php') }], `adm_${crypto.randomUUID()}`);
+check('The admin area redirects an anonymous visitor',
+  adminGate[0].status === 302 && /\/admin\/login\.php/.test((adminGate[0].headers || []).join(' ')),
+  `${adminGate[0].status} ${(adminGate[0].headers || []).join(' ').slice(0, 120)}`);
+
+// A merchant session must not open the panel: the two auth systems share no state.
+const merchantSessionForAdmin = signIn('merchant@example.com', 'correct-horse-battery');
+const merchantOnAdmin = requests([{ method: 'GET', script: path.join(root, 'admin/index.php') }], merchantSessionForAdmin.session);
+check('A merchant session cannot open the admin panel',
+  merchantOnAdmin[0].status === 302 && /\/admin\/login\.php/.test((merchantOnAdmin[0].headers || []).join(' ')),
+  `${merchantOnAdmin[0].status}`);
+
+// --- Signing in ---
+const adminSession = `adm_${crypto.randomUUID()}`;
+const gatePage = requests([{ method: 'GET', script: path.join(root, 'admin/login.php') }], adminSession);
+let adminCsrf = /name="csrf" value="([a-f0-9]{64})"/.exec(gatePage[0].body || '')?.[1];
+check('The admin gate renders a CSRF-protected form', Boolean(adminCsrf), (gatePage[0].body || '').slice(0, 80));
+
+const wrongAdmin = requests([{
+  method: 'POST', script: path.join(root, 'admin/login.php'),
+  post: { csrf: adminCsrf, email: 'admin', password: 'definitely-wrong' },
+}], adminSession);
+check('A wrong admin password is refused',
+  wrongAdmin[0].status === 200 && /did not match an administrator/.test(wrongAdmin[0].body || '')
+  && !setCookie(wrongAdmin[0], 'tg_admin_session'),
+  String(wrongAdmin[0].status));
+
+const adminLogin = requests([{
+  method: 'POST', script: path.join(root, 'admin/login.php'),
+  post: { csrf: adminCsrf, email: 'admin', password: 'admin' },
+}], adminSession);
+const adminToken = setCookie(adminLogin[0], 'tg_admin_session');
+check('The seeded credential signs in',
+  adminLogin[0].status === 302 && Boolean(adminToken), `${adminLogin[0].status} token=${adminToken ? 'yes' : 'no'}`);
+// The cookie a sign-in sets must survive the browser's session. Emitting
+// Max-Age=0 (or any past Expires) on a login makes the browser delete the
+// cookie immediately, which looks like "login worked but nothing is saved".
+const loginCookieHeader = (adminLogin[0].headers || []).find((h) => /^Set-Cookie:.*tg_admin_session=/.test(h)) || '';
+check('The sign-in cookie is not self-deleting',
+  loginCookieHeader !== '' && !/Max-Age=0\b/i.test(loginCookieHeader)
+  && !/Expires=Thu, 01 Jan 1970/i.test(loginCookieHeader),
+  loginCookieHeader.slice(0, 140));
+
+const adminCookies = { tg_admin_session: adminToken || '' };
+const adminHome = requests([{ method: 'GET', script: path.join(root, 'admin/index.php'), cookies: adminCookies }], adminSession);
+check('The overview renders for a signed-in operator',
+  adminHome[0].status === 200 && /Overview/.test(adminHome[0].body || '')
+  && /Merchants/.test(adminHome[0].body || ''), String(adminHome[0].status));
+check('The overview warns that the default password is still in use',
+  /admin<\/code>\/<code>admin/.test(adminHome[0].body || ''), (adminHome[0].body || '').match(/default.{0,80}/i)?.[0] || 'no warning');
+
+// Every page must load, not just the overview.
+const adminPages = ['merchants.php', 'orders.php', 'addons.php', 'tickets.php', 'audit.php', 'admins.php', 'settings.php'];
+const adminPageResults = requests(adminPages.map((p) => ({
+  method: 'GET', script: path.join(root, 'admin', p), cookies: adminCookies,
+})), adminSession);
+for (const [i, page] of adminPages.entries()) {
+  check(`Admin ${page} loads without an error`,
+    adminPageResults[i].status === 200 && !/Something went wrong/.test(adminPageResults[i].body || '')
+    && !adminPageResults[i].exception,
+    `${adminPageResults[i].status} ${adminPageResults[i].exception || ''}`);
+}
+
+// --- Suspension actually stops a merchant ---
+const suspendFixture = JSON.parse(php(`<?php
+require 'includes/db.php';
+require 'includes/crypto.php';
+$pdo = db();
+$stmt = $pdo->prepare('INSERT INTO merchants(name,email,password,api_key) VALUES(?,?,?,?)');
+$stmt->execute(['Suspend Me','suspend-me@example.com',password_hash('correct-horse-battery', PASSWORD_DEFAULT),'tg_SUSPENDMEKEY']);
+$pdo->exec("UPDATE merchants SET status='active' WHERE email='suspend-me@example.com'");
+echo json_encode(['id' => (int)$pdo->lastInsertId()]);
+`, baseEnv()));
+const victimAuth = signIn('suspend-me@example.com', 'correct-horse-battery');
+const victimOk = requests([{ method: 'GET', script: path.join(root, 'dashboard.php') }], victimAuth.session);
+check('The suspension fixture can sign in first', victimOk[0].status === 200, String(victimOk[0].status));
+
+const merchantsCsrf = /name="admin_csrf" value="([a-f0-9]{64})"/.exec(
+  requests([{ method: 'GET', script: path.join(root, 'admin/merchants.php'), cookies: adminCookies }], adminSession)[0].body || ''
+)?.[1];
+const suspendPost = requests([{
+  method: 'POST', script: path.join(root, 'admin/merchants.php'), cookies: adminCookies,
+  post: { admin_csrf: merchantsCsrf, action: 'suspend', merchant_id: String(suspendFixture.id), reason: 'Test suspension' },
+}], adminSession);
+check('An operator can suspend a merchant',
+  suspendPost[0].status === 200 && /suspended/i.test(suspendPost[0].body || ''), String(suspendPost[0].status));
+
+const afterSuspend = requests([{ method: 'GET', script: path.join(root, 'dashboard.php') }], victimAuth.session);
+check('A suspended merchant is signed out of the dashboard',
+  afterSuspend[0].status === 302 && /\/login\.php/.test((afterSuspend[0].headers || []).join(' ')),
+  `${afterSuspend[0].status} ${(afterSuspend[0].headers || []).join(' ')}`);
+
+const susSession = `sus_${crypto.randomUUID()}`;
+const suspendedLogin = requests([
+  { method: 'GET', script: path.join(root, 'login.php') },
+], susSession);
+const susCsrf = /name="csrf" value="([a-f0-9]{64})"/.exec(suspendedLogin[0].body || '')?.[1];
+// Same session id as the GET that minted the token: the CSRF value is per
+// session, so posting it under a fresh id is a 419, not a login attempt.
+const susAttempt = requests([{
+  method: 'POST', script: path.join(root, 'login.php'),
+  post: { csrf: susCsrf, email: 'suspend-me@example.com', password: 'correct-horse-battery' },
+}], susSession);
+check('A suspended merchant cannot sign back in',
+  susAttempt[0].status === 200 && /suspended/i.test(susAttempt[0].body || ''), String(susAttempt[0].status));
+
+const susApi = requests([{
+  method: 'POST', script: path.join(root, 'api/create-order.php'),
+  headers: { 'X-Api-Key': 'tg_SUSPENDMEKEY' },
+  body: JSON.stringify({ amount: 100 }),
+}]);
+check('A suspended merchant\'s API key is refused',
+  susApi[0].status === 403 && /suspended/i.test(susApi[0].body || ''), `${susApi[0].status} ${(susApi[0].body || '').slice(0, 90)}`);
+
+// Restore, then confirm the account works again — suspension must be reversible.
+const restorePost = requests([{
+  method: 'POST', script: path.join(root, 'admin/merchants.php'), cookies: adminCookies,
+  post: { admin_csrf: merchantsCsrf, action: 'restore', merchant_id: String(suspendFixture.id) },
+}], adminSession);
+// Suspension deliberately destroys the session, so restoring cannot resurrect
+// the old cookie. The correct check is that the credential works again.
+// Clear the login limiter first: this section signs in several times and the
+// real rate limit (12 per 5 min) is shared across the whole suite.
+php(`<?php
+require 'includes/db.php';
+try { db()->exec('DELETE FROM api_rate_limits'); } catch (Throwable) {}
+`, baseEnv());
+const restoredAuth = signIn('suspend-me@example.com', 'correct-horse-battery');
+const afterRestore = requests([{ method: 'GET', script: path.join(root, 'dashboard.php') }], restoredAuth.session);
+check('Restoring a merchant lets them sign in again',
+  restorePost[0].status === 200 && afterRestore[0].status === 200, `${afterRestore[0].status}`);
+php(`<?php
+require 'includes/db.php';
+db()->prepare('DELETE FROM merchants WHERE email=?')->execute(['suspend-me@example.com']);
+`, baseEnv());
+
+// --- The last owner is protected ---
+const ownerGuard = JSON.parse(php(`<?php
+require 'includes/db.php';
+require 'includes/admin.php';
+$pdo = db();
+$owner = $pdo->query("SELECT id FROM admins WHERE role='owner' AND status='active' ORDER BY id LIMIT 1")->fetchColumn();
+echo json_encode(['owner_id' => (int)$owner, 'others' => tg_admin_owner_count((int)$owner)]);
+`, baseEnv()));
+check('The deployment has exactly one owner, so the guard matters',
+  ownerGuard.others === 0, JSON.stringify(ownerGuard));
+
+const demoteLastOwner = requests([{
+  method: 'POST', script: path.join(root, 'admin/admins.php'), cookies: adminCookies,
+  post: { admin_csrf: merchantsCsrf, action: 'role', admin_id: String(ownerGuard.owner_id), new_role: 'staff' },
+}], adminSession);
+const ownerStillOwner = JSON.parse(php(`<?php
+require 'includes/db.php';
+echo json_encode(db()->query("SELECT role FROM admins WHERE id=" . (int)${JSON.stringify(ownerGuard.owner_id)})->fetchColumn());
+`, baseEnv()));
+check('The last owner cannot demote themselves away',
+  /last active owner/i.test(demoteLastOwner[0].body || '') && ownerStillOwner === 'owner',
+  `${ownerStillOwner}`);
+
+const deleteLastOwner = requests([{
+  method: 'POST', script: path.join(root, 'admin/admins.php'), cookies: adminCookies,
+  post: { admin_csrf: merchantsCsrf, action: 'delete', admin_id: String(ownerGuard.owner_id) },
+}], adminSession);
+check('The last owner cannot delete their own account',
+  /cannot delete your own account/i.test(deleteLastOwner[0].body || ''), (deleteLastOwner[0].body || '').match(/cannot[^<.]{0,60}/i)?.[0] || '');
+
+// --- CSRF and logout ---
+const noCsrf = requests([{
+  method: 'POST', script: path.join(root, 'admin/merchants.php'), cookies: adminCookies,
+  post: { action: 'suspend', merchant_id: '1' },
+}], adminSession);
+check('An admin POST without a CSRF token is rejected', noCsrf[0].status === 419, String(noCsrf[0].status));
+
+const adminLogout = requests([{ method: 'GET', script: path.join(root, 'admin/logout.php'), cookies: adminCookies }], adminSession);
+const afterLogout = requests([{ method: 'GET', script: path.join(root, 'admin/index.php'), cookies: adminCookies }], adminSession);
+check('Signing out revokes the session server-side',
+  adminLogout[0].status === 302 && afterLogout[0].status === 302, `${afterLogout[0].status}`);
+
+// ============================================================
+// Payer UTR claims
+// ------------------------------------------------------------
+// The checkout page is unauthenticated, so a claim must record an
+// assertion and change nothing else. These checks exist because the
+// obvious implementation — feed the UTR straight into settle_receipt —
+// lets a stranger mark an order paid with an invented reference.
+// ============================================================
+section('Payer UTR claims');
+
+const claimFixture = JSON.parse(php(`<?php
+require 'includes/db.php';
+$pdo = db();
+$pdo->exec("DELETE FROM orders WHERE order_id IN ('tg_CLAIMTEST1','tg_CLAIMTEST2')");
+$pdo->exec("DELETE FROM receipt_events WHERE utr='778899001122'");
+$acc = $pdo->query('SELECT id FROM merchant_accounts WHERE merchant_id=1 ORDER BY id LIMIT 1')->fetchColumn();
+$pdo->prepare("INSERT INTO orders(order_id,merchant_id,merchant_account_id,amount,payable_amount,status,expires_at,created_at) VALUES('tg_CLAIMTEST1',1,?,'321.00','321.00','pending',?,?)")
+    ->execute([$acc, gmdate('Y-m-d H:i:s', time()+1800), gmdate('Y-m-d H:i:s')]);
+echo json_encode(['account' => (int)$acc]);
+`, baseEnv()));
+
+const claimPost = requests([{
+  method: 'POST', script: path.join(root, 'pay.php'),
+  query: { order_id: 'tg_CLAIMTEST1' },
+  post: { action: 'claim_utr', order_id: 'tg_CLAIMTEST1', utr: '778899001122' },
+}], `claim_${crypto.randomUUID()}`);
+check('A payer can submit a UTR from checkout',
+  claimPost[0].status === 200 && /recorded that reference/i.test(claimPost[0].body || ''),
+  String(claimPost[0].status));
+
+// The whole point: the order must still be pending.
+const claimState = JSON.parse(php(`<?php
+require 'includes/db.php';
+$pdo = db();
+echo json_encode([
+  'order_status' => $pdo->query("SELECT status FROM orders WHERE order_id='tg_CLAIMTEST1'")->fetchColumn(),
+  'event_state' => $pdo->query("SELECT state FROM receipt_events WHERE utr='778899001122'")->fetchColumn(),
+]);
+`, baseEnv()));
+check('A claim does not mark the order paid',
+  claimState.order_status === 'pending', `order=${claimState.order_status}`);
+check('A claim is recorded as an assertion, not a settlement',
+  claimState.event_state === 'claimed', `state=${claimState.event_state}`);
+
+// A short or non-numeric reference is a typo, not a payment.
+const badClaim = requests([{
+  method: 'POST', script: path.join(root, 'pay.php'),
+  query: { order_id: 'tg_CLAIMTEST1' },
+  post: { action: 'claim_utr', order_id: 'tg_CLAIMTEST1', utr: '123' },
+}], `claim_${crypto.randomUUID()}`);
+check('A malformed UTR is rejected',
+  /8 to 18 digits/i.test(badClaim[0].body || ''), (badClaim[0].body || '').match(/8 to 18[^<]{0,40}/)?.[0] || '');
+
+// Re-submitting the same reference must not create a second row.
+const repeatClaim = requests([{
+  method: 'POST', script: path.join(root, 'pay.php'),
+  query: { order_id: 'tg_CLAIMTEST1' },
+  post: { action: 'claim_utr', order_id: 'tg_CLAIMTEST1', utr: '778899001122' },
+}], `claim_${crypto.randomUUID()}`);
+const claimRows = Number(php(`<?php
+require 'includes/db.php';
+echo db()->query("SELECT COUNT(*) FROM receipt_events WHERE utr='778899001122'")->fetchColumn();
+`, baseEnv()));
+check('A repeated claim does not duplicate the record',
+  claimRows === 1, `${claimRows} rows`);
+
+// The merchant confirms it, which is what actually settles the order.
+php(`<?php
+require 'includes/db.php';
+try { db()->exec('DELETE FROM api_rate_limits'); } catch (Throwable) {}
+`, baseEnv());
+const claimMerchant = signIn('merchant@example.com', 'correct-horse-battery');
+const claimsPage = requests([{ method: 'GET', script: path.join(root, 'transactions.php') }], claimMerchant.session);
+check('The merchant sees references awaiting confirmation',
+  /awaiting your confirmation/i.test(claimsPage[0].body || '') && /778899001122/.test(claimsPage[0].body || ''),
+  (claimsPage[0].body || '').match(/awaiting your confirmation/i)?.[0] || 'panel missing');
+
+const claimCsrf = /name="csrf" value="([a-f0-9]{64})"/.exec(claimsPage[0].body || '')?.[1];
+const claimId = JSON.parse(php(`<?php
+require 'includes/db.php';
+echo json_encode((int)db()->query("SELECT id FROM receipt_events WHERE utr='778899001122'")->fetchColumn());
+`, baseEnv()));
+const confirmPost = requests([{
+  method: 'POST', script: path.join(root, 'transactions.php'),
+  post: { csrf: claimCsrf, action: 'claims', claim_id: String(claimId), decision: 'confirm' },
+}], claimMerchant.session);
+check('The merchant can confirm a claim',
+  /Confirmed\./i.test(confirmPost[0].body || ''), (confirmPost[0].body || '').match(/Confirmed[^<.]{0,50}/)?.[0] || '');
+
+const afterConfirm = JSON.parse(php(`<?php
+require 'includes/db.php';
+$pdo = db();
+echo json_encode([
+  'order_status' => $pdo->query("SELECT status FROM orders WHERE order_id='tg_CLAIMTEST1'")->fetchColumn(),
+  'utr_on_order' => $pdo->query("SELECT utr FROM orders WHERE order_id='tg_CLAIMTEST1'")->fetchColumn(),
+  'event_state' => $pdo->query("SELECT state FROM receipt_events WHERE utr='778899001122'")->fetchColumn(),
+]);
+`, baseEnv()));
+check('Confirming settles the order through the normal path',
+  afterConfirm.order_status === 'success' && afterConfirm.utr_on_order === '778899001122'
+  && afterConfirm.event_state === 'matched', JSON.stringify(afterConfirm));
+
+// Rejecting must leave the order open.
+const rejectFixture = JSON.parse(php(`<?php
+require 'includes/db.php';
+$pdo = db();
+$pdo->exec("DELETE FROM receipt_events WHERE utr='554433221100'");
+$acc = $pdo->query('SELECT id FROM merchant_accounts WHERE merchant_id=1 ORDER BY id LIMIT 1')->fetchColumn();
+$pdo->prepare("INSERT INTO orders(order_id,merchant_id,merchant_account_id,amount,payable_amount,status,expires_at,created_at) VALUES('tg_CLAIMTEST2',1,?,'77.00','77.00','pending',?,?)")
+    ->execute([$acc, gmdate('Y-m-d H:i:s', time()+1800), gmdate('Y-m-d H:i:s')]);
+echo json_encode(['account' => (int)$acc]);
+`, baseEnv()));
+requests([{
+  method: 'POST', script: path.join(root, 'pay.php'),
+  query: { order_id: 'tg_CLAIMTEST2' },
+  post: { action: 'claim_utr', order_id: 'tg_CLAIMTEST2', utr: '554433221100' },
+}], `claim_${crypto.randomUUID()}`);
+const rejectId = JSON.parse(php(`<?php
+require 'includes/db.php';
+echo json_encode((int)db()->query("SELECT id FROM receipt_events WHERE utr='554433221100'")->fetchColumn());
+`, baseEnv()));
+const rejectPost = requests([{
+  method: 'POST', script: path.join(root, 'transactions.php'),
+  post: { csrf: claimCsrf, action: 'claims', claim_id: String(rejectId), decision: 'reject' },
+}], claimMerchant.session);
+const afterReject = JSON.parse(php(`<?php
+require 'includes/db.php';
+$pdo = db();
+echo json_encode([
+  'order_status' => $pdo->query("SELECT status FROM orders WHERE order_id='tg_CLAIMTEST2'")->fetchColumn(),
+  'event_state' => $pdo->query("SELECT state FROM receipt_events WHERE utr='554433221100'")->fetchColumn(),
+]);
+`, baseEnv()));
+check('Rejecting a claim leaves the order open',
+  afterReject.order_status === 'pending' && afterReject.event_state === 'rejected', JSON.stringify(afterReject));
+
+php(`<?php
+require 'includes/db.php';
+$pdo = db();
+$pdo->exec("DELETE FROM orders WHERE order_id IN ('tg_CLAIMTEST1','tg_CLAIMTEST2')");
+$pdo->exec("DELETE FROM receipt_events WHERE utr IN ('778899001122','554433221100')");
+`, baseEnv());
 
 section('Multi-accounts: caps, validation and payout re-auth');
 
@@ -1644,20 +2030,26 @@ steps = requests([
   { method: 'GET', script: path.join(root, 'invoices.php') },
   { method: 'GET', script: path.join(root, 'services.php') },
 ], addonAuth.session);
-const [addonsPage, invoicesEmpty, servicesPage, addonRefused, sliceRefused, mobikwikRefused, phonepeRefused, addonBought, invoicesAfter, servicesAfter] = steps;
+const [addonsPage, invoicesEmpty, servicesPage, addonRefused, sliceRefused, mobikwikRefused, phonepeRefused, paytmRefused, invoicesAfter, servicesAfter] = steps;
 check('Addons page lists the core, addon and coming-soon gateways',
   ['FamPay UPI Gateway', 'Paytm for Business', 'BharatPe for Business', 'Slice UPI Gateway', 'MobiKwik UPI Gateway', 'PhonePe for Business']
     .every((name) => (addonsPage.body || '').includes(name)),
   'one or more gateway cards missing');
 check('Empty invoices page shows the reference empty state', invoicesEmpty.body.includes('No Invoices Yet'));
 check('Services page shows the free core gateway', servicesPage.body.includes('Free Forever'));
-check('Non-purchasable addons are refused',
-  [addonRefused, sliceRefused, mobikwikRefused, phonepeRefused]
+check('Every external gateway is refused, including Paytm',
+  [addonRefused, sliceRefused, mobikwikRefused, phonepeRefused, paytmRefused]
     .every((r) => /not available for purchase/.test(r.body || '')),
-  [addonRefused, sliceRefused, mobikwikRefused, phonepeRefused].map((r) => /not available/.test(r.body || '')).join(','));
-check('Buying an addon succeeds and names the invoice', /Invoice INV-/.test(addonBought.body || ''));
-check('Invoice appears in the billing history', /INV-\d{6}-[A-F0-9]{6}/.test(invoicesAfter.body || ''));
-check('Purchased addon appears in My Services', /Paytm for Business/.test(servicesAfter.body || ''));
+  [addonRefused, sliceRefused, mobikwikRefused, phonepeRefused, paytmRefused].map((r) => /not available/.test(r.body || '')).join(','));
+check('Paytm is advertised as coming soon',
+  /Paytm for Business[\s\S]{0,400}Coming Soon|Coming Soon[\s\S]{0,400}Paytm for Business/i.test(addonsPage.body || ''),
+  'Paytm card no longer says Coming Soon');
+check('Addon cards show the real brand marks',
+  ['fampay', 'paytm', 'bharatpe', 'slice', 'mobikwik', 'phonepe']
+    .every((key) => (addonsPage.body || '').includes(`/assets/img/gateways/${key}.png`)),
+  'one or more gateway logos missing');
+check('A refused purchase creates no invoice',
+  !/INV-\d{6}-/.test(invoicesAfter.body || ''), 'an invoice appeared for a refused addon');
 
 section('Public status page');
 const statusOut = JSON.parse(php(`<?php

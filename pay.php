@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__.'/includes/orders.php';
+// tg_audit() records the payer's claim; it lives with the merchant helpers.
+require_once __DIR__.'/includes/merchant.php';
 
 $pdo = db();
 $orderId = substr((string)($_GET['order_id'] ?? ''), 0, 40);
@@ -28,6 +30,84 @@ if ($linkSlug !== '') {
                 'note' => $link['title'],
             ]);
             redirect_to('/pay.php?order_id='.rawurlencode($created['order_id']));
+        }
+    }
+}
+
+/**
+ * Payer-submitted UTR.
+ *
+ * The receipt pipeline normally learns about a payment from the merchant
+ * mailbox. When the provider's mail is delayed, filtered, or never sent at
+ * all, the payer has already parted with money and the order sits pending
+ * until it expires — a silent loss. Letting the payer submit the reference
+ * they can see in their own UPI app closes that gap.
+ *
+ * The claim is NOT trusted for fulfilment: it goes through the same
+ * settle_receipt() path as an emailed receipt, so the duplicate check,
+ * amount check and audit row are identical. What it changes is which party
+ * provides the reference, not how far it is trusted.
+ */
+$claimNotice = '';
+$claimError = '';
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['action'] ?? '') === 'claim_utr') {
+    rate_limit('pay-claim', 8, 300);
+    $claimedOrder = substr((string)($_POST['order_id'] ?? ''), 0, 40);
+    $claimedUtr = preg_replace('/\D/', '', (string)($_POST['utr'] ?? '')) ?? '';
+    $target = find_checkout_order($pdo, $claimedOrder);
+
+    if (!$target) {
+        $claimError = 'That payment order no longer exists.';
+    } elseif ($target['status'] !== 'pending') {
+        $claimError = 'This order is no longer waiting for payment.';
+    } elseif (strlen($claimedUtr) < 8 || strlen($claimedUtr) > 18) {
+        // UPI reference numbers are 12 digits for most providers, 8–18 in
+        // practice. A short or non-numeric value is a typo, not a payment.
+        $claimError = 'A UPI reference (UTR) is 8 to 18 digits — check your app and try again.';
+    } else {
+        require_once __DIR__.'/includes/settlement.php';
+        $accountRow = $pdo->prepare('SELECT * FROM merchant_accounts WHERE id=? AND merchant_id=? LIMIT 1');
+        $accountRow->execute([(int)$target['merchant_account_id'], (int)$target['merchant_id']]);
+        $acct = $accountRow->fetch();
+        if (!$acct) {
+            $claimError = 'This merchant has no receiving account for that order.';
+        } else {
+            // Deliberately recorded as a *claim*, never as a settlement.
+            //
+            // This endpoint has no login: anyone holding the checkout link can
+            // post to it, and settle_receipt() matches primarily on amount. If
+            // the claim were fed through that path, a stranger could open their
+            // own checkout, read the total, invent a 12-digit reference and have
+            // the order marked paid without any money moving. The claim is
+            // therefore an *assertion by the payer*, kept separate from the
+            // mailbox pipeline, and it changes no order state. The merchant
+            // confirms it; that confirmation is what settles the order.
+            //
+            // A genuine emailed receipt for the same UTR still settles
+            // automatically, and in that case settle_receipt() will see this
+            // row and report the pair rather than double-counting.
+            $already = $pdo->prepare('SELECT state FROM receipt_events WHERE utr=? LIMIT 1');
+            $already->execute([$claimedUtr]);
+            $priorState = $already->fetchColumn();
+
+            if ($priorState !== false) {
+                $claimNotice = $priorState === 'matched'
+                    ? 'That reference is already confirmed against an order.'
+                    : 'That reference was already recorded. Your payment is not lost — the merchant can see it.';
+            } else {
+                $pdo->prepare('INSERT INTO receipt_events(merchant_id,merchant_account_id,message_id,utr,amount,sender_name,order_ref,matched_order_id,state,detail,created_at)
+                               VALUES(?,?,?,?,?,?,?,?,?,?,?)')
+                    ->execute([
+                        (int)$target['merchant_id'], (int)$target['merchant_account_id'], null,
+                        $claimedUtr, (string)$target['payable_amount'], null,
+                        (string)$target['order_id'], null, 'claimed',
+                        'Payer submitted this reference from the checkout page; awaiting merchant confirmation.',
+                        db_now(),
+                    ]);
+                tg_audit((int)$target['merchant_id'], 'payment.utr_claimed', $claimedUtr.' for '.$target['order_id']);
+                $claimNotice = 'Thanks — we recorded that reference for '.$target['order_id']
+                    .'. The merchant will verify it against their bank statement. Do not pay again.';
+            }
         }
     }
 }
@@ -66,6 +146,20 @@ body{background:#f1f4f9}
 .wait{margin-top:16px;padding:13px;background:#f1f6ff;border-radius:10px;font-size:11px;color:#49648d}
 .expired{background:#fff2ee;color:#b84c35}
 .success{background:#eaf8f1;color:#18895f}
+.claim{margin-top:18px;text-align:left;border-top:1px solid #eef1f6;padding-top:14px}
+.claim summary{font-size:11.5px;font-weight:600;color:#4d5c73;cursor:pointer;list-style:none;padding:6px 0}
+.claim summary::-webkit-details-marker{display:none}
+.claim summary:before{content:'▸';display:inline-block;margin-right:7px;color:#93a1b5;transition:transform .15s}
+.claim[open] summary:before{transform:rotate(90deg)}
+.claim-intro{font-size:11px;line-height:1.75;color:#7a8797;margin:6px 0 12px}
+.claim-label{display:block;font-size:10.5px;font-weight:600;color:#5d6b80;margin-bottom:5px}
+.claim-row{display:flex;gap:8px}
+.claim-row .form-input{flex:1 1 auto;font-size:13px;font-variant-numeric:tabular-nums}
+.claim-row .btn{white-space:nowrap}
+.claim-hint{display:block;font-size:10px;color:#93a1b5;margin-top:7px;line-height:1.6}
+.claim-result{margin-top:16px;padding:11px 13px;border-radius:10px;font-size:11.5px;line-height:1.7;text-align:left}
+.claim-ok{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
+.claim-bad{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
 .checkout-foot{font-size:9px;color:#9aa4b4;margin-top:18px;line-height:1.7}
 .checkout-foot a{color:#5473ad}
 .copy-upi{margin-top:12px;font-size:10px;color:#6b7a90}
@@ -74,7 +168,7 @@ body{background:#f1f4f9}
 </head>
 <body>
 <main class="checkout">
-  <a class="brand" href="/"><img src="/assets/img/logo.svg" alt="">TG Gateways</a>
+  <a class="brand" href="/"><img src="/assets/img/tg-mark.png" alt="">TG Gateways</a>
   <?php if ($notice): ?>
     <div class="note" style="margin-top:20px"><?=h($notice)?></div>
   <?php elseif ($order): ?>
@@ -95,6 +189,32 @@ body{background:#f1f4f9}
       <div class="copy-upi">or pay to <code id="upi-id"><?=h($order['upi_id'] ?: '—')?></code>
         <button type="button" class="btn btn-outline" style="padding:4px 8px;font-size:9px" data-copy-target="#upi-id">Copy UPI ID</button>
       </div>
+
+      <?php if ($claimNotice !== ''): ?>
+        <div class="claim-result claim-ok"><?=h($claimNotice)?></div>
+      <?php elseif ($claimError !== ''): ?>
+        <div class="claim-result claim-bad"><?=h($claimError)?></div>
+      <?php endif ?>
+
+      <details class="claim" <?=$claimError !== '' ? 'open' : ''?>>
+        <summary>Already paid? Submit your UTR</summary>
+        <p class="claim-intro">
+          Confirmation normally arrives from the merchant's mailbox within a couple of minutes.
+          If your UPI app shows the money left but this page has not updated, paste the reference here —
+          it goes through the same verification, it just does not wait for the email.
+        </p>
+        <form method="post" class="claim-form">
+          <input type="hidden" name="action" value="claim_utr">
+          <input type="hidden" name="order_id" value="<?=h((string)$order['order_id'])?>">
+          <label class="claim-label" for="claim-utr">UPI reference / UTR</label>
+          <div class="claim-row">
+            <input class="form-input" id="claim-utr" name="utr" inputmode="numeric" autocomplete="off"
+                   pattern="[0-9]{8,18}" maxlength="18" required placeholder="e.g. 416782930145">
+            <button class="btn btn-primary">Submit</button>
+          </div>
+          <span class="claim-hint">12 digits for most apps. Never pay twice while waiting for confirmation.</span>
+        </form>
+      </details>
     <?php else: ?>
       <div class="wait <?=$order['status'] === 'success' ? 'success' : 'expired'?>">
         <?php if ($order['status'] === 'success'): ?>
