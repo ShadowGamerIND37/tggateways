@@ -11,6 +11,7 @@ declare(strict_types=1);
  * silently discarding files.
  */
 require_once __DIR__.'/includes/merchant.php';
+require_once __DIR__.'/includes/attachments.php';
 require_once __DIR__.'/includes/auth.php';
 require_once __DIR__.'/includes/notify.php';
 $merchant = require_login();
@@ -58,6 +59,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $ticketId = (int)$pdo->lastInsertId();
                 $pdo->prepare('INSERT INTO ticket_messages(ticket_id,author,body,attachment_count,created_at) VALUES(?,?,?,?,?)')
                     ->execute([$ticketId, 'merchant', $message, $attachments, db_now()]);
+                $messageId = (int)$pdo->lastInsertId();
+                $uploaded = tg_ticket_collect_uploads($ticketId, $id, $messageId);
+                if ($uploaded['errors']) $error = implode(' ', $uploaded['errors']);
+                if ($uploaded['stored'] > 0) {
+                    $pdo->prepare('UPDATE tickets SET attachments=? WHERE id=?')->execute([$uploaded['stored'], $ticketId]);
+                    $pdo->prepare('UPDATE ticket_messages SET attachment_count=? WHERE id=?')->execute([$uploaded['stored'], $messageId]);
+                }
                 tg_audit($id, 'ticket.created', $reference);
                 $notice = 'Ticket '.$reference.' opened. Our team replies by email.';
                 $view = $ticketId;
@@ -114,6 +122,9 @@ if ($view > 0) {
     }
 }
 
+// Files for the ticket currently on screen (empty when none is open).
+$attachments = ($view > 0 && $thread !== null) ? tg_attachments_for((int)$view, $id) : [];
+
 require __DIR__.'/includes/dashboard-header.php';
 ?>
 
@@ -166,7 +177,18 @@ require __DIR__.'/includes/dashboard-header.php';
             <?=$mine ? 'You' : 'Support'?> · <?=h(date('d M Y, H:i', strtotime((string)$msg['created_at'])))?>
           </div>
           <div style="font-size:13px;line-height:1.75;white-space:pre-wrap"><?=h((string)$msg['body'])?></div>
-          <?php if ((int)$msg['attachment_count'] > 0): ?>
+          <?php $msgFiles = array_values(array_filter($attachments, fn(array $a): bool => (int)($a['message_id'] ?? 0) === (int)$msg['id'])); ?>
+          <?php if ($msgFiles): ?>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+              <?php foreach ($msgFiles as $file): ?>
+                <a class="btn btn-secondary btn-sm" href="/attachment.php?id=<?=(int)$file['id']?>">
+                  <?=icon($file['mime'] === 'application/pdf' ? 'file-text' : 'image', 12)?>
+                  <?=h((string)$file['original_name'])?>
+                  <span class="form-hint" style="display:inline">(<?=h(tg_attachment_size((int)$file['bytes']))?>)</span>
+                </a>
+              <?php endforeach ?>
+            </div>
+          <?php elseif ((int)$msg['attachment_count'] > 0): ?>
             <div style="font-size:11px;color:var(--color-ink-mute);margin-top:6px"><?=icon('file-text', 11)?> <?=(int)$msg['attachment_count']?> attachment(s) referenced</div>
           <?php endif ?>
         </div>
@@ -237,7 +259,7 @@ require __DIR__.'/includes/dashboard-header.php';
     <div class="card-title"><?=icon('plus', 16)?> Open Support Ticket</div>
     <div class="card-sub">Include the order ID or bank UTR so we can trace the payment immediately.</div>
   </div>
-  <form method="post" class="form-grid">
+  <form method="post" enctype="multipart/form-data" class="form-grid">
     <input type="hidden" name="csrf" value="<?=h(csrf_token())?>">
     <input type="hidden" name="action" value="create">
     <div class="form-group">
@@ -261,16 +283,11 @@ require __DIR__.'/includes/dashboard-header.php';
       <textarea class="form-input" name="message" rows="5" required minlength="10" placeholder="What happened, what you expected, and any reference numbers."></textarea>
     </div>
     <div class="form-group" style="grid-column:1/-1">
-      <label class="form-label">Attachments</label>
-      <input class="form-input" type="number" name="attachment_count" min="0" max="5" value="0" style="max-width:120px">
-      <span class="form-hint">
-        This deployment does not accept file uploads yet — record how many screenshots you have and support will
-        request them by email. Max 5, JPG/PNG/WEBP/PDF, 5 MB each.
-      </span>
-    </div>
-    <div class="form-actions" style="grid-column:1/-1">
-      <button class="btn btn-primary">Submit Ticket</button>
-      <a class="btn btn-secondary" href="/docs.php">Read the docs first</a>
+      <label class="form-label" for="ticket-files">Attach Screenshots (Max 5)</label>
+      <input class="form-input" id="ticket-files" type="file" name="attachments[]" multiple
+             accept="image/jpeg,image/png,image/webp,application/pdf">
+      <span class="form-hint">JPG, PNG, WEBP or PDF, up to 5 MB each, maximum 5 files.
+        Files are stored outside the web root and served only to you.</span>
     </div>
   </form>
 </div>

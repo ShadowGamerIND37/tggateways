@@ -33,6 +33,22 @@ putenv('TG_TEST_BODY_PATH='.$bodyFile);
 $_GET = $spec['query'] ?? [];
 $_POST = $spec['post'] ?? [];
 $_REQUEST = $_GET + $_POST;
+// Simulated uploads: each entry is [field, name, tmp_path, error, size]. The
+// app validates real bytes from the temp path, so tests exercise the same
+// magic-byte sniffing a browser upload would.
+$_FILES = [];
+foreach (($spec['files'] ?? []) as $entry) {
+    [$field, $name, $tmpPath, $error, $size] = $entry;
+    $field = (string)$field;
+    if (!isset($_FILES[$field])) {
+        $_FILES[$field] = ['name' => [], 'type' => [], 'tmp_name' => [], 'error' => [], 'size' => []];
+    }
+    $_FILES[$field]['name'][] = $name;
+    $_FILES[$field]['type'][] = 'application/octet-stream';
+    $_FILES[$field]['tmp_name'][] = $tmpPath;
+    $_FILES[$field]['error'][] = $error;
+    $_FILES[$field]['size'][] = $size;
+}
 $_SERVER = array_merge([
     'REQUEST_METHOD' => strtoupper((string)($spec['method'] ?? 'GET')),
     'REMOTE_ADDR' => '127.0.0.1',

@@ -211,6 +211,37 @@ function tg_migrations(): array {
                 'ALTER TABLE orders ADD COLUMN paid_via TEXT',
             ],
         ],
+        '2026_11_18_ticket_attachments' => [
+            'mysql' => [
+                'CREATE TABLE IF NOT EXISTS ticket_attachments (
+                    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    ticket_id BIGINT UNSIGNED NOT NULL,
+                    message_id BIGINT UNSIGNED NULL,
+                    merchant_id BIGINT UNSIGNED NOT NULL,
+                    stored_name VARCHAR(80) NOT NULL,
+                    original_name VARCHAR(200) NOT NULL,
+                    mime VARCHAR(100) NOT NULL,
+                    bytes INT UNSIGNED NOT NULL,
+                    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_attach_ticket FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
+                    INDEX idx_attach_ticket (ticket_id)
+                ) ENGINE=InnoDB',
+            ],
+            'sqlite' => [
+                'CREATE TABLE IF NOT EXISTS ticket_attachments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ticket_id INTEGER NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
+                    message_id INTEGER,
+                    merchant_id INTEGER NOT NULL,
+                    stored_name TEXT NOT NULL,
+                    original_name TEXT NOT NULL,
+                    mime TEXT NOT NULL,
+                    bytes INTEGER NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )',
+            ],
+        ],
+
     ];
 }
 

@@ -1,0 +1,6 @@
+# Runtime files only. The directory itself is tracked so the image always has
+# somewhere to write ticket attachments.
+*
+!.gitignore
+!attachments/
+storage/attachments/*.gitignore

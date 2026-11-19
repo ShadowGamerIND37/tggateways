@@ -140,6 +140,7 @@ function request(step, sessionId = `sess_${crypto.randomUUID()}`) {
     headers: step.headers || {},
     query: step.query || {},
     post: step.post || {},
+    files: step.files || [],
     body: step.body ?? '',
     script: step.script,
   }));
@@ -1174,6 +1175,76 @@ check('Long windows thin their axis labels instead of crowding',
   && ((steps[2].body || '').match(/dash-bar-label">[^<]+</g) || []).length <= 10);
 check('The chart summarises the window in words',
   /orders and ₹/.test(steps[1].body || '') && /in this window/.test(steps[1].body || ''));
+
+section('Ticket attachments');
+
+const attAuth = { session: exportAuth.session };
+php(`<?php
+require 'includes/db.php';
+db()->exec('DELETE FROM api_rate_limits');
+`, baseEnv());
+const attPage = requests([{ method: 'GET', script: path.join(root, 'tickets.php') }], attAuth.session)[0];
+const attCsrf = (attPage.body || '').match(/name="csrf" value="([a-f0-9]{64})"/)?.[1] || '';
+check('The ticket form offers a multi-file picker',
+  /Attach Screenshots \(Max 5\)/.test(attPage.body || '')
+  && /name="attachments\[\]"[^>]*multiple/.test(attPage.body || ''));
+
+// Real fixture bytes: a 1x1 PNG, and a text file dressed up as an image.
+const tmpDir = mkdtempSync(path.join(tmpdir(), 'tgatt-'));
+const pngPath = path.join(tmpDir, 'shot.png');
+writeFileSync(pngPath, Buffer.from('89504E470D0A1A0A0000000D49484452000000010000000108060000001F15C4890000000A49444154789C6300010000050001', 'hex'));
+const fakePath = path.join(tmpDir, 'evil.png');
+writeFileSync(fakePath, '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>');
+const bigPath = path.join(tmpDir, 'big.png');
+writeFileSync(bigPath, Buffer.concat([Buffer.from('89504E470D0A1A0A', 'hex'), Buffer.alloc(5 * 1024 * 1024 + 10)]));
+
+const createTicket = (extra) => requests([{
+  method: 'POST', script: path.join(root, 'tickets.php'),
+  post: { csrf: attCsrf, action: 'create', topic: 'api', subject: 'Upload test', message: 'A ticket with a screenshot attached.' },
+  ...extra,
+}], attAuth.session)[0];
+
+const withPng = createTicket({ files: [['attachments', 'screen.png', pngPath, 0, 68]] });
+check('A PNG attachment is accepted', /Ticket TCK-/.test(withPng.body || ''), (withPng.body || '').slice(0, 120));
+check('The attachment is listed with its size', /screen\.png/.test(withPng.body || ''), '');
+
+const stored = JSON.parse(php(`<?php
+require 'includes/db.php';
+$rows = db()->query("SELECT id,stored_name,original_name,mime,bytes FROM ticket_attachments ORDER BY id")->fetchAll(PDO::FETCH_ASSOC);
+echo json_encode($rows);
+`, baseEnv()));
+check('Exactly one attachment row was written', stored.length === 1, JSON.stringify(stored));
+check('The stored mime comes from the file bytes, not the name', stored[0]?.mime === 'image/png', stored[0]?.mime);
+check('The stored name is random with a derived extension', /^[a-f0-9]{32}\.png$/.test(stored[0]?.stored_name || ''));
+check('The file exists outside the web root',
+  existsSync(path.join(root, 'storage', 'attachments', stored[0]?.stored_name || 'x')));
+
+// A file whose bytes are SVG must be rejected even though it is named .png.
+const browserBad = createTicket({ files: [['attachments', 'evil.png', fakePath, 0, 60]] });
+check('Content sniffing beats a misleading filename', /Only JPG, PNG, WEBP and PDF/.test(browserBad.body || ''));
+const afterBad = JSON.parse(php(`<?php
+require 'includes/db.php';
+echo json_encode((int)db()->query('SELECT COUNT(*) FROM ticket_attachments')->fetchColumn());
+`, baseEnv()));
+check('The rejected file wrote no row', afterBad === 1, String(afterBad));
+
+const bigUpload = createTicket({ files: [['attachments', 'big.png', bigPath, 0, 5 * 1024 * 1024 + 10]] });
+check('An oversize file is refused', /up to 5 MB each|between 1 byte and 5 MB/i.test(bigUpload.body || ''),
+  (bigUpload.body || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 140));
+
+// Download: owner only, always as an attachment.
+const attId = stored[0]?.id;
+const ownerDownload = requests([{ method: 'GET', script: path.join(root, 'attachment.php'), query: { id: String(attId) } }], attAuth.session)[0];
+check('The owner can download the file', ownerDownload.status === 200
+  && (ownerDownload.headers || []).join(' ').includes('attachment;'),
+  `status=${ownerDownload.status} headers=${(ownerDownload.headers || []).join(' | ').slice(0, 200)} body=${(ownerDownload.body || '').slice(0, 120)}`);
+check('Downloads are served with nosniff', (ownerDownload.headers || []).join(' ').toLowerCase().includes('nosniff'));
+const anonDownload = requests([{ method: 'GET', script: path.join(root, 'attachment.php'), query: { id: String(attId) } }], `anon_${crypto.randomUUID()}`)[0];
+check('A signed-out visitor cannot download it', anonDownload.status === 302 || anonDownload.status === 403);
+const missingDownload = requests([{ method: 'GET', script: path.join(root, 'attachment.php'), query: { id: '999999' } }], attAuth.session)[0];
+check('An unknown attachment id is a clean 404', missingDownload.status === 404);
+
+rmSync(tmpDir, { recursive: true, force: true });
 
 section('Integrations: Gmail & FamPay setup');
 
