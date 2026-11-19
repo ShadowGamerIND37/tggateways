@@ -8,8 +8,14 @@ services:
       DB_PORT: 3306
       DB_NAME: tggateways
       SESSION_SECURE: ${SESSION_SECURE:-false}
+      # One variable drives both the published host port and the public base URL
+      # the app generates checkout links from, so they cannot drift apart. Set
+      # TG_HTTP_PORT (and, for production, APP_URL) in .env.
+      APP_URL: ${APP_URL:-http://localhost:${TG_HTTP_PORT:-8090}}
     ports:
-      - "${TG_HTTP_PORT:-8080}:80"
+      # 8080 is the most commonly occupied port on a developer machine (other
+      # projects, Tomcat, Jenkins, local proxies), so the default is 8090.
+      - "${TG_HTTP_PORT:-8090}:80"
     depends_on:
       database:
         condition: service_healthy
