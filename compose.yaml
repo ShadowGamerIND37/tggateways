@@ -20,6 +20,10 @@ services:
       # 8080 is the most commonly occupied port on a developer machine (other
       # projects, Tomcat, Jenkins, local proxies), so the default is 8090.
       - "${TG_HTTP_PORT:-8090}:80"
+    volumes:
+      # Ticket attachments live outside the document root and must survive a
+      # rebuild, so they get their own named volume.
+      - tg-attachments:/var/www/html/storage/attachments
     depends_on:
       database:
         condition: service_healthy
@@ -71,3 +75,4 @@ services:
 
 volumes:
   tg-mysql:
+  tg-attachments:

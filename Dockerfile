@@ -22,6 +22,8 @@ WORKDIR /var/www/html
 COPY composer.json ./
 RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 COPY . .
-RUN chown -R www-data:www-data /var/www/html && mkdir -p storage && chown -R www-data:www-data storage
+RUN chown -R www-data:www-data /var/www/html \
+    && mkdir -p storage/attachments storage/sessions \
+    && chown -R www-data:www-data storage
 
 EXPOSE 80
