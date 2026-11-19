@@ -59,7 +59,12 @@ function imap_set_last_uid(PDO $pdo, int $accountId, int $uid): void {
 
 /** Open a mailbox using the account's stored, encrypted credentials. */
 function imap_open_account(array $account): TgImapClient {
-    $password = decrypt_secret((string)$account['google_app_password']);
+    $stored = (string)($account['google_app_password'] ?? '');
+    if ($stored === '') {
+        // Fail with a message that says what to do, instead of an auth error.
+        throw new RuntimeException('This mailbox is disconnected. Enter an app password on the Integrations page to reconnect it.');
+    }
+    $password = decrypt_secret($stored);
     [$host, $port] = explode(':', imap_connection_string($account).':', 2);
     $host = $host !== '' ? $host : 'imap.gmail.com';
     $port = (int)($port !== '' ? $port : 993) ?: 993;
@@ -172,7 +177,12 @@ function imap_ingest_account(PDO $pdo, array $account): array {
 function imap_ingest_all(PDO $pdo): array {
     $reason = imap_unsupported_reason();
     if ($reason !== null) return ['error' => 'Receipt polling unavailable: '.$reason];
-    $accounts = $pdo->query('SELECT id,merchant_id,linked_email,imap_host,imap_port,google_app_password FROM merchant_accounts WHERE is_active=1')->fetchAll();
+    // Only poll mailboxes that actually have a credential. Disconnecting clears
+    // the password but keeps the row, and retrying a blank login every few
+    // seconds would hammer the provider and bury real failures in the log.
+    $accounts = $pdo->query("SELECT id,merchant_id,linked_email,imap_host,imap_port,google_app_password
+                               FROM merchant_accounts
+                              WHERE is_active=1 AND google_app_password IS NOT NULL AND google_app_password <> ''")->fetchAll();
     $results = [];
     foreach ($accounts as $account) {
         try {

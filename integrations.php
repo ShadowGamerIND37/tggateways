@@ -17,6 +17,9 @@ $notice = '';
 $noticeType = 'success';
 $test = null;
 
+// The account this page shows and edits. The worker polls the ACTIVE one, so
+// this page must edit that same row — ordering by id alone would silently
+// rewrite a standby wallet instead.
 $q = $pdo->prepare('SELECT id,account_label,upi_id,linked_email,imap_host,imap_port,is_active,last_checked_at,last_error
                       FROM merchant_accounts WHERE merchant_id=? ORDER BY is_active DESC, id LIMIT 1');
 $q->execute([$id]);
@@ -28,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = (string)($_POST['action'] ?? 'save');
 
     if ($action === 'test') {
-        $row = $pdo->prepare('SELECT merchant_id,linked_email,imap_host,imap_port,google_app_password FROM merchant_accounts WHERE merchant_id=? ORDER BY id LIMIT 1');
+        $row = $pdo->prepare('SELECT merchant_id,linked_email,imap_host,imap_port,google_app_password FROM merchant_accounts WHERE merchant_id=? ORDER BY is_active DESC, id LIMIT 1');
         $row->execute([$id]);
         $acc = $row->fetch();
         $test = $acc ? imap_test_connection($acc) : ['ok' => false, 'message' => 'Save a receiving account before testing.'];
@@ -72,7 +75,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $noticeType = 'error';
         } else {
             try {
-                $existing = $pdo->prepare('SELECT id FROM merchant_accounts WHERE merchant_id=? ORDER BY id LIMIT 1');
+                $pdo->beginTransaction();
+                // Match the row the page is displaying, not just the oldest.
+                $existing = $pdo->prepare('SELECT id FROM merchant_accounts WHERE merchant_id=? ORDER BY is_active DESC, id LIMIT 1');
                 $existing->execute([$id]);
                 $row = $existing->fetch();
                 if ($row) {
@@ -89,11 +94,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                    VALUES(?,?,?,?,?,?,?,1)')
                         ->execute([$id, $label, $upi, $email, $imapHost, $imapPort, encrypt_secret($pass)]);
                 }
-                $notice = 'Connected. Run the mailbox test, then confirm a real receipt is recognised before accepting live payments.';
                 tg_audit($id, 'integration.connected', $upi);
                 $q->execute([$id]);
                 $account = $q->fetch();
+
+                // "Verify & Connect" has to verify. Saving is only half the job:
+                // if the credentials cannot open the mailbox, say so immediately
+                // instead of letting the merchant believe setup succeeded and
+                // discover it later when no payment ever settles.
+                $saved = $pdo->prepare('SELECT merchant_id,linked_email,imap_host,imap_port,google_app_password
+                                          FROM merchant_accounts WHERE merchant_id=? ORDER BY is_active DESC, id LIMIT 1');
+                $saved->execute([$id]);
+                $savedRow = $saved->fetch();
+                $test = $savedRow ? imap_test_connection($savedRow) : ['ok' => false, 'message' => 'Saved, but the account could not be re-read.'];
+                // Save regardless of the probe's outcome: a wrong app password
+                // and an unreachable network look identical from inside the
+                // process, and discarding the row would lose a correct entry
+                // because the server happened to be offline. The result of the
+                // probe is reported instead, and last_error is recorded either
+                // way so the page and the worker agree.
+                $pdo->commit();
+                if (!empty($test['ok'])) {
+                    $notice = 'Connected and verified. '.$test['message'];
+                } else {
+                    $notice = 'Saved, but the mailbox could not be verified: '.$test['message'];
+                    $noticeType = 'error';
+                }
+                $q->execute([$id]);
+                $account = $q->fetch();
             } catch (Throwable $e) {
+                if ($pdo->inTransaction()) $pdo->rollBack();
                 error_log('Integration save failed: '.$e->getMessage());
                 $notice = 'Could not save settings. Confirm the encryption key and database configuration.';
                 $noticeType = 'error';
@@ -123,6 +153,29 @@ require __DIR__.'/includes/dashboard-header.php';
 <?php if ($notice): ?>
   <div class="callout callout-<?=$noticeType === 'error' ? 'danger' : 'success'?>" style="margin-bottom:18px">
     <?=icon($noticeType === 'error' ? 'alert-circle' : 'check-circle', 16)?><span><?=h($notice)?></span>
+  </div>
+<?php endif ?>
+
+<?php
+// Surface a failing mailbox prominently: the worker records last_error on every
+// failed poll, and a silently broken mailbox means payments never settle.
+$mailboxHealthy = $hasPassword && empty($account['last_error']);
+?>
+<?php if ($hasPassword && !empty($account['last_error'])): ?>
+  <div class="callout callout-danger" style="margin-bottom:18px">
+    <?=icon('alert-triangle', 16)?>
+    <span><strong>Receipt polling is failing.</strong>
+      <?=h((string)$account['last_error'])?>
+      <?php if (!empty($account['last_checked_at'])): ?>
+        <span class="form-hint" style="display:block;margin-top:4px">Last attempt: <?=h((string)$account['last_checked_at'])?></span>
+      <?php endif ?>
+    </span>
+  </div>
+<?php elseif ($hasPassword && empty($account['last_checked_at'])): ?>
+  <div class="callout callout-warning" style="margin-bottom:18px">
+    <?=icon('clock', 16)?>
+    <span><strong>Connected, but the worker has not polled yet.</strong>
+      Receipts are read by the cron worker; give it a few seconds, or check that the worker container is running.</span>
   </div>
 <?php endif ?>
 

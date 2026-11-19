@@ -96,6 +96,54 @@ final class TgImapClient
      *
      * @throws RuntimeException on connect, TLS or authentication failure
      */
+    /**
+     * Turn the server's NO/BAD text into a short hint, without echoing secrets.
+     *
+     * Gmail answers a bad app password and a disabled-IMAP account differently,
+     * and those need different fixes, so the distinction is worth surfacing.
+     *
+     * @param list<string> $lines
+     */
+    private static function classifyAuthFailure(array $lines, string $user): string
+    {
+        $text = strtolower(implode(' ', $lines));
+        if ($text === '') return 'The server closed the connection without explaining why.';
+        if (str_contains($text, 'application-specific password')
+            || str_contains($text, 'app password')
+            || str_contains($text, 'invalid credentials')) {
+            return 'Gmail says: use a 16-character App Password, not your normal password.';
+        }
+        if (str_contains($text, 'imap') && (str_contains($text, 'disabled') || str_contains($text, 'not enabled'))) {
+            return 'Gmail says: IMAP access is disabled for this mailbox. Enable it in Gmail settings.';
+        }
+        if (str_contains($text, 'web login required') || str_contains($text, 'unsafe')) {
+            return 'Google blocked the sign-in. Complete the "web login required" step and try again.';
+        }
+        if (str_contains($text, 'too many') || str_contains($text, 'rate')) {
+            return 'The provider is rate limiting this mailbox. Wait a few minutes.';
+        }
+        if (str_contains($text, 'locked') || str_contains($text, 'suspended')) {
+            return 'The mailbox looks locked or suspended at the provider.';
+        }
+        if (str_contains($text, 'unknown user') || str_contains($text, 'no such user')) {
+            return 'The provider does not recognise that mailbox address.';
+        }
+        // Generic fallback. Only echo vocabulary the IMAP protocol itself uses,
+        // never free text from the server, because a NO reply may quote the
+        // address or password that was just rejected.
+        foreach ([
+            'authenticationfailed' => 'The provider rejected the credentials.',
+            'authentication failed' => 'The provider rejected the credentials.',
+            'invalid credentials' => 'The provider rejected the credentials.',
+            'authorization failed' => 'The mailbox is not authorised for IMAP access.',
+            'temporarily' => 'The provider asked to try again shortly.',
+            'unavailable' => 'The mailbox is temporarily unavailable at the provider.',
+        ] as $needle => $message) {
+            if (str_contains($text, $needle)) return $message;
+        }
+        return 'The server rejected the credentials. Check the address, the app password, and that IMAP is enabled.';
+    }
+
     public static function connect(
         string $host,
         int $port,
@@ -126,8 +174,19 @@ final class TgImapClient
         $errstr = '';
         $socket = @stream_socket_client($remote, $errno, $errstr, $timeout, STREAM_CLIENT_CONNECT, $context);
         if (!is_resource($socket)) {
-            // Never echo the password or the full socket error: it can include the host only, which is fine.
-            throw new RuntimeException(sprintf('Could not connect to %s:%d (%s)', $host, $port, $errstr !== '' ? $errstr : 'timeout'));
+            // Never echo the password. The host is safe to show, and the errstr
+            // is what distinguishes a typo from a firewall from a bad cert.
+            $detail = $errstr !== '' ? $errstr : 'connection timed out';
+            $hint = match (true) {
+                str_contains(strtolower($detail), 'getaddrinfo'),
+                str_contains(strtolower($detail), 'name or service') => ' — the hostname does not resolve; check for a typo.',
+                str_contains(strtolower($detail), 'refused') => ' — the port refused the connection; check the port number.',
+                str_contains(strtolower($detail), 'timed out') => ' — no answer; a firewall or your host may block outbound IMAP.',
+                str_contains(strtolower($detail), 'certificate'),
+                str_contains(strtolower($detail), 'ssl') => ' — the TLS certificate was rejected. Only set IMAP_VALIDATE_CERT=false for a mail server you control.',
+                default => '',
+            };
+            throw new RuntimeException(sprintf('Could not connect to %s:%d (%s)%s', $host, $port, $detail, $hint));
         }
         stream_set_timeout($socket, $timeout);
 
@@ -176,8 +235,15 @@ final class TgImapClient
     {
         [$status, $lines] = $this->command('LOGIN '.$this->literal($user).' '.$this->literal($password));
         if ($status !== 'OK') {
-            // Deliberately generic: never reflect credentials or server text verbatim.
-            throw new RuntimeException('IMAP authentication failed — check the mailbox address and app password');
+            // Neither the address nor the password is ever echoed back. The
+            // server's own NO/BAD text is kept as a short classification only,
+            // because it is what tells "wrong password" apart from "IMAP is
+            // disabled on this mailbox" — with identical wording the merchant
+            // has nothing to act on.
+            throw new RuntimeException(
+                'IMAP authentication failed — check the mailbox address and app password. '
+                .self::classifyAuthFailure($lines, $user)
+            );
         }
         $this->authenticated = true;
     }
