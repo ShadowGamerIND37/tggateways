@@ -145,11 +145,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ];
             } elseif ($error === '') {
                 if ($action === 'add') {
-                    $q = $pdo->prepare('INSERT INTO merchant_accounts(merchant_id,account_label,upi_id,payee_name,linked_email,imap_host,imap_port,google_app_password,is_active) VALUES(?,?,?,?,?,?,?,?,0)');
+                    // The first wallet on an account must go live immediately:
+                    // a merchant with zero active accounts receives no orders and
+                    // the worker polls no mailbox, so nothing would ever settle.
+                    $isFirst = tg_account_count($id) === 0;
+                    $q = $pdo->prepare('INSERT INTO merchant_accounts(merchant_id,account_label,upi_id,payee_name,linked_email,imap_host,imap_port,google_app_password,is_active) VALUES(?,?,?,?,?,?,?,?,?)');
                     $q->execute([$id, mb_substr($label, 0, 100), $upi, $payee ?: null, (string)$email,
-                        $imapHost, $imapPort, encrypt_secret($password)]);
+                        $imapHost, $imapPort, encrypt_secret($password), $isFirst ? 1 : 0]);
                     tg_audit($id, 'account.added', $upi);
-                    $notice = 'Standby account added. Activate it when its mailbox test passes.';
+                    $notice = $isFirst
+                        ? 'Primary wallet connected and set active. New orders route to it immediately.'
+                        : 'Standby account added. Activate it when its mailbox test passes.';
                 } else {
                     // An empty app password means "keep the stored one".
                     $notice = tg_apply_account_edit($pdo, $id, [
@@ -203,9 +209,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // otherwise removing the attribute in devtools skips the check.
                 $error = 'Type the account label exactly to confirm removal.';
             } else {
-                $pdo->prepare('DELETE FROM merchant_accounts WHERE id=? AND merchant_id=?')->execute([$target, $id]);
-                $notice = 'Account removed.';
-                tg_audit($id, 'account.removed', (string)$acc['account_label']);
+                // Orders reference the wallet with ON DELETE SET NULL. Deleting
+                // a wallet that still has pending orders would orphan them:
+                // they stay payable but no receipt could ever claim them,
+                // because settlement matches on merchant_account_id. Refuse
+                // instead, and say how many orders are involved.
+                $open = $pdo->prepare("SELECT COUNT(*) FROM orders WHERE merchant_account_id=? AND status='pending'");
+                $open->execute([$target]);
+                $pendingCount = (int)$open->fetchColumn();
+                if ($pendingCount > 0) {
+                    $error = 'This wallet still has '.$pendingCount.' pending order'
+                        .($pendingCount === 1 ? '' : 's')
+                        .'. Wait for them to expire or settle before removing it.';
+                } else {
+                    $pdo->prepare('DELETE FROM merchant_accounts WHERE id=? AND merchant_id=?')->execute([$target, $id]);
+                    $notice = 'Account removed.';
+                    tg_audit($id, 'account.removed', (string)$acc['account_label']);
+                }
             }
         }
     } catch (Throwable $e) {

@@ -1069,6 +1069,45 @@ check('Removal is written to the audit log', auditRow >= 1, String(auditRow));
 // with orders attached violates the foreign key. The suite uses a throwaway
 // database, so there is nothing to tidy.
 
+// A wallet with pending orders must not be removable: deleting it would NULL
+// merchant_account_id on those orders and settlement could never claim them.
+const guardAuth = { session: exportAuth.session };
+const guardIds = JSON.parse(php(`<?php
+require 'includes/db.php';
+require 'includes/crypto.php';
+$pdo = db();
+$pdo->exec("DELETE FROM orders WHERE order_id='tg_ORPHANGUARD'");
+$acc = $pdo->query('SELECT id FROM merchant_accounts WHERE merchant_id=1 ORDER BY id LIMIT 1')->fetchColumn();
+$pdo->prepare('INSERT INTO merchant_accounts(merchant_id,account_label,upi_id,linked_email,imap_host,imap_port,google_app_password,is_active,created_at) VALUES(1,?,?,?,?,?,?,0,?)')
+    ->execute(['Guard Wallet','guard@fam','guard@example.com','imap.gmail.com',993,encrypt_secret('abcdefghijklmnop'),gmdate('Y-m-d H:i:s')]);
+$guard = (int)$pdo->lastInsertId();
+$pdo->prepare("INSERT INTO orders(order_id,merchant_id,merchant_account_id,amount,payable_amount,status,expires_at,created_at) VALUES('tg_ORPHANGUARD',1,?,'5','5','pending',?,?)")
+    ->execute([$guard, gmdate('Y-m-d H:i:s', time()+600), gmdate('Y-m-d H:i:s')]);
+echo json_encode(['guard' => $guard, 'label' => 'Guard Wallet']);
+`, baseEnv()));
+const guardCsrf = (requests([{ method: 'GET', script: path.join(root, 'multi-accounts.php') }], guardAuth.session)[0].body || '')
+  .match(/name="csrf" value="([a-f0-9]{64})"/)?.[1] || '';
+steps = requests([{ method: 'POST', script: path.join(root, 'multi-accounts.php'),
+  post: { csrf: guardCsrf, action: 'delete', id: String(guardIds.guard), confirm_label: 'Guard Wallet' } }], guardAuth.session);
+check('A wallet with pending orders cannot be removed',
+  /still has 1 pending order/.test(steps[0].body || ''), (steps[0].body || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 140));
+const guardSurvived = JSON.parse(php(`<?php
+require 'includes/db.php';
+$pdo = db();
+echo json_encode([
+  'wallets' => (int)$pdo->query('SELECT COUNT(*) FROM merchant_accounts WHERE account_label="Guard Wallet"')->fetchColumn(),
+  'account_on_order' => $pdo->query("SELECT merchant_account_id FROM orders WHERE order_id='tg_ORPHANGUARD'")->fetchColumn(),
+]);
+`, baseEnv()));
+check('The protected wallet and its order link survive',
+  guardSurvived.wallets === 1 && String(guardSurvived.account_on_order ?? '') !== '', JSON.stringify(guardSurvived));
+php(`<?php
+require 'includes/db.php';
+$pdo = db();
+$pdo->exec("DELETE FROM orders WHERE order_id='tg_ORPHANGUARD'");
+$pdo->exec("DELETE FROM merchant_accounts WHERE account_label='Guard Wallet'");
+`, baseEnv());
+
 section('Payment links');
 
 const plAuth = { session: exportAuth.session };
@@ -1315,6 +1354,120 @@ require 'includes/db.php';
 require 'includes/crypto.php';
 db()->prepare('UPDATE merchant_accounts SET google_app_password=? WHERE merchant_id=1')->execute([encrypt_secret('abcdefghijklmnop')]);
 `, baseEnv());
+
+section('IMAP setup correctness');
+
+// These four bugs all produced the same symptom ("IMAP setup not working"),
+// so each is pinned to the specific behaviour that was wrong.
+const imapCfg = JSON.parse(php(`<?php
+require 'includes/db.php';
+require 'includes/merchant.php';
+$pdo = db();
+// Deterministic fixture: one active wallet plus an older standby row.
+// Accounts are UPDATED, never deleted: orders reference them with
+// ON DELETE SET NULL, so deleting a wallet silently orphans pending orders and
+// they can never be settled by a receipt.
+$ids = $pdo->query('SELECT id FROM merchant_accounts WHERE merchant_id=1 ORDER BY id')->fetchAll(PDO::FETCH_COLUMN);
+$upd = $pdo->prepare('UPDATE merchant_accounts SET account_label=?,upi_id=?,linked_email=?,imap_host=?,imap_port=?,google_app_password=?,is_active=?,created_at=? WHERE id=?');
+if (count($ids) >= 2) {
+    $upd->execute(['Old Standby','old@fam','old@example.com','imap.gmail.com',993,'v1:stale',0,'2026-01-01 00:00:00',$ids[0]]);
+    $upd->execute(['Active Wallet','live@fam','live@example.com','imap.gmail.com',993,'v1:live',1,'2026-02-01 00:00:00',$ids[1]]);
+} else {
+    $upd->execute(['Active Wallet','live@fam','live@example.com','imap.gmail.com',993,'v1:live',1,'2026-02-01 00:00:00',$ids[0]]);
+    $pdo->prepare('INSERT INTO merchant_accounts(merchant_id,account_label,upi_id,linked_email,imap_host,imap_port,google_app_password,is_active,created_at) VALUES(1,?,?,?,?,?,?,?,?)')
+        ->execute(['Old Standby','old@fam','old@example.com','imap.gmail.com',993,'v1:stale',0,'2026-01-01 00:00:00']);
+}
+echo json_encode(['id' => (int)$pdo->lastInsertId()]);
+`, baseEnv()));
+
+// Bug 1: the page displayed the active wallet but wrote to the oldest row.
+const imapCsrf = (requests([{ method: 'GET', script: path.join(root, 'integrations.php') }], exportAuth.session)[0].body || '')
+  .match(/name="csrf" value="([a-f0-9]{64})"/)?.[1] || '';
+const imapSave = requests([{ method: 'POST', script: path.join(root, 'integrations.php'),
+  post: { csrf: imapCsrf, action: 'save', account_label: 'Renamed Active', upi_id: 'live@fam',
+          linked_email: 'live@example.com', app_password: '', imap_host: 'imap.gmail.com', imap_port: '993' } }],
+  exportAuth.session)[0];
+const labels = JSON.parse(php(`<?php
+require 'includes/db.php';
+$r = db()->query('SELECT account_label,is_active FROM merchant_accounts WHERE merchant_id=1 ORDER BY id')->fetchAll(PDO::FETCH_ASSOC);
+echo json_encode($r);
+`, baseEnv()));
+check('Integrations edits the active wallet, not the oldest row',
+  labels.some((r) => r.account_label === 'Renamed Active' && Number(r.is_active) === 1)
+  && labels.some((r) => r.account_label === 'Old Standby'),
+  (imapSave.body || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').match(/callout[^>]*>\s*<svg[^>]*>.*?<\/svg>\s*<span>(.{0,160})/)?.[1] || JSON.stringify(labels));
+
+// Bug 2: a disconnected (blank password) active row must not be polled at all.
+php(`<?php
+require 'includes/db.php';
+db()->exec("UPDATE merchant_accounts SET google_app_password='' WHERE is_active=1 AND merchant_id=1");
+`, baseEnv());
+const polled = JSON.parse(php(`<?php
+require 'includes/db.php';
+require 'includes/imap.php';
+$pdo = db();
+echo json_encode(count($pdo->query("SELECT id FROM merchant_accounts WHERE is_active=1 AND google_app_password IS NOT NULL AND google_app_password <> ''")->fetchAll()));
+`, baseEnv()));
+check('A disconnected mailbox is excluded from polling', polled === 0, String(polled));
+const disconnectedMsg = JSON.parse(php(`<?php
+require 'includes/db.php';
+require 'includes/crypto.php';
+require 'includes/imap.php';
+try {
+    imap_open_account(['id'=>1,'merchant_id'=>1,'linked_email'=>'x@y.com','imap_host'=>'imap.gmail.com','imap_port'=>993,'google_app_password'=>'']);
+    echo json_encode(['threw' => false]);
+} catch (Throwable $e) {
+    echo json_encode(['threw' => true, 'msg' => $e->getMessage()]);
+}
+`, baseEnv()));
+check('Opening a disconnected mailbox says to reconnect',
+  disconnectedMsg.threw === true && /disconnected/i.test(disconnectedMsg.msg || ''), disconnectedMsg.msg);
+
+// Bug 3: provider errors must be classified, not collapsed into one message.
+const classify = JSON.parse(php(`<?php
+require 'includes/imap-client.php';
+$ref = new ReflectionMethod('TgImapClient', 'classifyAuthFailure');
+echo json_encode([
+  'apppass'  => $ref->invoke(null, ['[ALERT] Please log in with an application-specific password'], 'a@b.com'),
+  'imapoff'  => $ref->invoke(null, ['NO [ALERT] IMAP access is disabled for this account'], 'a@b.com'),
+  'unknown'  => $ref->invoke(null, ['NO [AUTHENTICATIONFAILED] Unknown user'], 'a@b.com'),
+  'empty'    => $ref->invoke(null, [], 'a@b.com'),
+  'leaks'    => str_contains($ref->invoke(null, ['NO secret-password-123'], 'a@b.com'), 'secret-password-123'),
+]);
+`, baseEnv()));
+check('An app-password failure explains the fix', /App Password/i.test(classify.apppass || ''), classify.apppass);
+check('A disabled-IMAP failure is distinguished', /IMAP access is disabled/i.test(classify.imapoff || ''), classify.imapoff);
+check('An unknown mailbox is distinguished', /does not recognise/i.test(classify.unknown || ''), classify.unknown);
+check('An empty server reply still yields a message', (classify.empty || '').length > 10);
+check('Failure text never echoes the password', classify.leaks === false);
+
+// Bug 5: the first wallet a merchant adds must become active immediately.
+// Use a throwaway merchant: deleting merchant 1's wallets would orphan orders.
+const firstMerchant = JSON.parse(php(`<?php
+require 'includes/db.php';
+$pdo = db();
+$pdo->prepare('INSERT INTO merchants(name,email,password,api_key) VALUES(?,?,?,?)')
+    ->execute(['First Wallet Co','first-wallet@example.com',password_hash('correct-horse-battery', PASSWORD_DEFAULT),'tg_FIRSTWALLETKEY']);
+echo json_encode(['id' => (int)$pdo->lastInsertId()]);
+`, baseEnv()));
+// Sign in as that merchant: tg_account_count() is per merchant, so this is the
+// only way to exercise the genuine "this is my first wallet" branch.
+const firstAuth = signIn('first-wallet@example.com', 'correct-horse-battery');
+const firstCsrf = (requests([{ method: 'GET', script: path.join(root, 'multi-accounts.php') }], firstAuth.session)[0].body || '')
+  .match(/name="csrf" value="([a-f0-9]{64})"/)?.[1] || '';
+const firstAdd = requests([{ method: 'POST', script: path.join(root, 'multi-accounts.php'),
+  post: { csrf: firstCsrf, action: 'add', account_label: 'First Wallet', upi_id: 'first@fam', linked_email: 'first@example.com',
+    app_password: 'abcdefghijklmnop', imap_host: 'imap.gmail.com', imap_port: '993' } }], firstAuth.session)[0];
+const firstActive = JSON.parse(php(`<?php
+require 'includes/db.php';
+$r = db()->query('SELECT is_active FROM merchant_accounts ORDER BY id DESC LIMIT 1')->fetch();
+echo json_encode((int)($r['is_active'] ?? -1));
+`, baseEnv()));
+check('The first wallet becomes active', firstActive === 1, String(firstActive));
+check('The page says it is live, not a standby',
+  /Primary wallet connected and set active/i.test(firstAdd.body || ''), '');
+
+// Merchant 1's wallets were updated in place, so nothing needs restoring.
 
 section('Payout re-auth via email OTP');
 

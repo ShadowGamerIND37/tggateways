@@ -354,12 +354,14 @@ node tests/run.mjs                 # auto-detects php, then a php-wasm CLI
 PHP_BIN=/usr/bin/php node tests/run.mjs
 ```
 
-311 checks run against a throwaway SQLite database: receipt parsing/matching, MIME
+328 checks run against a throwaway SQLite database: receipt parsing/matching, MIME
 decoding against plain/quoted-printable/base64/forwarded samples, the IMAP protocol client
 driven by a scripted peer, AES-GCM round-trips, auth and CSRF, input validation, rate
 limits, order creation, status and verification endpoints, the hosted checkout page,
 settlement idempotency (matched → duplicate → unmatched → unparsed), worker housekeeping,
-webhook signing/queueing/retry and the SSRF URL policy. MySQL remains the production database; SQLite exists so the
+webhook signing/queueing/retry and the SSRF URL policy. The IMAP setup suite covers
+active-wallet selection, disconnection handling, provider-failure classification and the
+refusal to delete a wallet that still has pending orders. MySQL remains the production database; SQLite exists so the
 same code is testable without a database server.
 
 Webhook delivery is tested through `tests/webhook-transport.php`, which records the exact
