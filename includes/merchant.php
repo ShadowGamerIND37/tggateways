@@ -64,6 +64,9 @@ function tg_status_badge(string $status): string {
         'pending' => ['pending', 'Created'],
         'expired' => ['expired', 'Expired'],
         'failed'  => ['failed', 'Failed'],
+        // Payment-link states reuse the same pill styling with their own labels.
+        'active'   => ['success', 'Active'],
+        'inactive' => ['expired', 'Inactive'],
     ];
     [$kind, $label] = $map[strtolower($status)] ?? ['expired', ucfirst($status)];
     return '<span class="status-badge status-'.$kind.'">'.h($label).'</span>';

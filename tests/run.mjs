@@ -993,6 +993,83 @@ check('Formula-injection names are escaped in CSV',
   injected.includes("'=cmd|calc") && !/(^|,)"?=cmd\|calc/.test(injected),
   'expects a leading apostrophe, no bare formula');
 
+section('Payment links');
+
+const plAuth = { session: exportAuth.session };
+let plPage = requests([{ method: 'GET', script: path.join(root, 'payment-links.php') }], plAuth.session)[0];
+check('Payment links page renders both cards',
+  /Generate Payment Link/.test(plPage.body || '') && /My Payment Links/.test(plPage.body || ''));
+const plCsrf = (plPage.body || '').match(/name="csrf" value="([a-f0-9]{64})"/)?.[1] || '';
+
+// Create with a custom slug.
+steps = requests([{
+  method: 'POST', script: path.join(root, 'payment-links.php'),
+  post: { csrf: plCsrf, action: 'create', title: 'Consulting call', amount: '1499.50', slug: 'consult-call', expiry_days: '7', redirect_url: '', description: 'A 30 minute call' },
+}], plAuth.session);
+check('A custom slug is created', /Payment link created/.test(steps[0].body || '')
+  && /consult-call/.test(steps[0].body || ''), (steps[0].body || '').match(/callout[^<]*<[^>]*>([^<]*)/)?.[1]);
+check('The new link is listed as Active', /Active/.test(steps[0].body || '') && /₹1,499.50/.test(steps[0].body || ''));
+check('The list shows created and expiry columns',
+  /Created/.test(steps[0].body || '') && /Expires/.test(steps[0].body || ''));
+
+// Duplicate slug is refused, and nothing extra is written.
+steps = requests([{
+  method: 'POST', script: path.join(root, 'payment-links.php'),
+  post: { csrf: plCsrf, action: 'create', title: 'Duplicate', amount: '10', slug: 'consult-call', expiry_days: '0' },
+}], plAuth.session);
+check('A taken slug is refused', /already taken/.test(steps[0].body || ''));
+const slugCount = JSON.parse(php(`<?php
+require 'includes/db.php';
+echo json_encode((int)db()->query("SELECT COUNT(*) FROM payment_links WHERE slug='consult-call'")->fetchColumn());
+`, baseEnv()));
+check('The refused duplicate did not insert a row', slugCount === 1, String(slugCount));
+
+// Validation matrix.
+steps = requests([
+  { method: 'POST', script: path.join(root, 'payment-links.php'), post: { csrf: plCsrf, action: 'create', title: 'Bad slug', amount: '10', slug: 'Has Spaces!', expiry_days: '0' } },
+  { method: 'POST', script: path.join(root, 'payment-links.php'), post: { csrf: plCsrf, action: 'create', title: '', amount: '10', slug: 'ok-slug', expiry_days: '0' } },
+  { method: 'POST', script: path.join(root, 'payment-links.php'), post: { csrf: plCsrf, action: 'create', title: 'Zero', amount: '0', slug: 'zero-amount', expiry_days: '0' } },
+  { method: 'POST', script: path.join(root, 'payment-links.php'), post: { csrf: plCsrf, action: 'create', title: 'Bad redirect', amount: '10', slug: 'bad-redirect', expiry_days: '0', redirect_url: 'javascript:alert(1)' } },
+  { method: 'POST', script: path.join(root, 'payment-links.php'), post: { csrf: plCsrf, action: 'create', title: 'Bad expiry', amount: '10', slug: 'bad-expiry', expiry_days: '999' } },
+], plAuth.session);
+check('Malformed slugs are refused', /lowercase letters, numbers and hyphens/.test(steps[0].body || ''));
+check('A missing title is refused', /Give the link a title/.test(steps[1].body || ''));
+check('A zero amount is refused', /between ₹1 and/.test(steps[2].body || ''));
+check('A javascript: redirect is refused', /valid HTTPS address/.test(steps[3].body || ''));
+check('An unoffered expiry window is refused', /offered expiry windows/.test(steps[4].body || ''));
+const junk = JSON.parse(php(`<?php
+require 'includes/db.php';
+echo json_encode((int)db()->query("SELECT COUNT(*) FROM payment_links WHERE slug IN ('zero-amount','bad-redirect','bad-expiry','ok-slug')")->fetchColumn());
+`, baseEnv()));
+check('No invalid link reached the database', junk === 0, String(junk));
+
+// Deactivate → the public checkout must stop serving it.
+steps = requests([{ method: 'POST', script: path.join(root, 'payment-links.php'),
+  post: { csrf: plCsrf, action: 'deactivate', slug: 'consult-call' } }], plAuth.session);
+check('A link can be deactivated', /Link deactivated/.test(steps[0].body || ''));
+const active = JSON.parse(php(`<?php
+require 'includes/db.php';
+echo json_encode((int)db()->query("SELECT is_active FROM payment_links WHERE slug='consult-call'")->fetchColumn());
+`, baseEnv()));
+check('Deactivation is persisted', active === 0, String(active));
+const payDead = requests([{ method: 'GET', script: path.join(root, 'pay.php'), query: { link: 'consult-call' } }], 'pub-links')[0];
+check('A deactivated link is refused at checkout', /unavailable or has expired/.test(payDead.body || ''));
+
+// Reactivate, and confirm the checkout accepts it again.
+steps = requests([{ method: 'POST', script: path.join(root, 'payment-links.php'),
+  post: { csrf: plCsrf, action: 'activate', slug: 'consult-call' } }], plAuth.session);
+check('A link can be reactivated', /Link reactivated/.test(steps[0].body || ''));
+const payLive = requests([{ method: 'GET', script: path.join(root, 'pay.php'), query: { link: 'consult-call' } }], 'pub-links2')[0];
+check('A reactivated link reaches the checkout', payLive.status === 302
+  && /order_id=/.test((payLive.headers || []).join(' ')), (payLive.headers || []).join(' | ').slice(0, 120));
+
+// Another merchant's link cannot be touched.
+const foreign = JSON.parse(php(`<?php
+require 'includes/db.php';
+echo json_encode((int)db()->query("SELECT merchant_id FROM payment_links WHERE slug='consult-call'")->fetchColumn());
+`, baseEnv()));
+check('The test link belongs to the signed-in merchant', foreign === 1, String(foreign));
+
 section('Dashboard activity periods');
 
 // Re-use an existing signed-in session: every extra login counts against the
