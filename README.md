@@ -272,8 +272,21 @@ The panel uses the FamGateway layout and design tokens (`assets/css/design-syste
 dark sidebar, stat cards, filter tabs and a seven-column transaction table. Navigation:
 Dashboard, Transactions, Payment Links, API Keys, Webhooks, Settings, Integrations,
 Multi-Accounts, Addons, My Services, Invoices, Profile, Support Tickets, Documentation and
-System Status. Settings, My Services, Invoices, Profile, Support Tickets and the public
-status page are stubs today — each states what works now and what the next slice adds.
+System Status. Profile (five tabs, avatar embedded in QR codes), Settings (payment defaults), Support
+Tickets (create/reply/resolve with counters), Addons (Paytm ₹49/month in 1/3/6/12-month
+terms), My Services, Invoices and a public System Status page with measured 30-day uptime
+are all live.
+
+**Schema upgrades are automatic.** `includes/migrate.php` runs on boot and records applied
+migrations in `schema_migrations`, so an existing volume gains new tables on the next
+dashboard request. `database/schema.sql` is only for fresh installs. To apply by hand:
+
+```sh
+docker compose exec app php -r 'require "includes/db.php"; require "includes/migrate.php"; print_r(tg_run_migrations());'
+```
+
+To avoid the boot check entirely (large fleets, read-only filesystems), set
+`TG_SKIP_MIGRATIONS=true`.
 
 Two behaviours worth knowing:
 
@@ -292,7 +305,7 @@ node tests/run.mjs                 # auto-detects php, then a php-wasm CLI
 PHP_BIN=/usr/bin/php node tests/run.mjs
 ```
 
-155 checks run against a throwaway SQLite database: receipt parsing/matching, MIME
+200 checks run against a throwaway SQLite database: receipt parsing/matching, MIME
 decoding against plain/quoted-printable/base64/forwarded samples, the IMAP protocol client
 driven by a scripted peer, AES-GCM round-trips, auth and CSRF, input validation, rate
 limits, order creation, status and verification endpoints, the hosted checkout page,
