@@ -119,6 +119,22 @@ function retry_webhooks(PDO $pdo, int $limit = 25): int {
         $delay = webhook_backoff($nextAttempt);
         $pdo->prepare('UPDATE webhook_logs SET attempt_count=?,response_code=?,delivered_at=?,next_retry_at=?,last_error=? WHERE id=?')
             ->execute([$nextAttempt,$result['code'] ?: null,$ok ? db_now() : null,$ok ? null : db_now($delay),$ok ? null : substr((string)$result['error'], 0, 250),$log['id']]);
+        // Last attempt failed: tell the merchant instead of going quiet. The
+        // queue used to exhaust silently, which is how a broken endpoint went
+        // unnoticed until reconciliation.
+        if (!$ok && $nextAttempt >= webhook_max_attempts()) {
+            require_once __DIR__.'/notify.php';
+            try {
+                $owner = $pdo->prepare('SELECT merchant_id FROM orders WHERE order_id=?');
+                $owner->execute([$log['order_id']]);
+                $merchantId = (int)($owner->fetchColumn() ?: 0);
+                if ($merchantId > 0) {
+                    notify_webhook_failure($pdo, $merchantId, (string)$log['order_id'], (string)$merchant['webhook_url']);
+                }
+            } catch (Throwable $e) {
+                error_log('webhook failure notice: '.$e->getMessage());
+            }
+        }
         $sent++;
     }
     return $sent;

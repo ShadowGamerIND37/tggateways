@@ -934,6 +934,109 @@ steps = requests([{
 }], payoutAuth.session);
 check('Active account cannot be deleted', /Switch the active account/.test(steps[0].body || ''));
 
+section('Transaction export and detail drawer');
+
+const exportAuth = signIn('merchant@example.com', 'correct-horse-battery');
+steps = requests([
+  { method: 'GET', script: path.join(root, 'transactions.php') },
+  { method: 'GET', script: path.join(root, 'transactions-export.php') },
+  { method: 'GET', script: path.join(root, 'transactions-export.php'), query: { status: 'success', range: '30d' } },
+  { method: 'GET', script: path.join(root, 'transactions-export.php'), query: { status: 'not-a-status', range: 'not-a-range' } },
+], exportAuth.session);
+const [txPage, csvAll, csvFiltered, csvBogus] = steps;
+check('Transactions page offers a CSV export', /Export CSV/.test(txPage.body || ''));
+check('Export returns CSV with an attachment header',
+  csvAll.status === 200 && /attachment; filename="transactions-/.test((csvAll.headers || []).join(' ')),
+  (csvAll.headers || []).join(' | ').slice(0, 160));
+const csvHeader = (csvAll.body || '').replace(/^\uFEFF/, '').split(/\r?\n/)[0].replace(/"/g, '');
+check('CSV starts with the expected header row',
+  csvHeader.startsWith('Order ID,Bank RRN / UTR,Status,Amount,Payable amount'),
+  JSON.stringify(csvHeader));
+check('CSV is UTF-8 with a BOM for Excel', (csvAll.body || '').startsWith('\uFEFF'));
+check('Filtered export still succeeds', csvFiltered.status === 200);
+check('Unknown export filters fall back instead of failing', csvBogus.status === 200);
+
+// Detail drawer: a known order renders its full record; an unknown one warns.
+const drawerOrder = JSON.parse(php(`<?php
+require 'includes/db.php';
+$row = db()->query('SELECT order_id FROM orders WHERE merchant_id=1 ORDER BY id LIMIT 1')->fetch();
+echo json_encode(['id' => $row['order_id'] ?? '']);
+`, baseEnv()));
+steps = requests([
+  { method: 'GET', script: path.join(root, 'transactions.php'), query: { view: drawerOrder.id } },
+  { method: 'GET', script: path.join(root, 'transactions.php'), query: { view: 'tg_DOESNOTEXIST' } },
+], exportAuth.session);
+check('Detail drawer renders the selected order', /Receiving account/.test(steps[0].body || '')
+  && (steps[0].body || '').includes(drawerOrder.id));
+check('Drawer shows the customer and bank fields', /Bank RRN \/ UTR/.test(steps[0].body || '')
+  && /Payer name from bank/.test(steps[0].body || ''));
+check('Unknown order id warns instead of erroring', /No order/.test(steps[1].body || ''));
+check("Drawer close link drops the view parameter", /href="\/transactions\.php\?[^"]*"/.test(steps[0].body || '')
+  && !/view=tg_.*&amp;view=/.test(steps[0].body || ''));
+
+// CSV injection: a customer name starting with "=" must be neutralised.
+// Inserted as `pending` so it cannot be mistaken for a settled order by the
+// settlement tests, and removed again immediately afterwards.
+php(`<?php
+require 'includes/db.php';
+db()->prepare("INSERT INTO orders(order_id,merchant_id,amount,payable_amount,status,source,customer_name,expires_at,created_at)
+               VALUES('tg_CSVINJECT',1,'10','10','pending','api','=cmd|calc',?,?)")
+    ->execute([gmdate('Y-m-d H:i:s'), gmdate('Y-m-d H:i:s')]);
+`, baseEnv());
+steps = requests([{ method: 'GET', script: path.join(root, 'transactions-export.php') }], exportAuth.session);
+const injected = steps[0].body || '';
+php(`<?php
+require 'includes/db.php';
+db()->exec("DELETE FROM orders WHERE order_id='tg_CSVINJECT'");
+`, baseEnv());
+check('Formula-injection names are escaped in CSV',
+  injected.includes("'=cmd|calc") && !/(^|,)"?=cmd\|calc/.test(injected),
+  'expects a leading apostrophe, no bare formula');
+
+section('Documentation text endpoints');
+
+const docAuth = signIn('merchant@example.com', 'correct-horse-battery');
+const docsBase = { ...baseEnv(), APP_URL: 'https://gate.example.com' };
+const docText = php(`<?php
+require 'includes/apidoc.php';
+echo tg_doc_text();
+`, docsBase);
+const llmsText = php(`<?php
+require 'includes/apidoc.php';
+echo tg_doc_llms();
+`, docsBase);
+const promptText = php(`<?php
+require 'includes/apidoc.php';
+echo tg_doc_ai_prompt();
+`, docsBase);
+
+check('docs.txt lists every endpoint', JSON.parse(php(`<?php
+require 'includes/apidoc.php';
+echo json_encode(array_column(tg_doc_endpoints(), 'path'));
+`, docsBase)).every((p) => docText.includes(p)));
+check('docs.txt uses the configured base URL', docText.includes('https://gate.example.com'));
+check('docs.txt documents the webhook signature rule', /hmac_sha256/.test(docText));
+check('docs.txt warns against fulfilling from polling', /Never fulfil from/.test(docText));
+check('llms.txt follows the llms.txt convention', llmsText.startsWith('# TG Gateways')
+  && llmsText.includes('> ') && llmsText.includes('## Endpoints'));
+check('llms.txt states the non-custodial scope', /never holds or routes customer funds/.test(llmsText));
+check('ai-prompt.txt gives both HMAC snippets',
+  /hmac\.new/.test(promptText) && /hash_hmac/.test(promptText));
+check('ai-prompt.txt warns about idempotency', /delivered more than once/.test(promptText));
+check('ai-prompt.txt maps the key files', promptText.includes('includes/settlement.php'));
+
+// Served over HTTP with the right content type.
+steps = requests([
+  { method: 'GET', script: path.join(root, 'docs.txt.php') },
+  { method: 'GET', script: path.join(root, 'llms.txt.php') },
+  { method: 'GET', script: path.join(root, 'ai-prompt.txt.php') },
+], docAuth.session);
+check('Text endpoints are public and serve text/plain',
+  steps.every((r) => r.status === 200) && steps.every((r) => (r.headers || []).join(' ').includes('text/plain')),
+  steps.map((r) => r.status).join(','));
+check('Text endpoints expose no merchant secrets',
+  steps.every((r) => !(r.body || '').includes(apiKey)));
+
 section('Addons, services and invoices');
 
 const addonAuth = signIn('merchant@example.com', 'correct-horse-battery');

@@ -72,10 +72,32 @@ $rows = $q->fetchAll();
    shows the breakdown so a future multi-method gateway slots in unchanged. */
 $methodSplit = $counts['success'] > 0 ? [['UPI', 100.0]] : [];
 
-$query = fn(array $overrides = []): string => '?'.http_build_query(array_merge(
-    ['status' => $status, 'range' => $range, 'search' => $search, 'per_page' => $perPage, 'page' => $page],
-    $overrides
-));
+/* Order detail drawer (?view=ORDER_ID) — everything known about one order,
+   including the fields the table has no room for. */
+$detail = null;
+$viewId = substr((string)($_GET['view'] ?? ''), 0, 40);
+if ($viewId !== '') {
+    $d = $pdo->prepare('SELECT order_id,utr,transaction_id,sender_name,customer_name,customer_email,
+                               customer_phone,amount,payable_amount,status,source,created_at,paid_at,
+                               expires_at,webhook_url,redirect_url,note,merchant_account_id
+                          FROM orders WHERE merchant_id=? AND order_id=?');
+    $d->execute([$id, $viewId]);
+    $detail = $d->fetch() ?: null;
+}
+
+/**
+ * Build a query string from the current filters, with overrides applied.
+ * An override of null removes the key, which is how the detail drawer closes
+ * without leaving a stray `view=` in the URL.
+ */
+$query = function (array $overrides = []) use ($status, $range, $search, $perPage, $page): string {
+    $base = ['status' => $status, 'range' => $range, 'search' => $search, 'per_page' => $perPage, 'page' => $page];
+    foreach ($overrides as $key => $value) {
+        if ($value === null) unset($base[$key]);
+        else $base[$key] = $value;
+    }
+    return '?'.http_build_query($base);
+};
 
 require __DIR__.'/includes/dashboard-header.php';
 ?>
@@ -85,7 +107,10 @@ require __DIR__.'/includes/dashboard-header.php';
     <h1 style="font-size:22px;font-weight:700;letter-spacing:-.5px;margin:0">Transactions</h1>
     <p style="font-size:13px;color:var(--color-ink-mute);margin:4px 0 0">Every order, with its bank reference and customer detail.</p>
   </div>
-  <a class="btn btn-primary btn-sm" href="/payment-links.php"><?=icon('plus', 14)?> New payment link</a>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <a class="btn btn-secondary btn-sm" href="/transactions-export.php<?=h($query())?>"><?=icon('download', 14)?> Export CSV</a>
+    <a class="btn btn-primary btn-sm" href="/payment-links.php"><?=icon('plus', 14)?> New payment link</a>
+  </div>
 </div>
 
 <div class="dashboard-bottom-grid" style="grid-template-columns:1.6fr 1fr;margin-bottom:20px">
@@ -119,8 +144,57 @@ require __DIR__.'/includes/dashboard-header.php';
   </div>
 </div>
 
+<?php if ($detail): ?>
+  <div class="card" style="margin-bottom:20px;border-color:var(--color-primary)">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+      <div>
+        <div class="card-title"><?=icon('receipt', 16)?> <?=h((string)$detail['order_id'])?></div>
+        <div class="card-sub">Created <?=h(date('d M Y, H:i:s', strtotime((string)$detail['created_at'])))?></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <?=tg_status_badge((string)$detail['status'])?>
+        <a class="btn btn-secondary btn-sm" href="/transactions.php<?=h($query(['view' => null]))?>">Close</a>
+      </div>
+    </div>
+    <div class="dashboard-bottom-grid" style="grid-template-columns:1fr 1fr;gap:10px 28px">
+      <?php foreach ([
+          'Amount' => '₹'.number_format((float)$detail['amount'], 2),
+          'Payable amount' => '₹'.number_format((float)$detail['payable_amount'], 2),
+          'Bank RRN / UTR' => $detail['utr'] ?: '—',
+          'Transaction ID' => $detail['transaction_id'] ?: '—',
+          'Customer name' => $detail['customer_name'] ?: '—',
+          'Customer email' => $detail['customer_email'] ?: '—',
+          'Customer phone' => $detail['customer_phone'] ?: '—',
+          'Payer name from bank' => $detail['sender_name'] ?: '—',
+          'Source' => $detail['source'] ?: '—',
+          'Paid at' => $detail['paid_at'] ?: '—',
+          'Expires at' => $detail['expires_at'] ?: '—',
+          'Receiving account' => $detail['merchant_account_id'] ? '#'.$detail['merchant_account_id'] : '—',
+          'Redirect URL' => $detail['redirect_url'] ?: '—',
+          'Webhook URL' => $detail['webhook_url'] ?: '—',
+          'Note' => $detail['note'] ?: '—',
+      ] as $label => $value): ?>
+        <div style="padding:5px 0;border-bottom:1px solid var(--color-hairline)">
+          <div class="form-hint"><?=h($label)?></div>
+          <div style="font-size:13px;word-break:break-word"><?=h($value)?></div>
+        </div>
+      <?php endforeach ?>
+    </div>
+    <?php if ($detail['status'] === 'success'): ?>
+      <div style="margin-top:16px">
+        <a class="btn btn-primary btn-sm" href="/invoice.php?order_id=<?=h(rawurlencode((string)$detail['order_id']))?>"><?=icon('file-text', 14)?> Open receipt</a>
+      </div>
+    <?php endif ?>
+  </div>
+<?php elseif ($viewId !== ''): ?>
+  <div class="callout callout-warning" style="margin-bottom:18px">
+    <?=icon('alert-circle', 16)?><span>No order <code><?=h($viewId)?></code> on this account.</span>
+  </div>
+<?php endif ?>
+
 <div class="card" style="padding:0;overflow:hidden">
   <form method="get" style="padding:18px 24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--color-hairline)">
+    <?php if ($detail): ?><input type="hidden" name="view" value="<?=h((string)$detail['order_id'])?>"><?php endif ?>
     <div style="position:relative;flex:1;min-width:200px">
       <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--color-ink-mute-2);display:flex"><?=icon('search', 15)?></span>
       <input class="form-input" style="padding-left:34px" name="search" value="<?=h($search)?>" placeholder="Order ID, UTR, customer">
@@ -183,13 +257,12 @@ require __DIR__.'/includes/dashboard-header.php';
           <td style="white-space:nowrap"><?=h(date('d M Y, H:i', strtotime((string)$r['created_at'])))?></td>
           <td class="tnum" style="font-weight:600">₹<?=number_format((float)$r['amount'], 2)?></td>
           <td><?=tg_status_badge((string)$r['status'])?></td>
-          <td style="text-align:right">
+          <td style="text-align:right;white-space:nowrap">
+            <a class="btn btn-secondary btn-sm" href="<?=h($query(['view' => (string)$r['order_id']]))?>">Details</a>
             <?php if ($r['status'] === 'success'): ?>
               <a class="btn btn-secondary btn-sm" href="/invoice.php?order_id=<?=rawurlencode((string)$r['order_id'])?>">Receipt</a>
             <?php elseif ($r['status'] === 'pending'): ?>
               <a class="btn btn-secondary btn-sm" href="/pay.php?order_id=<?=rawurlencode((string)$r['order_id'])?>">Checkout</a>
-            <?php else: ?>
-              <span style="color:var(--color-ink-mute-2)">—</span>
             <?php endif ?>
           </td>
         </tr>

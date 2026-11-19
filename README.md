@@ -263,8 +263,26 @@ oldest is claimed and the event is flagged `ambiguous` for review.
 - `GET /api/health.php`: public deployment health (no merchant data).
 
 Merchant dashboard pages cover orders, payment links, API key rotation, webhook logs and
-endpoint health, mailbox/UPI configuration and additional accounts. `/docs.php` has
-request samples, HMAC verification, the Python and PHP SDKs, and links `openapi.json`.
+endpoint health, mailbox/UPI configuration and additional accounts.
+
+The API is described once in `includes/apidoc.php` and rendered four ways, so the routes
+cannot drift between formats:
+
+| URL | Format | Audience |
+| --- | --- | --- |
+| `/docs.php` | HTML | merchants |
+| `/docs.txt` | plain text | terminals, `curl`, offline reading |
+| `/llms.txt` | llms.txt convention | LLMs answering questions about the product |
+| `/ai-prompt.txt` | master prompt | assistants writing integration code |
+| `/openapi.json` | OpenAPI 3.1 | code generators |
+
+The `.txt` files are PHP scripts (`docs.txt.php`, …) reached through `mod_rewrite`, so they
+render from the same source while still looking like static documents.
+
+Transactions can be exported to CSV (`/transactions-export.php`) with the same filters as
+the table on screen. Cells beginning with `=`, `+`, `-` or `@` are prefixed with an
+apostrophe so a hostile customer name cannot execute as a spreadsheet formula, and the file
+carries a UTF-8 BOM so Excel renders ₹ and non-ASCII names correctly.
 
 ### Merchant panel
 
@@ -320,7 +338,7 @@ node tests/run.mjs                 # auto-detects php, then a php-wasm CLI
 PHP_BIN=/usr/bin/php node tests/run.mjs
 ```
 
-222 checks run against a throwaway SQLite database: receipt parsing/matching, MIME
+244 checks run against a throwaway SQLite database: receipt parsing/matching, MIME
 decoding against plain/quoted-printable/base64/forwarded samples, the IMAP protocol client
 driven by a scripted peer, AES-GCM round-trips, auth and CSRF, input validation, rate
 limits, order creation, status and verification endpoints, the hosted checkout page,

@@ -66,9 +66,95 @@ function notify_discord(PDO $pdo, string $orderId): bool {
     return $ok;
 }
 
+/**
+ * Email notification for a successful payment.
+ *
+ * Idempotent per order+channel like the Discord channel, and gated on the
+ * merchant's `notify_payments` preference — the toggle on the profile page has
+ * to actually mean something. Silently no-ops when no mail transport exists,
+ * because a missing transport is an operator concern, not a payment failure.
+ */
+function notify_email(PDO $pdo, string $orderId): bool {
+    if (!tg_mail_transport_available()) return false;
+
+    $q = $pdo->prepare('SELECT o.order_id,o.amount,o.utr,o.sender_name,o.paid_at,
+                               m.id merchant_id,m.name merchant_name,m.email merchant_email
+                          FROM orders o JOIN merchants m ON m.id=o.merchant_id
+                         WHERE o.order_id=?');
+    $q->execute([$orderId]);
+    $row = $q->fetch();
+    if (!$row) return false;
+
+    // Respect the merchant's preference when the profile table exists.
+    if (tg_table_exists('merchant_profiles')) {
+        $pref = $pdo->prepare('SELECT notify_payments FROM merchant_profiles WHERE merchant_id=?');
+        $pref->execute([(int)$row['merchant_id']]);
+        $wants = $pref->fetchColumn();
+        if ($wants !== false && (int)$wants === 0) return false;
+    }
+
+    $seen = $pdo->prepare("SELECT 1 FROM notification_logs WHERE order_id=? AND channel='email' AND delivered_at IS NOT NULL LIMIT 1");
+    $seen->execute([$orderId]);
+    if ($seen->fetchColumn()) return true;
+
+    $subject = 'Payment received — ₹'.number_format((float)$row['amount'], 2).' ('.$row['order_id'].')';
+    $body = "A payment was matched and recorded.\n\n"
+        . "Merchant:  {$row['merchant_name']}\n"
+        . "Order:     {$row['order_id']}\n"
+        . "Amount:    INR ".number_format((float)$row['amount'], 2)."\n"
+        . "UTR:       ".($row['utr'] ?: '—')."\n"
+        . "Payer:     ".($row['sender_name'] ?: '—')."\n"
+        . "Paid at:   ".($row['paid_at'] ?: '—')."\n\n"
+        . "The customer's order is marked successful and any configured webhook has been dispatched.\n";
+
+    $ok = tg_smtp_send((string)$row['merchant_email'], $subject, $body);
+    $pdo->prepare('INSERT INTO notification_logs(merchant_id,order_id,channel,response_code,last_error,delivered_at,created_at) VALUES(?,?,?,?,?,?,?)')
+        ->execute([(int)$row['merchant_id'], $orderId, 'email', $ok ? 250 : null,
+            $ok ? null : 'SMTP delivery failed', $ok ? db_now() : null, db_now()]);
+    return $ok;
+}
+
+/**
+ * Warn the merchant that a webhook exhausted its retries.
+ *
+ * This is the gap that made failures invisible: the queue retried and then went
+ * quiet. Sent at most once per delivery so a retry storm cannot spam the inbox.
+ */
+function notify_webhook_failure(PDO $pdo, int $merchantId, string $orderId, string $url): bool {
+    if (!tg_mail_transport_available()) return false;
+    if (tg_table_exists('merchant_profiles')) {
+        $pref = $pdo->prepare('SELECT notify_webhooks FROM merchant_profiles WHERE merchant_id=?');
+        $pref->execute([$merchantId]);
+        $wants = $pref->fetchColumn();
+        if ($wants !== false && (int)$wants === 0) return false;
+    }
+    $q = $pdo->prepare('SELECT name,email FROM merchants WHERE id=?');
+    $q->execute([$merchantId]);
+    $merchant = $q->fetch();
+    if (!$merchant) return false;
+
+    $seen = $pdo->prepare("SELECT 1 FROM notification_logs WHERE order_id=? AND channel='webhook_failure' AND delivered_at IS NOT NULL LIMIT 1");
+    $seen->execute([$orderId]);
+    if ($seen->fetchColumn()) return true;
+
+    $subject = 'Webhook delivery failed for '.$orderId;
+    $body = "Every retry for one of your webhook endpoints has failed.\n\n"
+        . "Order:     $orderId\n"
+        . "Endpoint:  $url\n\n"
+        . "The payment itself is recorded and safe — only the callback did not land.\n"
+        . "Reconcile the order with GET /api/verify-order.php?order_id=$orderId once your\n"
+        . "endpoint is healthy again, so you never fulfil twice.\n";
+
+    $ok = tg_smtp_send((string)$merchant['email'], $subject, $body);
+    $pdo->prepare('INSERT INTO notification_logs(merchant_id,order_id,channel,response_code,last_error,delivered_at,created_at) VALUES(?,?,?,?,?,?,?)')
+        ->execute([$merchantId, $orderId, 'webhook_failure', $ok ? 250 : null,
+            $ok ? null : 'SMTP delivery failed', $ok ? db_now() : null, db_now()]);
+    return $ok;
+}
+
 /** Run every configured notification for an order. Failures are logged only. */
 function notify_all(PDO $pdo, string $orderId): void {
-    foreach (['discord' => 'notify_discord'] as $channel => $fn) {
+    foreach (['discord' => 'notify_discord', 'email' => 'notify_email'] as $channel => $fn) {
         if (!function_exists($fn)) continue;
         try { $fn($pdo, $orderId); }
         catch (Throwable $e) { error_log('Notification ('.$channel.') failed for order '.$orderId.': '.$e->getMessage()); }

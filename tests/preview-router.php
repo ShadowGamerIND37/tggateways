@@ -28,9 +28,12 @@ if (str_starts_with($uri, '/assets/')) {
 }
 
 $self = realpath(__FILE__);
+// Generated text endpoints: /docs.txt is served by docs.txt.php, and so on.
+$textRoutes = ['/docs.txt' => '/docs.txt.php', '/llms.txt' => '/llms.txt.php', '/ai-prompt.txt' => '/ai-prompt.txt.php'];
+
 $candidates = $uri === '/'
     ? ['/index.php']
-    : [$uri, rtrim($uri, '/').'.php'];
+    : [($textRoutes[$uri] ?? $uri), rtrim($uri, '/').'.php'];
 
 foreach ($candidates as $candidate) {
     $script = realpath($root.$candidate);
