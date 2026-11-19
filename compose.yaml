@@ -12,6 +12,10 @@ services:
       # the app generates checkout links from, so they cannot drift apart. Set
       # TG_HTTP_PORT (and, for production, APP_URL) in .env.
       APP_URL: ${APP_URL:-http://localhost:${TG_HTTP_PORT:-8090}}
+      # Behind cloudflared / any reverse proxy set TRUSTED_PROXIES to its address
+      # so the real visitor IP survives; empty means "believe REMOTE_ADDR only".
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
+      PROXY_IP_HEADER: ${PROXY_IP_HEADER:-HTTP_CF_CONNECTING_IP}
     ports:
       # 8080 is the most commonly occupied port on a developer machine (other
       # projects, Tomcat, Jenkins, local proxies), so the default is 8090.

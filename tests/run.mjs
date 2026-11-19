@@ -352,6 +352,62 @@ check('Secret decrypts back exactly', cryptoChecks.roundtrip);
 check('Same plaintext yields different ciphertext (random IV)', cryptoChecks.differs);
 check('Tampered ciphertext is rejected', cryptoChecks.tamper);
 
+section('Unit: client address behind a proxy');
+// cloudflared (and any reverse proxy) connects from the Docker bridge, so without
+// this every visitor would share one rate-limit bucket. A forwarded header must
+// never be believed unless the request really arrived from a trusted proxy.
+const ipOut = JSON.parse(php(`<?php
+require 'includes/client-ip.php';
+$cases = [
+  ['docker bridge + CF header', ['REMOTE_ADDR'=>'172.18.0.1','HTTP_CF_CONNECTING_IP'=>'203.0.113.9'], '172.16.0.0/12'],
+  ['XFF last hop wins', ['REMOTE_ADDR'=>'172.18.0.1','HTTP_X_FORWARDED_FOR'=>'198.51.100.7, 197.51.100.8'], '172.16.0.0/12'],
+  ['untrusted proxy ignores header', ['REMOTE_ADDR'=>'172.18.0.1','HTTP_CF_CONNECTING_IP'=>'203.0.113.9'], ''],
+  ['direct client cannot spoof', ['REMOTE_ADDR'=>'203.0.113.9','HTTP_CF_CONNECTING_IP'=>'1.2.3.4'], '172.16.0.0/12'],
+  ['garbage header falls back', ['REMOTE_ADDR'=>'172.18.0.1','HTTP_CF_CONNECTING_IP'=>'not-an-ip'], '172.16.0.0/12'],
+  ['ipv6 trusted loopback', ['REMOTE_ADDR'=>'::1','HTTP_CF_CONNECTING_IP'=>'2001:db8::1'], '::1/128'],
+];
+$out = [];
+foreach ($cases as [$label, $server, $trusted]) $out[$label] = tg_client_ip($server, $trusted);
+echo json_encode($out);
+`));
+check('Trusted proxy header supplies the visitor IP', ipOut['docker bridge + CF header'] === '203.0.113.9', JSON.stringify(ipOut));
+check('X-Forwarded-For uses the proxy-appended last hop', ipOut['XFF last hop wins'] === '197.51.100.8');
+check('Untrusted proxy headers are ignored', ipOut['untrusted proxy ignores header'] === '172.18.0.1');
+check('A direct visitor cannot spoof their address', ipOut['direct client cannot spoof'] === '203.0.113.9');
+check('Malformed forwarded header falls back to the socket address', ipOut['garbage header falls back'] === '172.18.0.1');
+check('IPv6 proxy ranges are supported', ipOut['ipv6 trusted loopback'] === '2001:db8::1');
+const cidr = JSON.parse(php(`<?php
+require 'includes/client-ip.php';
+echo json_encode([
+  'in' => tg_ip_in_cidr('10.20.30.40','10.0.0.0/8'),
+  'out' => tg_ip_in_cidr('11.20.30.40','10.0.0.0/8'),
+  'narrow' => tg_ip_in_cidr('192.168.1.7','192.168.1.0/24'),
+  'edge' => tg_ip_in_cidr('192.168.2.1','192.168.1.0/24'),
+]);
+`));
+check('CIDR matching is exact at the boundary', cidr.in === true && cidr.out === false && cidr.narrow === true && cidr.edge === false, JSON.stringify(cidr));
+
+section('Configuration: HTTPS behind a tunnel');
+const tunnelCfg = JSON.parse(php(`<?php
+putenv('APP_ENCRYPTION_KEY='.str_repeat('ab',32));
+putenv('DB_PASSWORD=real-password');
+putenv('SESSION_SECURE=false');
+putenv('APP_URL=http://gate.example.com');
+require 'includes/db.php';
+$problems = tg_config_problems();
+echo json_encode(['mentions_https' => (bool)array_filter($problems, fn($p) => str_contains($p, 'https'))]);
+`));
+check('http:// on a public host is flagged', tunnelCfg.mentions_https === true);
+const loopbackCfg = JSON.parse(php(`<?php
+putenv('APP_ENCRYPTION_KEY='.str_repeat('ab',32));
+putenv('DB_PASSWORD=real-password');
+putenv('SESSION_SECURE=false');
+putenv('APP_URL=http://localhost:8009');
+require 'includes/db.php';
+echo json_encode(['problems' => tg_config_problems()]);
+`));
+check('http://localhost stays quiet for local development', !loopbackCfg.problems.some((problem) => problem.includes('https')), JSON.stringify(loopbackCfg.problems));
+
 section('Diagnostics never leak into responses');
 // A stray notice (Xdebug, a deprecation, a warning) printed before a JSON body
 // makes an API response unparseable and breaks header() calls. Web SAPIs must be
@@ -432,12 +488,44 @@ check('Public status hides customer data', steps[5].status === 200 && !('custome
 check('Public status rejects malformed id', steps[6].status === 422);
 
 section('API: rate limiting');
-const bursts = Array.from({ length: 62 }, () => ({ method: 'POST', script: path.join(root, 'api/create-order.php'), headers: { 'X-Api-Key': apiKey }, body: JSON.stringify({ amount: 5 }) }));
-const burstSteps = requests(bursts);
-const limited = burstSteps.filter((s) => s.status === 429);
-const mix = burstSteps.reduce((acc, s) => ({ ...acc, [s.status]: (acc[s.status] || 0) + 1 }), {});
-check('Create-order limit returns 429 after 60/min', limited.length >= 2, `${limited.length} rejected of ${JSON.stringify(mix)}`);
+// The limit is configurable, so the test uses a small quota with a long window:
+// asserting the real default would need 60+ requests inside one 60s window, which
+// a slow test runtime cannot guarantee (the window would reset mid-burst).
+// Start from an empty quota: earlier sections already consumed this merchant's
+// create-order budget, so the assertion below would otherwise measure their usage.
+php(`<?php
+$pdo = new PDO('sqlite:'.getenv('DB_SQLITE_PATH'), null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$pdo->exec('DELETE FROM api_rate_limits');
+`);
+const limitedRun = (() => {
+  const previous = { max: process.env.RATE_LIMIT_CREATE_MAX, window: process.env.RATE_LIMIT_CREATE_WINDOW };
+  process.env.RATE_LIMIT_CREATE_MAX = '5';
+  process.env.RATE_LIMIT_CREATE_WINDOW = '300';
+  try {
+    const steps = requests(Array.from({ length: 7 }, () => ({
+      method: 'POST', script: path.join(root, 'api/create-order.php'),
+      headers: { 'X-Api-Key': apiKey }, body: JSON.stringify({ amount: 5 }),
+    })));
+    return steps;
+  } finally {
+    if (previous.max === undefined) delete process.env.RATE_LIMIT_CREATE_MAX; else process.env.RATE_LIMIT_CREATE_MAX = previous.max;
+    if (previous.window === undefined) delete process.env.RATE_LIMIT_CREATE_WINDOW; else process.env.RATE_LIMIT_CREATE_WINDOW = previous.window;
+  }
+})();
+const limited = limitedRun.filter((s) => s.status === 429);
+const allowed = limitedRun.filter((s) => s.status === 201);
+check('Create-order rejects requests beyond the quota', limited.length === 2 && allowed.length === 5, JSON.stringify(limitedRun.map((s) => s.status)));
 check('429 includes Retry-After', limited.length > 0 && limited[0].headers.some((h) => /Retry-After/i.test(h)));
+check('429 body explains the limit', limited.length > 0 && /rate limit/i.test(limited[0].body || ''), limited[0]?.body);
+// Once the window has passed the counter must start over. The previous run used a
+// 300s window, so purge it and confirm a fresh request is allowed again rather
+// than staying locked out.
+php(`<?php
+$pdo = new PDO('sqlite:'.getenv('DB_SQLITE_PATH'));
+$pdo->exec('DELETE FROM api_rate_limits');
+`);
+const afterReset = requests([{ method: 'POST', script: path.join(root, 'api/create-order.php'), headers: { 'X-Api-Key': apiKey }, body: JSON.stringify({ amount: 5 }) }]);
+check('A new window allows requests again', afterReset[0].status === 201, String(afterReset[0].status));
 
 section('Merchant auth flow');
 const merchantSession = `merchant_${crypto.randomUUID()}`;

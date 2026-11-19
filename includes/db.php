@@ -13,9 +13,9 @@ function load_env(string $path): void {
 }
 load_env(dirname(__DIR__).'/.env');
 
-/** Read a configuration value from the environment (loaded from .env above). */
-function envv(string $key, ?string $default = null): ?string { $v = getenv($key); return $v === false ? $default : $v; }
+require_once __DIR__.'/env.php';
 
+require_once __DIR__.'/client-ip.php';
 require_once __DIR__.'/errors.php';
 tg_install_error_handlers();
 
@@ -121,10 +121,10 @@ function require_method(string ...$methods): void {
 
 function rate_limit(string $identity, int $limit=90, int $window=60): void {
     $pdo = db();
-    // Production uses the client address; the CLI harness has none, so the
-    // identity alone scopes the counter instead of collapsing every caller into
-    // one bucket.
-    $address = PHP_SAPI === 'cli' ? 'cli' : (string)($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+    // Proxy-aware address so a tunnel or load balancer does not collapse every
+    // visitor into a single bucket. The CLI harness has no address at all, so the
+    // identity alone scopes the counter there.
+    $address = PHP_SAPI === 'cli' ? 'cli' : client_ip();
     $key = hash('sha256', $identity.'|'.$address);
     $now = time();
     $cutoff = $now - $window;
@@ -173,9 +173,12 @@ function safe_webhook_resolve(string $url): array|false {
     return $pinned;
 }
 
+/**
+ * Client address, proxy-aware (see includes/client-ip.php). Requires
+ * TRUSTED_PROXIES to be set before any forwarded header is believed.
+ */
 function client_ip(): string {
-    $ip = (string)($_SERVER['REMOTE_ADDR'] ?? '');
-    return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : 'unknown';
+    return tg_client_ip();
 }
 
 /**
@@ -205,9 +208,18 @@ function tg_config_problems(): array {
     }
 
     $secure = filter_var(envv('SESSION_SECURE', 'true'), FILTER_VALIDATE_BOOLEAN);
-    $localOnly = str_starts_with(strtolower($appUrl), 'http://localhost') || str_starts_with(strtolower($appUrl), 'http://127.0.0.1');
-    if (!$secure && !$localOnly) {
+    $host = strtolower((string)parse_url($appUrl, PHP_URL_HOST));
+    $loopback = in_array($host, ['localhost', '127.0.0.1', '::1'], true);
+    if (!$secure && !$loopback) {
         $problems[] = 'SESSION_SECURE is false while APP_URL is not localhost. Session cookies could travel over plain HTTP.';
+    }
+
+    // A tunnel or reverse proxy terminates TLS and forwards plain HTTP to the
+    // container. If APP_URL still says http://, checkout links are handed to
+    // customers over an insecure scheme — and behind an HTTPS tunnel the browser
+    // then refuses the session cookie, which looks like "login does nothing".
+    if (!$loopback && $appUrl !== '' && str_starts_with(strtolower($appUrl), 'http://')) {
+        $problems[] = 'APP_URL uses http:// for a public host. Behind an HTTPS tunnel or proxy set it to the https:// URL customers actually open, or checkout links and session cookies break.';
     }
 
     if (db_driver() === 'mysql' && in_array((string)envv('DB_PASSWORD', ''), ['', 'change-me'], true)) {
