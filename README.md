@@ -266,6 +266,23 @@ Merchant dashboard pages cover orders, payment links, API key rotation, webhook 
 endpoint health, mailbox/UPI configuration and additional accounts. `/docs.php` has
 request samples, HMAC verification, the Python and PHP SDKs, and links `openapi.json`.
 
+### Merchant panel
+
+The panel uses the FamGateway layout and design tokens (`assets/css/design-system.css`):
+dark sidebar, stat cards, filter tabs and a seven-column transaction table. Navigation:
+Dashboard, Transactions, Payment Links, API Keys, Webhooks, Settings, Integrations,
+Multi-Accounts, Addons, My Services, Invoices, Profile, Support Tickets, Documentation and
+System Status. Settings, My Services, Invoices, Profile, Support Tickets and the public
+status page are stubs today — each states what works now and what the next slice adds.
+
+Two behaviours worth knowing:
+
+- Sign-in runs a second email-code step **only** when `LOGIN_2FA=true` and a mail transport
+  is configured. A code screen that cannot deliver mail would lock merchants out, so the
+  auto-detect that used to enable it is gone.
+- New registrations must accept the Terms and Privacy links, and the account is created
+  after email verification when 2FA is on.
+
 ---
 
 ## 8. Tests
@@ -275,7 +292,7 @@ node tests/run.mjs                 # auto-detects php, then a php-wasm CLI
 PHP_BIN=/usr/bin/php node tests/run.mjs
 ```
 
-139 checks run against a throwaway SQLite database: receipt parsing/matching, MIME
+155 checks run against a throwaway SQLite database: receipt parsing/matching, MIME
 decoding against plain/quoted-printable/base64/forwarded samples, the IMAP protocol client
 driven by a scripted peer, AES-GCM round-trips, auth and CSRF, input validation, rate
 limits, order creation, status and verification endpoints, the hosted checkout page,

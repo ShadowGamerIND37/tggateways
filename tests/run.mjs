@@ -556,7 +556,7 @@ steps = requests([
 check('Short password rejected with message', steps[1].status === 200 && /at least 12 characters/.test(steps[1].body));
 steps = requests([
   { method: 'GET', script: path.join(root, 'register.php') },
-  { method: 'POST', script: path.join(root, 'register.php'), post: { csrf: csrf2, name: 'New Merchant', email, password: 'a-very-long-password', confirm_password: 'a-very-long-password' } },
+  { method: 'POST', script: path.join(root, 'register.php'), post: { csrf: csrf2, name: 'New Merchant', email, password: 'a-very-long-password', confirm_password: 'a-very-long-password', terms: '1' } },
   { method: 'GET', script: path.join(root, 'dashboard.php') },
 ], registerSession);
 check('Valid registration redirects to integrations', steps[1].status === 302 && steps[1].headers.some((h) => /Location: \/integrations\.php/.test(h)), `${steps[1].status} ${JSON.stringify(steps[1].headers)}`);
@@ -578,8 +578,101 @@ steps = requests([
 ], loginSession);
 check('Wrong password shows generic error', steps[0].status === 200 && /did not match/.test(steps[0].body));
 check('Correct password logs in', steps[1].status === 302);
-check('Logged-in dashboard renders stats', steps[2].status === 200 && /Total revenue/.test(steps[2].body));
+check('Logged-in dashboard renders stats', steps[2].status === 200 && /Total Revenue/i.test(steps[2].body));
 check('API key is not rendered in plaintext on dashboard', !steps[2].body.includes(apiKey));
+
+section('Merchant panel: navigation and pages');
+
+// Every sidebar destination must resolve for a signed-in merchant. This is the
+// regression that matters after a nav change: a dead link in a payments
+// dashboard reads as a broken deployment.
+const panelSession = `panel_${crypto.randomUUID()}`;
+const panelPages = ['dashboard.php', 'transactions.php', 'payment-links.php', 'api-keys.php',
+  'webhooks.php', 'settings.php', 'integrations.php', 'multi-accounts.php', 'addons.php',
+  'services.php', 'invoices.php', 'profile.php', 'tickets.php', 'status.php'];
+steps = requests([
+  { method: 'GET', script: path.join(root, 'login.php') },
+], panelSession);
+const panelCsrf = /name="csrf" value="([a-f0-9]{64})"/.exec(steps[0].body || '')?.[1];
+steps = requests([
+  { method: 'POST', script: path.join(root, 'login.php'), post: { csrf: panelCsrf, email: 'merchant@example.com', password: 'correct-horse-battery' } },
+  ...panelPages.map((page) => ({ method: 'GET', script: path.join(root, page) })),
+], panelSession);
+const panelBodies = steps.slice(1).map((r) => r.body || '');
+check('Every sidebar page returns 200', steps.slice(1).every((r) => r.status === 200),
+  steps.slice(1).map((r) => r.status).join(','));
+check('Sidebar renders all 15 destinations',
+  panelBodies[0].includes('Transactions') && panelBodies[0].includes('Multi-Accounts')
+  && panelBodies[0].includes('Support Tickets') && panelBodies[0].includes('System Status'));
+check('Sidebar marks the current page active', /class="sidebar-item active"/.test(panelBodies[0]));
+check('Sidebar shows the merchant MID', /MID:.*?7576900001/s.test(panelBodies[0]));
+check('Dashboard shows the reference stat cards',
+  panelBodies[0].includes('Total Revenue') && panelBodies[0].includes('Total Requests')
+  && panelBodies[0].includes('Successful') && panelBodies[0].includes('Failed / Pending'));
+check('Dashboard keeps the API key out of the page', !panelBodies[0].includes(apiKey));
+
+section('Merchant panel: transaction filters');
+
+// The reference filters by status tab plus date range, so both must reach SQL
+// and both must leave the other filter intact in the generated links.
+// One requests() call: login regenerates the session id and the harness has to
+// carry it forward itself, so the CSRF fetch and the signed-in GETs must live in
+// the same sequence.
+const filterSession = `filters_${crypto.randomUUID()}`;
+// The CSRF token is bound to the session that issued it, so the form fetch has
+// to happen in the same request batch as the login POST and the reads.
+steps = requests([
+  { method: 'GET', script: path.join(root, 'login.php') },
+], filterSession);
+const filterCsrf = /name="csrf" value="([a-f0-9]{64})"/.exec(steps[0].body || '')?.[1];
+const afterLogin = requests([
+  { method: 'POST', script: path.join(root, 'login.php'), post: { csrf: filterCsrf, email: 'merchant@example.com', password: 'correct-horse-battery' } },
+  { method: 'GET', script: path.join(root, 'transactions.php') },
+  { method: 'GET', script: path.join(root, 'transactions.php'), query: { status: 'success' } },
+  { method: 'GET', script: path.join(root, 'transactions.php'), query: { range: 'today', per_page: '10' } },
+  { method: 'GET', script: path.join(root, 'transactions.php'), query: { status: 'bogus', range: 'bogus', per_page: '999' } },
+  { method: 'GET', script: path.join(root, 'transactions.php'), query: { search: 'tg_' + 'x'.repeat(200) } },
+], filterSession);
+steps = [...steps, ...afterLogin];
+const [txAll, txCaptured, txToday, txBogus, txLongSearch] = steps.slice(2);
+check('Transactions page renders all four status tabs',
+  /All/.test(txAll.body) && /Created/.test(txAll.body) && /Captured/.test(txAll.body) && /Expired/.test(txAll.body));
+check('Transactions page shows the record counter',
+  /Showing page \d+ of \d+ \(Total [\d,]+ records\)/.test(txAll.body));
+check('Captured tab keeps the date range and page size in its links',
+  txCaptured.body.includes('status=success') && /range=(all|today|7d)/.test(txCaptured.body));
+check('Date range filter is accepted', txToday.status === 200 && txToday.body.includes('Today'));
+check('Unknown status/range fall back to safe defaults',
+  txBogus.status === 200 && txBogus.body.includes('Showing page 1 of'));
+check('Overlong search term is truncated, not rejected',
+  txLongSearch.status === 200);
+
+section('Merchant panel: two-factor sign-in');
+
+// 2FA must stay off unless explicitly enabled: a code screen with no working
+// transport would make the account unreachable.
+php(`<?php
+require 'includes/notify.php';
+$cases = [];
+putenv('LOGIN_2FA=false');
+$cases['default_off'] = tg_two_factor_required();
+putenv('LOGIN_2FA=true');
+$cases['enabled'] = tg_two_factor_required();
+putenv('LOGIN_2FA=true'); putenv('SMTP_HOST=');
+$cases['no_transport'] = tg_mail_transport_available();
+echo json_encode($cases);
+`, baseEnv());
+const twoFactor = JSON.parse(php(`<?php
+require 'includes/notify.php';
+putenv('LOGIN_2FA=false'); $cases = ['default_off' => tg_two_factor_required()];
+putenv('LOGIN_2FA=true'); $cases['enabled'] = tg_two_factor_required();
+putenv('SMTP_HOST='); $cases['no_transport'] = tg_mail_transport_available();
+putenv('SMTP_HOST=smtp.example.com'); $cases['smtp_transport'] = tg_mail_transport_available();
+echo json_encode($cases);
+`, baseEnv()));
+check('2FA is off by default', twoFactor.default_off === false, JSON.stringify(twoFactor));
+check('2FA can be enabled explicitly', twoFactor.enabled === true, JSON.stringify(twoFactor));
+check('SMTP_HOST counts as a usable transport', twoFactor.smtp_transport === true, JSON.stringify(twoFactor));
 
 section('Hosted checkout page');
 steps = requests([

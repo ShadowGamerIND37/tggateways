@@ -50,7 +50,7 @@ $brand = $order && preg_match('/^#[0-9a-f]{6}$/i', (string)$order['brand_color']
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Secure checkout — TG Gateways</title>
-<link rel="stylesheet" href="/assets/css/style.css">
+<link rel="stylesheet" href="/assets/css/design-system.css"><link rel="stylesheet" href="/assets/css/marketing.css">
 <style>
 body{background:#f1f4f9}
 .checkout{--brand:<?=h($brand)?>;width:min(460px,calc(100% - 28px));margin:46px auto;background:#fff;border:1px solid #e7ebf2;border-radius:18px;padding:27px;box-shadow:0 18px 60px #20365b14;text-align:center}
