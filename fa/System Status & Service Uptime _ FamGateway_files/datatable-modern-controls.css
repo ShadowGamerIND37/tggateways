@@ -1,0 +1,299 @@
+.modern-datatable-controls .dataTables_wrapper:not(.modern-datatable-loaded) > .row {
+	display: none;
+}
+
+.portlet.light .portlet-body.modern-datatable-portlet-body {
+	padding-top: 0;
+}
+
+.modern-datatable-controls .dataTables_wrapper > .row:first-child {
+	margin-bottom: 10px;
+}
+
+.modern-datatable-controls .dataTables_wrapper > .row:last-child {
+	margin-top: 0;
+}
+
+.modern-datatable-controls .dataTables_wrapper > .row > [class*="col-"] {
+	padding-left: 15px !important;
+	padding-right: 15px !important;
+}
+
+.modern-datatable-controls .dataTables_wrapper > .row > [class*="col-"]:first-child {
+	display: flex;
+	align-items: center;
+	flex: 1 1 auto;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.modern-datatable-controls .dataTables_extended_wrapper div.dataTables_paginate,
+.modern-datatable-controls .dataTables_extended_wrapper div.dataTables_length,
+.modern-datatable-controls .dataTables_extended_wrapper div.dataTables_info {
+	display: inline-flex !important;
+	align-items: center;
+}
+
+.modern-datatable-controls .dataTables_extended_wrapper .seperator {
+	display: none !important;
+}
+
+.modern-datatable-controls .dataTable,
+.modern-datatable-controls .table {
+	margin-bottom: 10px;
+}
+
+.modern-datatable-controls .pagination-panel,
+.modern-datatable-controls div.dataTables_length label,
+.modern-datatable-controls div.dataTables_info {
+	box-sizing: border-box;
+	height: 32px;
+	min-height: 0;
+	margin: 0 !important;
+	border: 1px solid #e3e8ef;
+	border-radius: 4px;
+	background: #f8fafc;
+	color: #5b6570;
+}
+
+.modern-datatable-controls .pagination-panel {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 2px 9px 2px 9px;
+	line-height: 1;
+}
+
+.modern-datatable-controls div.dataTables_length label,
+.modern-datatable-controls div.dataTables_info {
+	display: inline-flex !important;
+	align-items: center;
+	padding: 0 10px !important;
+	line-height: 1;
+}
+
+.modern-datatable-controls .pagination-panel .btn {
+	box-sizing: border-box;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 26px;
+	margin: 0;
+	padding: 4px 0;
+	border-color: #dde4ec;
+	background: #fff;
+	color: #44515f;
+}
+
+.modern-datatable-controls .pagination-panel .btn:hover,
+.modern-datatable-controls .pagination-panel .btn:focus {
+	border-color: #c7d1dc;
+	background: #eef2f7;
+	color: #24313f;
+}
+
+.modern-datatable-controls .pagination-panel .btn.disabled {
+	pointer-events: none;
+	opacity: 0.45;
+}
+
+.modern-datatable-controls .pagination-panel-input.form-control {
+	box-sizing: border-box;
+	width: 42px !important;
+	height: 26px;
+	margin: 0 !important;
+	padding: 3px 6px;
+	border-color: #dde4ec;
+	background: #fff;
+	color: #2f3b47;
+	font-weight: 600;
+}
+
+.modern-datatable-controls .pagination-panel-total {
+	font-weight: 600;
+	color: #2f3b47;
+}
+
+.modern-datatable-controls div.dataTables_length select.form-control {
+	box-sizing: border-box;
+	width: auto !important;
+	height: 26px;
+	margin: 0 6px !important;
+	border-color: #dde4ec;
+	color: #2f3b47;
+}
+
+@media (max-width: 1199px) {
+	.modern-datatable-controls .dataTables_wrapper > .row {
+		align-items: flex-start;
+	}
+
+	.modern-datatable-controls .dataTables_wrapper > .row > [class*="col-"]:first-child {
+		width: 100%;
+	}
+}
+
+@media (max-width: 1199px) {
+	#bulkreportcontainer .modern-datatable-portlet-body .js-datatable-search-row {
+		margin-top: 12px !important;
+		margin-bottom: 10px !important;
+	}
+
+	#bulkreportcontainer .modern-datatable-portlet-body .js-datatable-search-row > [class*="col-"] {
+		width: 100%;
+	}
+
+	#bulkreportcontainer .modern-datatable-portlet-body .js-match-datatable-controls,
+	#bulkreportcontainer .modern-datatable-portlet-body .js-match-datatable-controls-right {
+		float: none !important;
+		margin-right: auto !important;
+		margin-left: auto !important;
+	}
+
+	#bulkreportcontainer .modern-datatable-portlet-body .js-match-datatable-controls-right {
+		margin-top: 10px;
+	}
+
+	.modern-datatable-controls .dataTables_wrapper > .row > [class*="col-"] {
+		width: 100%;
+		padding-left: 15px !important;
+		padding-right: 15px !important;
+	}
+
+	.modern-datatable-controls .dataTables_wrapper > .row > [class*="col-"]:first-child {
+		display: flex;
+		width: 100%;
+	}
+
+	#bulkreportcontainer .modern-datatable-controls .dataTables_wrapper > .row > [class*="col-"]:first-child {
+		flex-wrap: nowrap;
+		gap: 6px;
+		justify-content: space-between;
+	}
+
+	#bulkreportcontainer .modern-datatable-controls .dataTables_wrapper > .row:first-child,
+	#bulkreportcontainer .modern-datatable-controls .dataTables_wrapper > .row:last-child {
+		display: flex !important;
+		flex-wrap: wrap;
+	}
+
+	.modern-datatable-controls .dataTables_extended_wrapper div.dataTables_paginate,
+	.modern-datatable-controls .dataTables_extended_wrapper div.dataTables_length,
+	.modern-datatable-controls .dataTables_extended_wrapper div.dataTables_info {
+		display: inline-flex !important;
+		float: none !important;
+		margin-bottom: 0 !important;
+	}
+
+	#bulkreportcontainer .modern-datatable-controls .dataTables_extended_wrapper div.dataTables_length {
+		order: 1;
+	}
+
+	#bulkreportcontainer .modern-datatable-controls .dataTables_extended_wrapper div.dataTables_paginate {
+		order: 2;
+	}
+
+	#bulkreportcontainer .modern-datatable-controls .dataTables_extended_wrapper div.dataTables_info {
+		order: 3;
+	}
+
+	.modern-datatable-controls .dataTables_extended_wrapper div.dataTables_paginate {
+		flex: 0 0 100%;
+		width: 100%;
+	}
+
+	#bulkreportcontainer .modern-datatable-controls .dataTables_extended_wrapper div.dataTables_paginate {
+		flex: 0 0 auto;
+		width: auto;
+		justify-content: center;
+	}
+
+	#bulkreportcontainer .modern-datatable-controls div.dataTables_length label,
+	#bulkreportcontainer .modern-datatable-controls div.dataTables_info,
+	#bulkreportcontainer .modern-datatable-controls .pagination-panel {
+		font-size: 0;
+	}
+
+	#bulkreportcontainer .modern-datatable-controls div.dataTables_length label {
+		padding: 0 4px !important;
+	}
+
+	#bulkreportcontainer .modern-datatable-controls div.dataTables_length select.form-control {
+		margin: 0 !important;
+		font-size: 13px;
+	}
+
+	#bulkreportcontainer .modern-datatable-controls .pagination-panel {
+		gap: 4px;
+		padding: 2px 5px;
+	}
+
+	#bulkreportcontainer .modern-datatable-controls .pagination-panel .btn {
+		width: 24px;
+	}
+
+	#bulkreportcontainer .modern-datatable-controls .pagination-panel-input.form-control {
+		width: 34px !important;
+		font-size: 13px;
+	}
+
+	#bulkreportcontainer .modern-datatable-controls .pagination-panel-total,
+	#bulkreportcontainer .modern-datatable-controls .datatable-total-found-count {
+		font-size: 13px;
+	}
+
+	#bulkreportcontainer .modern-datatable-controls .pagination-panel-total:before {
+		content: "/";
+		margin: 0 3px 0 1px;
+		color: #5b6570;
+		font-weight: 400;
+	}
+
+	#bulkreportcontainer .modern-datatable-controls div.dataTables_info {
+		min-width: 42px;
+		justify-content: center;
+		padding: 0 8px !important;
+	}
+
+	.modern-datatable-controls .pagination-panel {
+		width: auto;
+		max-width: 100%;
+		justify-content: flex-start;
+	}
+
+	.modern-datatable-controls .dataTables_extended_wrapper .table-group-actions {
+		float: none !important;
+		display: flex;
+		align-items: center;
+		width: 100%;
+		margin-top: 8px;
+		gap: 6px;
+	}
+
+	#bulkreportcontainer .modern-datatable-controls .dataTables_extended_wrapper .table-group-actions {
+		justify-content: center;
+		margin-top: 10px;
+	}
+
+	#bulkreportcontainer .modern-datatable-controls .dataTables_wrapper > .row:first-child > .dbbtns {
+		margin-top: 0;
+		order: 1;
+	}
+
+	#bulkreportcontainer .modern-datatable-controls .dataTables_wrapper > .row:first-child > .pgntn {
+		order: 2;
+		margin-top: 10px;
+	}
+
+	#bulkreportcontainer .modern-datatable-controls .dataTables_wrapper > .row:first-child > .dbbtns,
+	#bulkreportcontainer .modern-datatable-controls .dataTables_wrapper > .row:first-child > .dbbtns .table-group-actions {
+		justify-content: center !important;
+	}
+
+	.modern-datatable-controls .dataTables_extended_wrapper .table-group-actions .table-group-action-input.form-control.input-inline.input-small.input-sm {
+		flex: 1 1 auto;
+		width: auto !important;
+		min-width: 0;
+	}
+}
