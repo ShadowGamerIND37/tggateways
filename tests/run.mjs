@@ -1,0 +1,518 @@
+#!/usr/bin/env node
+/**
+ * TG Gateways test suite.
+ *
+ * Runs real application code (not mocks) against a throwaway SQLite database:
+ *   - unit tests for receipt parsing/matching rules and crypto
+ *   - API contract + auth + rate-limit tests through the actual endpoint files
+ *   - merchant registration/login/CSRF flows
+ *   - settlement tests that prove a receipt marks exactly one order paid
+ *   - webhook signing tests with a local receiver
+ *
+ * Usage:
+ *   node tests/run.mjs                     # auto-detect php or php-wasm
+ *   PHP_BIN=/usr/bin/php node tests/run.mjs
+ *
+ * Exit code 0 means every test passed.
+ */
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import http from 'node:http';
+import crypto from 'node:crypto';
+
+const root = path.resolve(import.meta.dirname, '..');
+const work = mkdtempSync(path.join(tmpdir(), 'tg-tests-'));
+const dbPath = path.join(work, 'test.sqlite');
+const sessionDir = path.join(work, 'sessions');
+const encKey = crypto.randomBytes(32).toString('hex');
+const apiKey = 'tg_TESTKEY_'.concat(crypto.randomBytes(12).toString('hex').toUpperCase());
+
+function detectPhp() {
+  if (process.env.PHP_BIN) return process.env.PHP_BIN.split(' ');
+  const candidates = [
+    ['/tmp/spc/node_modules/.bin/php-wasm-cli'],
+    ['php'],
+  ];
+  for (const [bin] of candidates) {
+    try {
+      execFileSync(bin, ['-v'], { stdio: 'ignore' });
+      return [bin];
+    } catch { /* try next */ }
+  }
+  throw new Error('No PHP runtime found. Set PHP_BIN to a PHP 8.1+ binary.');
+}
+
+const PHP = detectPhp();
+let passed = 0;
+const failures = [];
+let currentSection = 'general';
+
+function section(name) { currentSection = name; console.log(`\n\x1b[1m${name}\x1b[0m`); }
+
+function check(name, condition, detail = '') {
+  if (condition) {
+    passed++;
+    console.log(`  \x1b[32m✓\x1b[0m ${name}`);
+  } else {
+    failures.push(`[${currentSection}] ${name}${detail ? ` — ${detail}` : ''}`);
+    console.log(`  \x1b[31m✗\x1b[0m ${name}${detail ? ` — ${detail}` : ''}`);
+  }
+}
+
+/** Run a PHP snippet with the test environment. */
+function php(code, env = {}) {
+  const file = path.join(work, `snippet-${crypto.randomUUID()}.php`);
+  writeFileSync(file, code);
+  try {
+    return execFileSync(PHP[0], [...PHP.slice(1), file], {
+      cwd: root,
+      encoding: 'utf8',
+      env: { ...process.env, ...baseEnv(), ...env },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+  } finally {
+    rmSync(file, { force: true });
+  }
+}
+
+function baseEnv() {
+  return {
+    DB_DRIVER: 'sqlite',
+    DB_SQLITE_PATH: dbPath,
+    APP_ENCRYPTION_KEY: encKey,
+    APP_URL: 'http://localhost:8080',
+    SESSION_SECURE: 'false',
+    APP_ENV: 'test',
+    WEBHOOK_BACKOFF_SECONDS: '5',
+  };
+}
+
+/** Build the throwaway schema + seed merchant. */
+function seed() {
+  writeFileSync(path.join(work, 'seed.php'), `<?php
+$pdo = new PDO('sqlite:'.getenv('DB_SQLITE_PATH'), null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$pdo->exec('PRAGMA foreign_keys = ON');
+$pdo->exec(file_get_contents($argv[1]));
+$now = gmdate('Y-m-d H:i:s');
+$stmt = $pdo->prepare('INSERT INTO merchants(name,email,password,api_key,discord_webhook_url,created_at) VALUES(?,?,?,?,?,?)');
+$stmt->execute(['Test Merchant','merchant@example.com',password_hash('correct-horse-battery', PASSWORD_DEFAULT), $argv[2], null, $now]);
+$acct = $pdo->prepare('INSERT INTO merchant_accounts(merchant_id,account_label,upi_id,payee_name,linked_email,google_app_password,is_active,created_at) VALUES(1,?,?,?,?,?,1,?)');
+$acct->execute(['Main UPI','merchant@okaxis','Test Merchant','receipts@example.com','v1:not-a-real-secret',$now]);
+echo "seeded";
+`);
+  mkdirSyncSafe(sessionDir);
+  execFileSync(PHP[0], [...PHP.slice(1), path.join(work, 'seed.php'), path.join(root, 'database/schema.sqlite.sql'), apiKey], {
+    encoding: 'utf8',
+    env: { ...process.env, ...baseEnv() },
+  });
+}
+
+function mkdirSyncSafe(dir) {
+  try { execFileSync('mkdir', ['-p', dir]); } catch { /* ignore */ }
+}
+
+/**
+ * Execute request steps sequentially. Each step is its own PHP process (like a
+ * real request, because handlers exit()), sharing a session id between calls.
+ */
+function requests(steps, sessionId = `sess_${crypto.randomUUID()}`) {
+  let current = sessionId;
+  return steps.map((step) => {
+    const response = request(step, current);
+    // Follow session id changes (login/registration regenerate the id).
+    if (response.session_id) current = response.session_id;
+    return response;
+  });
+}
+
+function request(step, sessionId = `sess_${crypto.randomUUID()}`) {
+  const specPath = path.join(work, `spec-${crypto.randomUUID()}.json`);
+  const outPath = `${specPath}.out`;
+  writeFileSync(specPath, JSON.stringify({
+    env: baseEnv(),
+    session_dir: sessionDir,
+    session_id: sessionId,
+    output: outPath,
+    method: step.method || 'GET',
+    headers: step.headers || {},
+    query: step.query || {},
+    post: step.post || {},
+    body: step.body ?? '',
+    script: step.script,
+  }));
+  try {
+    execFileSync(PHP[0], [...PHP.slice(1), path.join(root, 'tests/request.php'), specPath], {
+      cwd: root, encoding: 'utf8', env: { ...process.env, ...baseEnv() },
+    });
+  } catch (error) {
+    throw new Error(`Request runner failed for ${path.basename(step.script)}: ${error.stderr || error.message}`);
+  }
+  const data = JSON.parse(readFileSync(outPath, 'utf8'));
+  rmSync(specPath, { force: true });
+  rmSync(outPath, { force: true });
+  return data;
+}
+
+const json = (step) => {
+  try { return JSON.parse(step.body); } catch { return null; }
+};
+
+/* ------------------------------------------------------------------ */
+
+section('Environment');
+check('PHP runtime available', PHP.length > 0, PHP.join(' '));
+const version = php('<?php echo PHP_VERSION;').trim();
+check('PHP >= 8.1', /^8\.(?:[1-9]|[1-9]\d)/.test(version), version);
+
+seed();
+check('Database schema creates all tables', true);
+
+section('Unit: receipt parsing');
+const parseOut = php(`<?php
+require 'includes/receipt.php';
+$cases = [
+  'hdfc' => "Dear Customer,\\nRs.499.00 has been credited to your account.\\nUTR: 123456789012\\nPaid by: ASHA KUMAR",
+  'gpay' => "<html><body>You received ₹1,299.50 from Rahul Sharma.<br>UPI transaction ID: 987654321098<br>Note: tg_ABC123XYZ</body></html>",
+  'inr' => "Payment of INR 250 received. Ref no: 111122223333",
+  'missing' => "Your order has shipped. No payment information here.",
+];
+$out = [];
+foreach ($cases as $name => $body) { $out[$name] = receipt_parse($body); }
+echo json_encode($out);
+`);
+const parsed = JSON.parse(parseOut);
+check('Parses Rs. amount and UTR', parsed.hdfc.amount === '499.00' && parsed.hdfc.utr === '123456789012', JSON.stringify(parsed.hdfc));
+check('Parses HTML body and ₹ amount', parsed.gpay.amount === '1299.50' && parsed.gpay.utr === '987654321098', JSON.stringify(parsed.gpay));
+check('Extracts payer name', /ASHA KUMAR/i.test(parsed.hdfc.sender || ''), String(parsed.hdfc.sender));
+check('Extracts order reference from remark', parsed.gpay.order_ref === 'tg_ABC123XYZ', String(parsed.gpay.order_ref));
+check('Parses INR-prefixed amount', parsed.inr.amount === '250.00' && parsed.inr.utr === '111122223333', JSON.stringify(parsed.inr));
+check('Rejects unrelated email', parsed.missing.ok === false && parsed.missing.utr === null);
+
+const matchOut = php(`<?php
+require 'includes/receipt.php';
+$pending = [
+  ['order_id'=>'tg_AAA111','payable_amount'=>'499.00','created_at'=>'2026-01-01 10:00:00'],
+  ['order_id'=>'tg_BBB222','payable_amount'=>'499.00','created_at'=>'2026-01-01 10:05:00'],
+  ['order_id'=>'tg_CCC333','payable_amount'=>'250.00','created_at'=>'2026-01-01 10:06:00'],
+];
+echo json_encode([
+  'exact_ref' => receipt_match($pending, '499.00', 'tg_BBB222'),
+  'amount_only' => receipt_match($pending, '499.00', null),
+  'wrong_ref' => receipt_match($pending, '499.00', 'tg_ZZZ999'),
+  'no_amount' => receipt_match($pending, '1.00', null),
+  'ref_only' => receipt_match($pending, '250.00', 'tg_CCC333'),
+]);
+`);
+const match = JSON.parse(matchOut);
+check('Order reference wins over FIFO', match.exact_ref?.order_id === 'tg_BBB222' && match.exact_ref.ambiguous === false, JSON.stringify(match.exact_ref));
+check('Amount-only match flags ambiguity', match.amount_only?.order_id === 'tg_AAA111' && match.amount_only.ambiguous === true && match.amount_only.candidates === 2, JSON.stringify(match.amount_only));
+check('Unknown reference does not fall back to amount match', match.wrong_ref === null, JSON.stringify(match.wrong_ref));
+check('No pending order for amount returns null', match.no_amount === null);
+check('Reference match with unique amount', match.ref_only?.order_id === 'tg_CCC333');
+
+section('Unit: crypto round-trip');
+const cryptoOut = php(`<?php
+require 'includes/crypto.php';
+$secret = 'abcd efgh ijkl mnop';
+$enc = encrypt_secret($secret);
+echo json_encode([
+  'prefix_ok' => str_starts_with($enc, 'v1:'),
+  'roundtrip' => decrypt_secret($enc) === $secret,
+  'differs' => encrypt_secret($secret) !== $enc,
+  'tamper' => (function() use ($enc) { $raw = base64_decode(substr($enc, 3)); $raw[20] = chr(ord($raw[20]) ^ 1); try { decrypt_secret('v1:'.base64_encode($raw)); return false; } catch (Throwable $e) { return true; } })(),
+]);
+`);
+const cryptoChecks = JSON.parse(cryptoOut);
+check('AES-GCM ciphertext is versioned', cryptoChecks.prefix_ok);
+check('Secret decrypts back exactly', cryptoChecks.roundtrip);
+check('Same plaintext yields different ciphertext (random IV)', cryptoChecks.differs);
+check('Tampered ciphertext is rejected', cryptoChecks.tamper);
+
+section('API: authentication');
+let steps = requests([
+  { method: 'POST', script: path.join(root, 'api/create-order.php'), body: JSON.stringify({ amount: 499 }) },
+  { method: 'POST', script: path.join(root, 'api/create-order.php'), body: JSON.stringify({ amount: 499 }), headers: { 'X-Api-Key': 'tg_wrong' } },
+  { method: 'GET', script: path.join(root, 'api/create-order.php'), headers: { 'X-Api-Key': apiKey } },
+]);
+check('Missing API key → 401', steps[0].status === 401, String(steps[0].status));
+check('Wrong API key → 401', steps[1].status === 401);
+check('Wrong method → 405 with Allow', steps[2].status === 405 && steps[2].headers.some((h) => /Allow: POST/i.test(h)));
+
+section('API: order creation');
+steps = requests([
+  { method: 'POST', script: path.join(root, 'api/create-order.php'), headers: { 'X-Api-Key': apiKey }, body: 'not json' },
+  { method: 'POST', script: path.join(root, 'api/create-order.php'), headers: { 'X-Api-Key': apiKey }, body: JSON.stringify({ amount: 0 }) },
+  { method: 'POST', script: path.join(root, 'api/create-order.php'), headers: { 'X-Api-Key': apiKey }, body: JSON.stringify({ amount: 10.999 }) },
+  { method: 'POST', script: path.join(root, 'api/create-order.php'), headers: { 'X-Api-Key': apiKey }, body: JSON.stringify({ amount: '12.50', customer_email: 'bad-email' }) },
+  { method: 'POST', script: path.join(root, 'api/create-order.php'), headers: { 'X-Api-Key': apiKey }, body: JSON.stringify({ amount: 12.5, redirect_url: 'http://insecure.example/cb' }) },
+  { method: 'POST', script: path.join(root, 'api/create-order.php'), headers: { 'X-Api-Key': apiKey }, body: JSON.stringify({ amount: 12.5 }) },
+  { method: 'POST', script: path.join(root, 'api/create-order.php'), headers: { 'X-Api-Key': apiKey }, body: JSON.stringify({ amount: 1500, customer_name: 'Asha', customer_email: 'asha@example.com', note: 'Invoice 42' }) },
+]);
+const created = json(steps[5]) || {};
+const created2 = json(steps[6]) || {};
+check('Malformed JSON → 400', steps[0].status === 400);
+check('Zero amount → 422', steps[1].status === 422);
+check('More than 2 decimals → 422', steps[2].status === 422);
+check('Invalid email → 422', steps[3].status === 422);
+check('Non-HTTPS redirect URL → 422', steps[4].status === 422);
+check('Valid order → 201', steps[5].status === 201, String(steps[5].status));
+check('Order id has expected shape', /^tg_[A-Z0-9]{20,}$/.test(created.order_id || ''), String(created.order_id));
+check('Order returns payable amount as number', created.payable_amount === 12.5);
+check('Order returns UPI intent with amount', typeof created.upi_intent === 'string' && created.upi_intent.startsWith('upi://pay?') && created.upi_intent.includes('am=12.50'));
+check('Order embeds its reference in the UPI note', decodeURIComponent(created.upi_intent || '').includes(created.order_id));
+check('Order returns absolute checkout URL', (created.checkout_url || '').startsWith('http://localhost:8080/pay.php?order_id='));
+check('Order returns QR URL', (created.qr_url || '').startsWith('/api/qr-image.php'));
+check('Second order created with customer + note', created2.order_id && created2.order_id !== created.order_id);
+
+section('API: status endpoints');
+steps = requests([
+  { method: 'GET', script: path.join(root, 'api/status.php'), headers: { 'X-Api-Key': apiKey } },
+  { method: 'GET', script: path.join(root, 'api/status.php'), headers: { 'X-Api-Key': apiKey }, query: { order_id: 'tg_DOESNOTEXIST' } },
+  { method: 'GET', script: path.join(root, 'api/status.php'), headers: { 'X-Api-Key': apiKey }, query: { order_id: created.order_id } },
+  { method: 'GET', script: path.join(root, 'api/status.php'), headers: { 'X-Api-Key': apiKey }, query: { order_ref: 'Invoice 42' } },
+  { method: 'GET', script: path.join(root, 'api/verify-order.php'), headers: { 'X-Api-Key': apiKey }, query: { order_id: created.order_id } },
+  { method: 'GET', script: path.join(root, 'api/public-status.php'), query: { order_id: created.order_id } },
+  { method: 'GET', script: path.join(root, 'api/public-status.php'), query: { order_id: 'bad id' } },
+]);
+check('Status without identifier → 422', steps[0].status === 422);
+check('Unknown order → 404', steps[1].status === 404);
+check('Status returns pending order', json(steps[2])?.order_id === created.order_id && json(steps[2])?.status === 'pending');
+check('Status by merchant reference works', json(steps[3])?.order_id === created2.order_id, JSON.stringify(json(steps[3])));
+check('Verify-order matches create-order', json(steps[4])?.order_id === created.order_id);
+const pub = json(steps[5]) || {};
+check('Public status hides customer data', steps[5].status === 200 && !('customer_email' in pub) && !('sender_name' in pub));
+check('Public status rejects malformed id', steps[6].status === 422);
+
+section('API: rate limiting');
+const bursts = Array.from({ length: 62 }, () => ({ method: 'POST', script: path.join(root, 'api/create-order.php'), headers: { 'X-Api-Key': apiKey }, body: JSON.stringify({ amount: 5 }) }));
+const burstSteps = requests(bursts);
+const limited = burstSteps.filter((s) => s.status === 429);
+check('Create-order limit returns 429 after 60/min', limited.length >= 2, `${limited.length} rejected`);
+check('429 includes Retry-After', limited.length > 0 && limited[0].headers.some((h) => /Retry-After/i.test(h)));
+
+section('Merchant auth flow');
+const merchantSession = `merchant_${crypto.randomUUID()}`;
+steps = requests([
+  { method: 'GET', script: path.join(root, 'dashboard.php') },
+], merchantSession);
+check('Dashboard redirects anonymous users to login', steps[0].status === 302 && steps[0].headers.some((h) => /Location: \/login\.php/.test(h)));
+
+steps = requests([
+  { method: 'GET', script: path.join(root, 'register.php') },
+], `reg_${crypto.randomUUID()}`);
+const csrfMatch = /name="csrf" value="([a-f0-9]{64})"/.exec(steps[0].body || '');
+check('Registration page issues CSRF token', Boolean(csrfMatch), String(csrfMatch?.[1]).slice(0, 12));
+const registerSession = `reg2_${crypto.randomUUID()}`;
+const email = `owner_${crypto.randomUUID().replace(/-/g, '').slice(0, 10)}@example.com`;
+steps = requests([
+  { method: 'POST', script: path.join(root, 'register.php'), post: { name: 'New Merchant', email, password: 'short', confirm_password: 'short' } },
+  { method: 'GET', script: path.join(root, 'register.php') },
+  { method: 'GET', script: path.join(root, 'register.php'), post: {} },
+], registerSession);
+check('Registration without CSRF is rejected (419)', steps[0].status === 419, String(steps[0].status));
+const csrf2 = /name="csrf" value="([a-f0-9]{64})"/.exec(steps[1].body || '')?.[1];
+check('CSRF token retrievable for the session', Boolean(csrf2));
+steps = requests([
+  { method: 'GET', script: path.join(root, 'register.php') },
+  { method: 'POST', script: path.join(root, 'register.php'), post: { csrf: csrf2, name: 'New Merchant', email, password: 'short', confirm_password: 'short' } },
+], registerSession);
+check('Short password rejected with message', steps[1].status === 200 && /at least 12 characters/.test(steps[1].body));
+steps = requests([
+  { method: 'GET', script: path.join(root, 'register.php') },
+  { method: 'POST', script: path.join(root, 'register.php'), post: { csrf: csrf2, name: 'New Merchant', email, password: 'a-very-long-password', confirm_password: 'a-very-long-password' } },
+  { method: 'GET', script: path.join(root, 'dashboard.php') },
+], registerSession);
+check('Valid registration redirects to integrations', steps[1].status === 302 && steps[1].headers.some((h) => /Location: \/integrations\.php/.test(h)), `${steps[1].status} ${JSON.stringify(steps[1].headers)}`);
+check('New session reaches dashboard', steps[2].status === 200 && /Dashboard/.test(steps[2].body));
+check('Dashboard reuses the same CSRF token after login', (steps[2].body || '').includes(csrf2));
+
+section('Merchant login flow');
+const loginSession = `login_${crypto.randomUUID()}`;
+steps = requests([
+  { method: 'GET', script: path.join(root, 'login.php') },
+], loginSession);
+const loginCsrf = /name="csrf" value="([a-f0-9]{64})"/.exec(steps[0].body || '')?.[1];
+steps = requests([
+  { method: 'POST', script: path.join(root, 'login.php'), post: { csrf: loginCsrf, email: 'merchant@example.com', password: 'wrong-password' } },
+  { method: 'POST', script: path.join(root, 'login.php'), post: { csrf: loginCsrf, email: 'merchant@example.com', password: 'correct-horse-battery' } },
+  { method: 'GET', script: path.join(root, 'dashboard.php') },
+], loginSession);
+check('Wrong password shows generic error', steps[0].status === 200 && /did not match/.test(steps[0].body));
+check('Correct password logs in', steps[1].status === 302);
+check('Logged-in dashboard renders stats', steps[2].status === 200 && /Total revenue/.test(steps[2].body));
+check('API key is not rendered in plaintext on dashboard', !steps[2].body.includes(apiKey));
+
+section('Hosted checkout page');
+steps = requests([
+  { method: 'GET', script: path.join(root, 'pay.php'), query: { order_id: created.order_id } },
+  { method: 'GET', script: path.join(root, 'pay.php'), query: { order_id: 'tg_NOPE' } },
+]);
+check('Checkout renders merchant and amount', steps[0].status === 200 && steps[0].body.includes('₹') && steps[0].body.includes(created.order_id));
+check('Checkout includes UPI intent for QR rendering', steps[0].body.includes('data-upi="upi://pay'));
+check('Checkout loads the vendored QR script', steps[0].body.includes('/assets/js/vendor/qrcode.js'));
+check('Unknown order shows a friendly notice', steps[1].status === 200 && /not found/i.test(steps[1].body));
+
+section('Settlement: receipt → paid order');
+const settleOut = php(`<?php
+require 'includes/settlement.php';
+$pdo = new PDO('sqlite:'.getenv('DB_SQLITE_PATH'), null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$pdo->exec('PRAGMA foreign_keys = ON');
+$account = ['id' => 1, 'merchant_id' => 1];
+// A pending order this receipt should claim.
+$pdo->prepare("INSERT INTO orders(order_id,merchant_id,merchant_account_id,amount,payable_amount,status,expires_at,created_at) VALUES('tg_SETTLE499',1,1,'499.00','499.00','pending',?,?)")
+    ->execute([gmdate('Y-m-d H:i:s', time()+600), gmdate('Y-m-d H:i:s')]);
+$out = [];
+$out['first'] = settle_receipt($pdo, $account, ['utr'=>'555666777888','amount'=>'499.00','sender'=>'ASHA','order_ref'=>null], 'msg-1');
+$out['duplicate'] = settle_receipt($pdo, $account, ['utr'=>'555666777888','amount'=>'499.00','sender'=>'ASHA','order_ref'=>null], 'msg-1');
+$out['unmatched'] = settle_receipt($pdo, $account, ['utr'=>'999888777666','amount'=>'7.00','sender'=>null,'order_ref'=>null], 'msg-2');
+$out['unparsed'] = settle_receipt($pdo, $account, ['utr'=>null,'amount'=>null,'sender'=>null,'order_ref'=>null], 'msg-3');
+$out['second'] = settle_receipt($pdo, $account, ['utr'=>'111222333444','amount'=>'1500.00','sender'=>'RAVI','order_ref'=>$pdo->query("SELECT order_id FROM orders WHERE amount=1500")->fetchColumn()], 'msg-4');
+$out['orders'] = $pdo->query("SELECT order_id,status,utr,sender_name,paid_at FROM orders ORDER BY id")->fetchAll();
+$out['events'] = $pdo->query("SELECT state,utr,order_ref FROM receipt_events ORDER BY id")->fetchAll();
+$out['count_paid'] = $pdo->query("SELECT COUNT(*) FROM orders WHERE status='success'")->fetchColumn();
+$out['event_count'] = $pdo->query("SELECT COUNT(*) FROM receipt_events")->fetchColumn();
+echo json_encode($out);
+`, { APP_URL: 'http://localhost:8080' });
+const settle = JSON.parse(settleOut);
+check('First receipt matches a pending order', settle.first.state === 'matched', JSON.stringify(settle.first));
+check('Repeated UTR is reported as duplicate', settle.duplicate.state === 'duplicate');
+check('Receipt with no matching amount is unmatched', settle.unmatched.state === 'unmatched');
+check('Unparseable receipt is recorded, not matched', settle.unparsed.state === 'unparsed');
+check('Reference-based receipt claims the right order', settle.second.state === 'matched' && settle.second.order_id && settle.second.order_id.includes('tg_'), JSON.stringify(settle.second));
+check('Only orders with matching receipts are paid', Number(settle.count_paid) === 2, String(settle.count_paid));
+check('Every receipt attempt leaves an audit row', Number(settle.event_count) === 4, String(settle.event_count));
+
+const expiryOut = php(`<?php
+require 'includes/settlement.php';
+$pdo = new PDO('sqlite:'.getenv('DB_SQLITE_PATH'), null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$pdo->exec("INSERT INTO orders(order_id,merchant_id,merchant_account_id,amount,payable_amount,status,expires_at,created_at) VALUES('tg_EXPIREDTEST',1,1,'10','10','pending','2020-01-01 00:00:00','2020-01-01 00:00:00')");
+$result = housekeeping($pdo);
+echo json_encode(['expired'=>$result['expired'],'status'=>$pdo->query("SELECT status FROM orders WHERE order_id='tg_EXPIREDTEST'")->fetchColumn()]);
+`);
+const expiry = JSON.parse(expiryOut);
+check('Housekeeping expires stale pending orders', expiry.status === 'expired' && expiry.expired >= 1);
+
+section('Webhooks: signing and delivery');
+const receiver = http.createServer((req, res) => {
+  const chunks = [];
+  req.on('data', (chunk) => chunks.push(chunk));
+  req.on('end', () => {
+    receiver.lastRequest = { headers: req.headers, body: Buffer.concat(chunks).toString('utf8') };
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end('{"ok":true}');
+  });
+});
+await new Promise((resolve) => receiver.listen(0, '127.0.0.1', resolve));
+const receiverPort = receiver.address().port;
+const receiverUrl = `http://127.0.0.1:${receiverPort}/hook`;
+
+const hookOut = php(`<?php
+require 'includes/webhook.php';
+$pdo = new PDO('sqlite:'.getenv('DB_SQLITE_PATH'), null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$pdo->exec('PRAGMA foreign_keys = ON');
+// Outbound policy requires HTTPS + public DNS, so the test posts directly to the
+// local receiver through deliver_webhook() to exercise signing and logging.
+$payload = ['event' => 'payment.succeeded', 'order_id' => 'tg_SIGNTEST', 'amount' => 499];
+$row = $pdo->query("SELECT order_id FROM orders LIMIT 1")->fetch();
+$body = json_encode(webhook_payload([ 'order_id'=>$row['order_id'], 'amount'=>499, 'payable_amount'=>499, 'status'=>'success', 'utr'=>'555666777888', 'transaction_id'=>'555666777888', 'sender_name'=>'ASHA', 'paid_at'=>'2026-01-01 00:00:00']));
+$signature = 'sha256='.hash_hmac('sha256', $body, 'secret-key');
+$ch = curl_init(getenv('HOOK_URL'));
+curl_setopt_array($ch, [CURLOPT_POST=>true, CURLOPT_POSTFIELDS=>$body, CURLOPT_HTTPHEADER=>['Content-Type: application/json','X-TGGateway-Signature: '.$signature], CURLOPT_RETURNTRANSFER=>true]);
+curl_exec($ch);
+$code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+curl_close($ch);
+echo json_encode(['body'=>$body,'signature'=>$signature,'code'=>$code]);
+`, { HOOK_URL: receiverUrl });
+const hook = JSON.parse(hookOut);
+await new Promise((resolve) => setTimeout(resolve, 150));
+const received = receiver.lastRequest;
+check('Local receiver got a 200 from cURL', hook.code === 200, String(hook.code));
+check('Receiver received JSON body', Boolean(received) && JSON.parse(received.body).order_id !== undefined);
+check('Signature header uses sha256= prefix', Boolean(received) && /^sha256=[0-9a-f]{64}$/.test(received.headers['x-tggateway-signature'] || ''));
+const expectedSignature = crypto.createHmac('sha256', 'secret-key').update(received?.body || '').digest('hex');
+check('HMAC matches an independent computation', received && received.headers['x-tggateway-signature'] === `sha256=${expectedSignature}`);
+check('Tampering with the body breaks the signature', crypto.createHmac('sha256', 'secret-key').update((received?.body || '') + ' ').digest('hex') !== expectedSignature);
+receiver.close();
+
+section('Webhook SSRF policy');
+const ssrfOut = php(`<?php
+require 'includes/db.php';
+$urls = ['http://example.com/hook','https://localhost/hook','https://127.0.0.1/hook','https://10.0.0.5/hook','https://169.254.169.254/latest','https://internal.local/hook','https://example.com:8443/hook','https://user:pass@example.com/hook'];
+$out = [];
+foreach ($urls as $u) $out[$u] = safe_webhook_resolve($u) !== false;
+echo json_encode($out);
+`);
+const ssrf = JSON.parse(ssrfOut);
+check('Plain HTTP rejected', ssrf['http://example.com/hook'] === false);
+check('localhost rejected', ssrf['https://localhost/hook'] === false);
+check('Loopback IP rejected', ssrf['https://127.0.0.1/hook'] === false);
+check('Private range rejected', ssrf['https://10.0.0.5/hook'] === false);
+check('Link-local metadata IP rejected', ssrf['https://169.254.169.254/latest'] === false);
+check('.local host rejected', ssrf['https://internal.local/hook'] === false);
+check('Non-443 port rejected', ssrf['https://example.com:8443/hook'] === false);
+check('Embedded credentials rejected', ssrf['https://user:pass@example.com/hook'] === false);
+
+section('Payment links');
+steps = requests([
+  { method: 'POST', script: path.join(root, 'api/manage-links.php'), headers: { 'X-Api-Key': apiKey }, body: JSON.stringify({ title: 'Consultation', amount: 999 }) },
+  { method: 'GET', script: path.join(root, 'api/manage-links.php'), headers: { 'X-Api-Key': apiKey } },
+  { method: 'POST', script: path.join(root, 'api/manage-links.php'), headers: { 'X-Api-Key': apiKey }, body: JSON.stringify({ title: 'Bad', amount: 5, redirect_url: 'javascript:alert(1)' }) },
+]);
+const link = json(steps[0]) || {};
+check('Payment link created with slug', steps[0].status === 201 && /^[a-f0-9]{18}$/.test(link.slug || ''), String(link.slug));
+check('Payment link listed for owner', Array.isArray(json(steps[1])?.links) && json(steps[1]).links.some((l) => l.slug === link.slug));
+check('Non-HTTPS redirect rejected', steps[2].status === 422);
+steps = requests([
+  { method: 'GET', script: path.join(root, 'pay.php'), query: { link: link.slug } },
+]);
+check('Visiting a payment link creates an order and redirects', steps[0].status === 302 && steps[0].headers.some((h) => /Location: \/pay\.php\?order_id=tg_/.test(h)), String(steps[0].status));
+steps = requests([
+  { method: 'GET', script: path.join(root, 'pay.php'), query: { link: 'missing-slug' } },
+]);
+check('Unknown payment link shows a notice', steps[0].status === 200 && /unavailable/i.test(steps[0].body));
+
+section('Health endpoint');
+steps = requests([
+  { method: 'GET', script: path.join(root, 'api/health.php') },
+]);
+const health = json(steps[0]) || {};
+check('Public health endpoint responds', steps[0].status === 200);
+check('Health reports database operational', health.database === 'operational', JSON.stringify(health));
+check('Health does not claim the parser works without a worker run', health.receipt_parser !== 'operational', String(health.receipt_parser));
+check('Health exposes no merchant identifiers', !JSON.stringify(health).includes('merchant@'));
+
+section('Legacy /api/status contract');
+steps = requests([
+  { method: 'GET', script: path.join(root, 'api/status.php') },
+  { method: 'GET', script: path.join(root, 'api/status.php'), headers: { 'X-Api-Key': apiKey }, query: { order_ref: 'Invoice 42' } },
+]);
+check('Legacy status without key → 401', steps[0].status === 401, String(steps[0].status));
+check('Legacy status resolves order_ref', steps[1].status === 200 && json(steps[1])?.payable_amount === 1500, String(steps[1].status));
+
+section('SQL portability');
+const sqlCheck = php(`<?php
+$pdo = new PDO('sqlite:'.getenv('DB_SQLITE_PATH'));
+$tables = $pdo->query("SELECT name FROM sqlite_master WHERE type='table'")->fetchAll(PDO::FETCH_COLUMN);
+sort($tables);
+echo json_encode($tables);
+`);
+const tables = JSON.parse(sqlCheck);
+for (const required of ['merchants','merchant_accounts','orders','payment_links','receipt_events','webhook_logs','notification_logs','api_rate_limits','system_state']) {
+  check(`Table ${required} exists`, tables.includes(required));
+}
+const mysqlSchema = readFileSync(path.join(root, 'database/schema.sql'), 'utf8');
+for (const required of ['receipt_events','notification_logs','system_state','payee_name','brand_color','payment_timeout_minutes']) {
+  check(`MySQL schema includes ${required}`, mysqlSchema.includes(required));
+}
+
+/* ------------------------------------------------------------------ */
+
+console.log(`\n${passed} passed, ${failures.length} failed`);
+if (failures.length) {
+  console.log('\nFailures:');
+  for (const failure of failures) console.log(`  - ${failure}`);
+}
+rmSync(work, { recursive: true, force: true });
+process.exit(failures.length ? 1 : 0);

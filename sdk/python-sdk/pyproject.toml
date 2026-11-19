@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tggateways"
+version = "0.1.0"
+description = "Python client for a self-hosted TG Gateways API"
+requires-python = ">=3.9"
+dependencies = ["requests>=2.31,<3"]
+
+[tool.setuptools]
+packages = ["tggateways"]

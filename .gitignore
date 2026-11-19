@@ -1,0 +1,9 @@
+.env
+/vendor/
+__pycache__/
+*.py[cod]
+.phpunit.cache/
+/storage/*.sqlite
+/storage/*.sqlite-wal
+/storage/*.sqlite-shm
+/storage/sessions/
