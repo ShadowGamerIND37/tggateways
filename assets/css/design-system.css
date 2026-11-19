@@ -1524,3 +1524,9 @@ input, button, textarea, select { font-family: var(--font); }
 .form-hint code { font-family: 'Consolas', 'Monaco', monospace; font-size: 11px; background: #eef2f8; padding: 1px 5px; border-radius: 4px; }
 .form-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .form-grid .form-group { display: flex; flex-direction: column; gap: 6px; }
+
+/* The period selector reuses .time-pill, which upstream only ever renders as a
+   <button>. Anchors need the button defaults reset and the underline removed. */
+a.time-pill { display: inline-block; text-decoration: none; line-height: 1.5; }
+a.time-pill:focus-visible { outline: 2px solid #2563eb; outline-offset: 1px; }
+.dash-bars:has(> div[style*="text-align:center"]) { display: block; }

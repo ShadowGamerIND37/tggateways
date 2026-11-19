@@ -993,9 +993,39 @@ check('Formula-injection names are escaped in CSV',
   injected.includes("'=cmd|calc") && !/(^|,)"?=cmd\|calc/.test(injected),
   'expects a leading apostrophe, no bare formula');
 
+section('Dashboard activity periods');
+
+// Re-use an existing signed-in session: every extra login counts against the
+// auth rate limiter, and the suite already signs in several times.
+const dashAuth = { session: exportAuth.session };
+steps = requests([
+  { method: 'GET', script: path.join(root, 'dashboard.php') },
+  { method: 'GET', script: path.join(root, 'dashboard.php'), query: { period: '15' } },
+  { method: 'GET', script: path.join(root, 'dashboard.php'), query: { period: '30' } },
+  { method: 'GET', script: path.join(root, 'dashboard.php'), query: { period: '999' } },
+  { method: 'GET', script: path.join(root, 'dashboard.php'), query: { period: 'abc' } },
+], dashAuth.session);
+const barCount = (html) => (html.match(/dash-bar-col/g) || []).length;
+check('Default dashboard window is 7 days',
+  /Activity — Last 7 Days/.test(steps[0].body || '') && barCount(steps[0].body || '') === 7);
+check('15-day window renders 15 bars',
+  /Activity — Last 15 Days/.test(steps[1].body || '') && barCount(steps[1].body || '') === 15);
+check('30-day window renders 30 bars',
+  /Activity — Last 30 Days/.test(steps[2].body || '') && barCount(steps[2].body || '') === 30);
+check('Out-of-range and non-numeric periods fall back to 7 days',
+  /Activity — Last 7 Days/.test(steps[3].body || '') && /Activity — Last 7 Days/.test(steps[4].body || ''));
+check('The active period pill marks only itself',
+  (steps[1].body || '').match(/time-pill active/g).length === 1
+  && /period=15"\s+aria-current="true"/.test(steps[1].body || ''));
+check('Long windows thin their axis labels instead of crowding',
+  barCount(steps[2].body || '') === 30
+  && ((steps[2].body || '').match(/dash-bar-label">[^<]+</g) || []).length <= 10);
+check('The chart summarises the window in words',
+  /orders and ₹/.test(steps[1].body || '') && /in this window/.test(steps[1].body || ''));
+
 section('Documentation text endpoints');
 
-const docAuth = signIn('merchant@example.com', 'correct-horse-battery');
+const docAuth = { session: exportAuth.session };
 const docsBase = { ...baseEnv(), APP_URL: 'https://gate.example.com' };
 const docText = php(`<?php
 require 'includes/apidoc.php';

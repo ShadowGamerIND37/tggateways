@@ -34,22 +34,40 @@ $recent = $recentStmt->fetchAll();
 $connected = tg_has_active_account($id);
 $mid = tg_merchant_mid($id);
 
-/* Activity series: orders per day for the last 7 days (chart is rendered as a
-   CSS bar chart, so no canvas/JS dependency and no external chart library). */
+/* Activity series: orders per day over the selected window (7, 15 or 30 days).
+   Rendered as a CSS bar chart, so there is no canvas/JS dependency and no
+   external chart library. */
+$chartPeriod = (int)($_GET['period'] ?? 7);
+if (!in_array($chartPeriod, [7, 15, 30], true)) $chartPeriod = 7;
+$firstDay = date('Y-m-d', strtotime('-'.($chartPeriod - 1).' days'));
+
 $chart = $pdo->prepare(
     "SELECT substr(created_at,1,10) d, COUNT(*) n,
             COALESCE(SUM(CASE WHEN status='success' THEN amount ELSE 0 END),0) revenue
        FROM orders WHERE merchant_id=? AND created_at>=? GROUP BY substr(created_at,1,10)"
 );
-$chart->execute([$id, date('Y-m-d', strtotime('-6 days'))]);
+$chart->execute([$id, $firstDay]);
 $days = [];
 foreach ($chart->fetchAll() as $row) $days[$row['d']] = $row;
 $series = [];
-for ($i = 6; $i >= 0; $i--) {
+for ($i = $chartPeriod - 1; $i >= 0; $i--) {
     $d = date('Y-m-d', strtotime("-$i days"));
-    $series[] = ['date' => $d, 'label' => date('D', strtotime($d)), 'n' => (int)($days[$d]['n'] ?? 0), 'revenue' => (float)($days[$d]['revenue'] ?? 0)];
+    // Long windows would print 30 labels into a row; show only every other one.
+    $showLabel = $chartPeriod === 7
+        || ($chartPeriod === 15 && $i % 3 === 0)
+        || ($chartPeriod === 30 && $i % 5 === 0)
+        || $i === 0;
+    $series[] = [
+        'date' => $d,
+        'label' => $showLabel ? date($chartPeriod === 7 ? 'D' : 'j M', strtotime($d)) : '',
+        'n' => (int)($days[$d]['n'] ?? 0),
+        'revenue' => (float)($days[$d]['revenue'] ?? 0),
+    ];
 }
 $maxRequests = max(1, max(array_column($series, 'n')));
+// Summary for the window, so the number under the chart is not hand-waved.
+$seriesOrders = array_sum(array_column($series, 'n'));
+$seriesRevenue = array_sum(array_column($series, 'revenue'));
 $configProblems = function_exists('tg_config_problems') ? tg_config_problems() : [];
 
 require __DIR__.'/includes/dashboard-header.php';
@@ -153,18 +171,25 @@ require __DIR__.'/includes/dashboard-header.php';
 <div class="card dash-anim-up is-visible" style="margin-top:20px">
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
     <div>
-      <div class="card-title"><?=icon('activity', 16)?> Activity — Last 7 Days</div>
-      <div class="card-sub">API requests and revenue over time</div>
+      <div class="card-title"><?=icon('activity', 16)?> Activity — Last <?=$chartPeriod?> Days</div>
+      <div class="card-sub"><?=$seriesOrders?> orders and ₹<?=number_format($seriesRevenue, 2)?> collected in this window</div>
     </div>
     <div class="chart-time-pills">
-      <button class="time-pill active" type="button">7D</button>
-      <button class="time-pill" type="button" disabled title="Available once longer history exists">15D</button>
-      <button class="time-pill" type="button" disabled title="Available once longer history exists">30D</button>
+      <?php foreach ([7, 15, 30] as $period): ?>
+        <a class="time-pill<?=$period === $chartPeriod ? ' active' : ''?>"
+           href="/dashboard.php?period=<?=$period?>"
+           aria-current="<?=$period === $chartPeriod ? 'true' : 'false'?>"><?=$period?>D</a>
+      <?php endforeach ?>
     </div>
   </div>
-  <div class="dash-bars" role="img" aria-label="Orders per day for the last seven days">
+  <div class="dash-bars" role="img" aria-label="Orders per day over the last <?=$chartPeriod?> days">
+    <?php if ($seriesOrders === 0): ?>
+      <div style="padding:26px;text-align:center;color:var(--color-ink-mute);font-size:13px">
+        No orders in this window yet. Bars appear as soon as your first payment link is paid.
+      </div>
+    <?php endif ?>
     <?php foreach ($series as $day): ?>
-      <div class="dash-bar-col" title="<?=h($day['label'].' '.$day['date'])?> — <?=$day['n']?> orders, ₹<?=number_format($day['revenue'], 2)?>">
+      <div class="dash-bar-col" title="<?=h(($day['label'] !== '' ? $day['label'].' ' : '').$day['date'])?> — <?=$day['n']?> orders, ₹<?=number_format($day['revenue'], 2)?>">
         <span class="dash-bar-tip"><?=$day['n']?></span>
         <div class="dash-bar" style="height:<?=$day['n'] === 0 ? 4 : max(8, (int)round(($day['n'] / $maxRequests) * 100))?>%"></div>
         <span class="dash-bar-label"><?=h($day['label'])?></span>
