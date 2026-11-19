@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<!-- saved from url=(0032)https://famgateway.in/status.php -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style>body {transition: opacity ease-in 0.2s; } 
+body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relative; } 
+</style>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+html, body {
+  background-color: #f6f8fb !important;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+.dashboard-layout {
+  background-color: #f6f8fb !important;
+}
+.sidebar {
+  background-color: #0b1329 !important;
+}
+.fam-legal-attribution {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+</style>
+<title>System Status &amp; Service Uptime | FamGateway</title>
+<meta name="description" content="Real-time system status, API latency metrics, IMAP daemon health, and live service uptime monitoring for the FamGateway UPI platform.">
+<meta name="keywords" content="FamGateway status, API uptime, system health, IMAP service status, UPI verification uptime, live service status">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+<meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+<meta name="author" content="Aryan Gupta">
+<meta name="author-registry" content="UDYAM-BR-28-0050000|Aryan Gupta|FamGateway">
+<meta name="copyright" content="Aryan Gupta / FamGateway (Aryanispe MSME UDYAM-BR-28-0050000)">
+<meta property="og:title" content="System Status &amp; Service Uptime | FamGateway">
+<meta property="og:description" content="Real-time system status, API latency metrics, IMAP daemon health, and live service uptime monitoring for the FamGateway UPI platform.">
+<meta property="og:image" content="https://cdn.famgateway.in/img/og-image.png">
+<meta property="og:url" content="https://famgateway.in/status.php">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="System Status &amp; Service Uptime | FamGateway">
+<meta name="twitter:description" content="Real-time system status, API latency metrics, IMAP daemon health, and live service uptime monitoring for the FamGateway UPI platform.">
+<meta name="twitter:image" content="https://cdn.famgateway.in/img/og-image.png">
+<link rel="canonical" href="https://famgateway.in/status.php">
+<link rel="icon" type="image/x-icon" href="https://cdn.famgateway.in/favicon.ico">
+<link rel="icon" type="image/png" href="https://cdn.famgateway.in/favicon.png">
+<link rel="apple-touch-icon" href="https://cdn.famgateway.in/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+<link href="./System Status &amp; Service Uptime _ FamGateway_files/css2" rel="stylesheet">
+<link rel="stylesheet" href="./System Status &amp; Service Uptime _ FamGateway_files/style.css">
+<script defer="" src="./System Status &amp; Service Uptime _ FamGateway_files/lucide.min.js.download"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  if (window.lucide) { lucide.createIcons(); }
+});
+</script>
+<!-- Google tag (gtag.js) - Google Analytics 4 -->
+<script async="" src="./System Status &amp; Service Uptime _ FamGateway_files/js"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-6L45EVBBK3', {
+    cookie_flags: 'SameSite=None;Secure'
+  });
+</script>
+<!-- Google Preferred Sources Interactive Button Script (Manual Control) -->
+<script async="" preferred-sources-control="manual" src="./System Status &amp; Service Uptime _ FamGateway_files/publisher.js.download"></script>
+
+<!-- Structured Data for System Status -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "FamGateway Real-Time System Status",
+  "url": "https://famgateway.in/status.php",
+  "description": "Real-time system status, API latency metrics, and live service uptime monitoring for FamGateway.",
+  "mainEntity": {
+    "@type": "Service",
+    "name": "FamGateway UPI Payment Gateway",
+    "serviceType": "FinTech Payment Verification",
+    "provider": {
+      "@type": "Organization",
+      "name": "FamGateway (A unit of ARYANISPE)",
+      "url": "https://famgateway.in"
+    },
+    "serviceOutput": "Instant UPI Webhooks & Real-time Transaction Verification",
+    "termsOfService": "https://famgateway.in/terms.php"
+  }
+}
+</script>
+<link rel="preconnect" href="https://wl.hetrixtools.com/" crossorigin="">
+<link rel="dns-prefetch" href="https://wl.hetrixtools.com/">
+<link rel="preconnect" href="https://static.hetrix.io/" crossorigin="">
+<link rel="dns-prefetch" href="https://static.hetrix.io/">
+
+<style>
+  .status-container {
+    max-width: 1400px;
+    width: 95%;
+    margin: 40px auto 40px auto;
+    padding: 0;
+    min-height: calc(100vh - 200px);
+  }
+  .status-header {
+    margin-bottom: 30px;
+    text-align: center;
+  }
+  .status-header h1 {
+    font-size: 32px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 10px;
+    letter-spacing: -0.5px;
+  }
+  .status-header p {
+    font-size: 16px;
+    color: #64748b;
+  }
+  .iframe-card {
+    background: transparent;
+    width: 100%;
+    max-width: 1080px;
+    margin: 0 auto;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .status-wrapper {
+    position: relative;
+    width: 100%;
+    min-height: 580px;
+    border-radius: 14px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  .status-loader-wrapper {
+    position: absolute;
+    inset: 0;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    transition: opacity 0.35s ease, visibility 0.35s ease;
+    padding: 40px 20px;
+    border-radius: 14px;
+  }
+  .status-loader-wrapper.loaded {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .loader-spinner-box {
+    position: relative;
+    width: 68px;
+    height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  .loader-spinner-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 3.5px solid #f1f5f9;
+    border-top-color: #2563eb;
+    border-right-color: #38bdf8;
+    animation: statusRingSpin 0.9s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+  }
+  .loader-spinner-inner {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #eff6ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2563eb;
+  }
+  .loader-spinner-inner svg {
+    animation: statusPulse 1.6s ease-in-out infinite;
+  }
+  @keyframes statusRingSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  @keyframes statusPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(0.85); opacity: 0.65; }
+  }
+  .loader-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 8px;
+    letter-spacing: -0.3px;
+    text-align: center;
+  }
+  .loader-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #0284c7;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    padding: 5px 14px;
+    border-radius: 99px;
+  }
+  .loader-status-dot {
+    width: 7px;
+    height: 7px;
+    background: #0284c7;
+    border-radius: 50%;
+    animation: dotPulse 1.4s ease-in-out infinite;
+  }
+  @keyframes dotPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.3; transform: scale(0.7); }
+  }
+  .htframe {
+    position: relative;
+    z-index: 1;
+    min-width: 760px;
+    border: none;
+    min-height: 580px;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .htframe.loaded {
+    opacity: 1;
+  }
+  @media (max-width: 768px) {
+    .status-container {
+      margin-top: 20px;
+      width: 95%;
+    }
+    .status-header {
+      margin-bottom: 20px;
+    }
+    .status-header h1 {
+      font-size: 26px;
+    }
+    .status-header p {
+      font-size: 14px;
+    }
+    .status-wrapper {
+      min-height: 520px;
+      border-radius: 12px;
+    }
+    .htframe {
+      min-width: 740px;
+    }
+    .loader-title {
+      font-size: 15px;
+    }
+    .loader-status-pill {
+      font-size: 11.5px;
+      padding: 4px 12px;
+    }
+  }
+</style>
+<style> /* devanagari */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTucXtAKPY.woff2) format('woff2');
+      unicode-range: U+0900-097F, U+1CD0-1CF6, U+1CF8-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FB;
+    }
+    /* latin-ext */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTufntAKPY.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    /* latin */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTucHtA.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+    /* devanagari */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z11lFc-K.woff2) format('woff2');
+      unicode-range: U+0900-097F, U+1CD0-1CF6, U+1CF8-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FB;
+    }
+    /* latin-ext */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z1JlFc-K.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    /* latin */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z1xlFQ.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins light */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 300;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Light.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+
+    /* poppins regular */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 400;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Regular.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins thin */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 100;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Thin.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins medium */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 500;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Medium.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins semi bold */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 600;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-SemiBold.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins bold */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 700;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Bold.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    </style><style type="text/css">
+  /** Common styles across all window sizes. */
+  .swg-dialog,
+  .swg-toast,
+  .publisher-toast {
+    box-sizing: border-box;
+  }
+
+  .swg-toast {
+    background-color: rgba(255, 255, 255, 1) !important;
+    max-height: 46px !important;
+  }
+
+  .publisher-toast {
+    background-color: transparent !important;
+    color-scheme: normal !important;
+    max-width: 360px !important;
+  }
+
+  .swg-toast,
+  .publisher-toast {
+    position: fixed !important;
+    bottom: 0 !important;
+    z-index: 2147483647 !important;
+    border: none !important;
+  }
+
+  /**
+  * Wide desktop screen support, when width is >= 871px and height is >= 641px.
+  */
+  @media (min-width: 871px) and (min-height: 641px) {
+    .swg-dialog.swg-wide-dialog {
+      left: -435px !important;
+    }
+
+    .swg-dialog.swg-wide-dialog,
+    .swg-toast,
+    .publisher-toast {
+      width: 870px !important;
+    }
+  }
+
+  /** Tablet/Medium screen support, when width OR height is <= 640px. */
+  @media (max-width: 640px), (max-height: 640px) {
+    .swg-dialog,
+    .swg-toast {
+      width: 480px !important;
+      left: -240px !important;
+      margin-inline-start: calc(100vw - 100vw / 2) !important;
+      border-top-left-radius: 8px !important;
+      border-top-right-radius: 8px !important;
+      box-shadow:
+        rgba(60, 64, 67, 0.3) 0 1px 1px,
+        rgba(60, 64, 67, 0.15) 0 1px 4px 1px !important;
+    }
+
+    .publisher-toast {
+      width: 480px !important;
+      left: -240px !important;
+      margin-inline-start: calc(100vw - 100vw / 2) !important;
+    }
+
+    [dir='rtl'] .swg-dialog,
+    [dir='rtl'] .swg-toast,
+    [dir='rtl'] .publisher-toast {
+      margin-inline-start: calc(100vw - 100vw / 2 - 240px) !important;
+    }
+  }
+
+  /** Desktop/Large screen support, when width AND height are >= 641px. */
+  @media (min-width: 641px) and (min-height: 641px) {
+    .swg-dialog,
+    .swg-toast,
+    .publisher-toast {
+      width: 630px !important;
+    }
+
+    .swg-dialog {
+      left: -315px !important;
+      margin-inline-start: calc(100vw - 100vw / 2) !important;
+      background-color: transparent !important;
+      border: none !important;
+    }
+
+    [dir='rtl'] .swg-dialog {
+      margin-inline-start: calc(100vw - 100vw / 2 - 315px) !important;
+    }
+
+    .swg-toast {
+      border-radius: 4px !important;
+      bottom: 8px !important;
+      box-shadow:
+        0 3px 1px -2px rgb(0 0 0 / 20%),
+        0 2px 2px 0 rgb(0 0 0 / 14%),
+        0 1px 5px 0 rgb(0 0 0 / 12%) !important;
+      left: 8px !important;
+    }
+
+    .publisher-toast {
+      bottom: 8px !important;
+      right: 30px !important;
+    }
+  }
+
+  /** Phone/Small screen support, when width is <= 480px. */
+  @media (max-width: 480px) {
+    .swg-dialog,
+    .swg-toast,
+    .publisher-toast {
+      width: 100% !important;
+      max-width: 100% !important;
+      left: 0 !important;
+      right: 0 !important;
+      margin-inline-start: 0 !important;
+    }
+  }
+
+  /**
+  * Class applied to content page to disable scrolling.
+  */
+  html.swg-disable-scroll,
+  html.swg-disable-scroll * {
+    overflow: hidden !important;
+  }
+</style><style type="text/css" id="mytempCss">._8mqQwQ { display: none; } ._1TWLMK.icF5zO { opacity: 0.01; }</style></head>
+<body>
+
+    <div class="dashboard-layout" style="background-color: #f6f8fb;">
+  <!-- Mobile Top Bar -->
+  <div class="mobile-header">
+      <div class="mobile-brand">
+        <a href="https://famgateway.in/dashboard.php">
+          <img src="./System Status &amp; Service Uptime _ FamGateway_files/logo-navbar-bright.png" alt="FamGateway" style="height:26px;width:auto;display:block;object-fit:contain;">
+        </a>
+      </div>
+    <button class="mobile-menu-btn" onclick="openSidebar()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="menu" aria-hidden="true" style="width:22px;height:22px;" class="lucide lucide-menu"><path d="M4 5h16"></path><path d="M4 12h16"></path><path d="M4 19h16"></path></svg>
+    </button>
+  </div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar" style="background-color: #0b1329;">
+    <div class="sidebar-header">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div class="sidebar-brand">
+            <a href="https://famgateway.in/dashboard.php">
+              <img src="./System Status &amp; Service Uptime _ FamGateway_files/logo-navbar-bright.png" alt="FamGateway" style="height:26px;width:auto;display:block;object-fit:contain;">
+            </a>
+          </div>
+        <button class="mobile-menu-btn" id="closeSidebarBtn" style="display:none;" onclick="closeSidebar()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="x" aria-hidden="true" style="width:20px;height:20px;" class="lucide lucide-x"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <a href="https://famgateway.in/dashboard.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-dashboard"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg> Dashboard
+      </a>
+      <a href="https://famgateway.in/transactions.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-receipt"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"></path><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 17.5v-11"></path></svg> Transactions
+      </a>
+      <a href="https://famgateway.in/payment-links.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2"></path><path d="M15 7h2a5 5 0 1 1 0 10h-2"></path><line x1="8" x2="16" y1="12" y2="12"></line></svg> Payment Links
+      </a>
+      <a href="https://famgateway.in/api-keys.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-key-round"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"></path><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"></circle></svg> API Keys
+      </a>
+      <a href="https://famgateway.in/webhooks.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send"><line x1="22" x2="11" y1="2" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Webhooks
+      </a>
+      <div class="sidebar-section-label">Settings</div>
+      <a href="https://famgateway.in/integrations.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plug-zap"><path d="m13 2-2 2.5h3L12 7"></path><path d="M10 14v-3"></path><path d="M14 14v-3"></path><path d="M11 19c-1.7 0-3-1.3-3-3v-2h8v2c0 1.7-1.3 3-3 3Z"></path><path d="M12 22v-3"></path></svg> Integrations
+      </a>
+            <a href="https://famgateway.in/multi-accounts.php" class="sidebar-item " style="color: #059669; font-weight: 600;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-wallet"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"></path><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path></svg>
+        <span>Multi-Accounts</span>
+      </a>
+                  <a href="https://famgateway.in/addons.php" class="sidebar-item " style="color: #6366f1; font-weight: 600;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-store"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"></path><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"></path><path d="M2 7h20"></path><path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 10V7"></path></svg>
+        <span>Addons</span>
+        <span class="sidebar-item-badge" style="background: linear-gradient(135deg, #6366f1, #4f46e5); color: #ffffff; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 9999px; letter-spacing: 0.5px; line-height: 1.1;">PRO</span>
+      </a>
+      <a href="https://famgateway.in/services.php" class="sidebar-item " style="color: #0284c7; font-weight: 600;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-package-check"><path d="m16 16 2 2 4-4"></path><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"></path><path d="m7.5 4.27 9 5.15"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" x2="12" y1="22" y2="12"></line></svg>
+        <span>My Services</span>
+      </a>
+      <a href="https://famgateway.in/invoices.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg>
+        <span>Invoices</span>
+      </a>
+      <a href="https://famgateway.in/profile.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-circle"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="10" r="3"></circle><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"></path></svg> Profile
+      </a>
+      <a href="https://famgateway.in/tickets.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ticket"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path><path d="M13 5v2"></path><path d="M13 17v2"></path><path d="M13 11v2"></path></svg>
+        <span>Support Tickets</span>
+              </a>
+      <a href="https://famgateway.in/docs.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg> Documentation
+      </a>
+      <a href="https://famgateway.in/status.php" class="sidebar-item active">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> System Status
+      </a>
+      <!-- Temporarily commented out during gateway downtime
+      <a href="https://wa.me/919771348544?text=Hello%2C%20I%20came%20from%20your%20FamGateway%20website%2C%20and%20I%20need%20support." target="_blank" class="sidebar-item" style="color: #10b981; font-weight: 600;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg> WhatsApp Support
+      </a>
+      -->
+
+          </nav>
+
+    <div class="sidebar-footer">
+      <a href="https://famgateway.in/profile.php" class="sidebar-user-card" title="View Profile">
+        <img src="./System Status &amp; Service Uptime _ FamGateway_files/unnamed.png" class="sidebar-avatar" alt="ShadowGamer Ind">
+        <div style="overflow:hidden; min-width:0; flex:1;">
+          <div class="sidebar-user-name" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">ShadowGamer Ind</div>
+        </div>
+      </a>
+
+                  <div class="sidebar-mid-pill" onclick="copyNavMid('7576902029', this)" title="Click to copy Merchant ID">
+        <span class="sidebar-mid-label">
+          <span class="sidebar-mid-dot"></span>
+          MID: <code>7576902029</code>
+        </span>
+        <span class="sidebar-mid-copy-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+        </span>
+      </div>
+      
+      <a href="https://famgateway.in/logout.php" class="sidebar-logout">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-log-out"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" x2="9" y1="12" y2="12"></line></svg> Sign Out
+      </a>
+    </div>
+  </aside>
+
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  
+<script>
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebarOverlay').style.display = 'block';
+  if(document.getElementById('closeSidebarBtn')) document.getElementById('closeSidebarBtn').style.display = 'flex';
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').style.display = 'none';
+  if(document.getElementById('closeSidebarBtn')) document.getElementById('closeSidebarBtn').style.display = 'none';
+}
+function copyNavMid(mid, el) {
+  navigator.clipboard.writeText(mid).then(function() {
+    var copyBtn = el.querySelector('.sidebar-mid-copy-btn');
+    if (!copyBtn) return;
+    var original = copyBtn.innerHTML;
+    copyBtn.innerHTML = '<span style="color:#22c55e; font-size:10.5px; font-weight:700;">Copied!</span>';
+    setTimeout(function() {
+      copyBtn.innerHTML = original;
+    }, 1500);
+  });
+}
+</script>
+
+<script>
+/* Dashboard entrance animations — IntersectionObserver */
+(function() {
+  if (!window.IntersectionObserver) {
+    /* Fallback: just show everything immediately */
+    document.querySelectorAll('.dash-anim-up,.dash-anim-in,.dash-anim-right,.dash-stagger').forEach(function(el) {
+      el.style.opacity = '1';
+    });
+    return;
+  }
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target); /* fire once only */
+      }
+    });
+  }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+
+  /* Run after DOM is ready */
+  function initObserver() {
+    document.querySelectorAll(
+      '.dash-anim-up, .dash-anim-in, .dash-anim-right, .dash-stagger'
+    ).forEach(function(el) { observer.observe(el); });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initObserver);
+  } else {
+    initObserver();
+  }
+})();
+</script>
+
+
+<!-- FAMGATEWAY GLOBAL CONFIRMATION & ALERT MODAL -->
+<style>
+.fam-modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9999999;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.fam-modal-backdrop.active {
+  display: flex !important;
+  opacity: 1;
+}
+.fam-modal-box {
+  background: #ffffff;
+  border-radius: 20px;
+  max-width: 440px;
+  width: 100%;
+  padding: 28px 24px;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
+  border: 1px solid #e2e8f0;
+  box-sizing: border-box;
+  transform: scale(0.94) translateY(8px);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.fam-modal-backdrop.active .fam-modal-box {
+  transform: scale(1) translateY(0);
+}
+.fam-modal-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+.fam-modal-icon-wrap.type-danger {
+  background: #fef2f2;
+  color: #ef4444;
+  border: 1px solid #fee2e2;
+}
+.fam-modal-icon-wrap.type-warning {
+  background: #fffbeb;
+  color: #f59e0b;
+  border: 1px solid #fef3c7;
+}
+.fam-modal-icon-wrap.type-success {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+.fam-modal-icon-wrap.type-info {
+  background: #eff6ff;
+  color: #3b82f6;
+  border: 1px solid #dbeafe;
+}
+.fam-modal-title {
+  font-size: 19px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px;
+  letter-spacing: -0.3px;
+  line-height: 1.3;
+}
+.fam-modal-text {
+  font-size: 13.5px;
+  color: #64748b;
+  line-height: 1.55;
+  margin: 0 0 22px;
+  word-break: break-word;
+  white-space: pre-line;
+}
+.fam-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.fam-modal-btn {
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 100px;
+  flex: 1;
+}
+.fam-modal-btn-cancel {
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+.fam-modal-btn-cancel:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+.fam-modal-btn-confirm {
+  background: #0284c7;
+  color: #ffffff;
+}
+.fam-modal-btn-confirm:hover {
+  background: #0369a1;
+}
+.fam-modal-btn-confirm.btn-danger {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+}
+.fam-modal-btn-confirm.btn-danger:hover {
+  background: #b91c1c !important;
+}
+.fam-modal-btn-confirm.btn-success {
+  background: #16a34a !important;
+  color: #ffffff !important;
+}
+.fam-modal-btn-confirm.btn-success:hover {
+  background: #15803d !important;
+}
+
+@media (max-width: 480px) {
+  .fam-modal-backdrop {
+    padding: 12px;
+  }
+  .fam-modal-box {
+    padding: 24px 18px;
+    border-radius: 18px;
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .fam-modal-title {
+    font-size: 17px;
+  }
+  .fam-modal-text {
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+  .fam-modal-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+  .fam-modal-btn {
+    width: 100%;
+    min-height: 44px;
+    font-size: 14px;
+    flex: none;
+  }
+}
+</style>
+
+<div class="fam-modal-backdrop" id="famGlobalModal" onclick="if(event.target===this)famCloseModal(false)">
+  <div class="fam-modal-box">
+    <div class="fam-modal-icon-wrap" id="famModalIconWrap">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="help-circle" aria-hidden="true" id="famModalIcon" style="width:28px;height:28px;" class="lucide lucide-help-circle"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
+    </div>
+    <h3 class="fam-modal-title" id="famModalTitle">Confirm Action</h3>
+    <p class="fam-modal-text" id="famModalText">Are you sure you want to proceed?</p>
+    <div class="fam-modal-actions" id="famModalActions">
+      <button type="button" class="fam-modal-btn fam-modal-btn-cancel" id="famModalCancelBtn" onclick="famCloseModal(false)">Cancel</button>
+      <button type="button" class="fam-modal-btn fam-modal-btn-confirm" id="famModalConfirmBtn" onclick="famCloseModal(true)">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var _famConfirmResolver = null;
+
+  window.famConfirm = function(options) {
+    return new Promise(function(resolve) {
+      if (typeof options === 'string') {
+        options = { text: options };
+      }
+      options = options || {};
+
+      var text = options.text || '';
+      var title = options.title || '';
+      var isDanger = options.danger || options.type === 'danger' || /delete|clear|purge|ban|remove|wipe|critical|erase|disconnect|unlink/i.test(text + ' ' + title);
+      var isSuccess = options.type === 'success';
+      var isWarning = options.type === 'warning' || (!isDanger && !isSuccess);
+
+      var titleEl = document.getElementById('famModalTitle');
+      var textEl = document.getElementById('famModalText');
+      var confirmBtn = document.getElementById('famModalConfirmBtn');
+      var cancelBtn = document.getElementById('famModalCancelBtn');
+      var iconWrap = document.getElementById('famModalIconWrap');
+      var icon = document.getElementById('famModalIcon');
+
+      if (!title) {
+        if (/delete/i.test(text)) title = 'Confirm Deletion';
+        else if (/clear/i.test(text)) title = 'Clear Records?';
+        else if (/purge|wipe/i.test(text)) title = 'Purge Records?';
+        else if (/ban/i.test(text)) title = 'Ban User?';
+        else if (/unban/i.test(text)) title = 'Unban User?';
+        else if (/unlink|disconnect/i.test(text)) title = 'Disconnect Account?';
+        else if (/remove/i.test(text)) title = 'Remove Item?';
+        else if (isDanger) title = 'Confirm Dangerous Action';
+        else title = 'Please Confirm';
+      }
+
+      if (titleEl) titleEl.textContent = title;
+      if (textEl) textEl.textContent = text || 'Do you want to proceed with this action?';
+      if (confirmBtn) confirmBtn.textContent = options.confirmText || (isDanger ? 'Yes, Proceed' : 'Confirm');
+      if (cancelBtn) {
+        cancelBtn.textContent = options.cancelText || 'Cancel';
+        cancelBtn.style.display = 'inline-flex';
+      }
+
+      if (iconWrap) {
+        iconWrap.className = 'fam-modal-icon-wrap ' + (isDanger ? 'type-danger' : isSuccess ? 'type-success' : isWarning ? 'type-warning' : 'type-info');
+      }
+      if (icon) {
+        icon.setAttribute('data-lucide', isDanger ? 'alert-triangle' : isSuccess ? 'check-circle-2' : isWarning ? 'alert-circle' : 'info');
+      }
+      if (confirmBtn) {
+        confirmBtn.className = 'fam-modal-btn fam-modal-btn-confirm' + (isDanger ? ' btn-danger' : isSuccess ? ' btn-success' : '');
+      }
+
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
+
+      _famConfirmResolver = resolve;
+      var modal = document.getElementById('famGlobalModal');
+      if (modal) modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    });
+  };
+
+  window.famAlert = function(options) {
+    return new Promise(function(resolve) {
+      if (typeof options === 'string') {
+        options = { text: options };
+      }
+      options = options || {};
+
+      var text = options.text || '';
+      var title = options.title || '';
+      var isDanger = options.type === 'danger' || options.type === 'error' || /failed|error|wrong/i.test(text + ' ' + title);
+      var isSuccess = options.type === 'success' || /success|copied/i.test(text + ' ' + title);
+
+      var titleEl = document.getElementById('famModalTitle');
+      var textEl = document.getElementById('famModalText');
+      var confirmBtn = document.getElementById('famModalConfirmBtn');
+      var cancelBtn = document.getElementById('famModalCancelBtn');
+      var iconWrap = document.getElementById('famModalIconWrap');
+      var icon = document.getElementById('famModalIcon');
+
+      if (titleEl) titleEl.textContent = title || (isDanger ? 'Notice' : isSuccess ? 'Success' : 'Notice');
+      if (textEl) textEl.textContent = text;
+      if (confirmBtn) confirmBtn.textContent = options.okText || 'OK';
+      if (cancelBtn) cancelBtn.style.display = 'none';
+
+      if (iconWrap) {
+        iconWrap.className = 'fam-modal-icon-wrap ' + (isDanger ? 'type-danger' : isSuccess ? 'type-success' : 'type-info');
+      }
+      if (icon) {
+        icon.setAttribute('data-lucide', isDanger ? 'alert-triangle' : isSuccess ? 'check-circle-2' : 'info');
+      }
+      if (confirmBtn) {
+        confirmBtn.className = 'fam-modal-btn fam-modal-btn-confirm' + (isDanger ? ' btn-danger' : isSuccess ? ' btn-success' : '');
+      }
+
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
+
+      _famConfirmResolver = function() { resolve(true); };
+      var modal = document.getElementById('famGlobalModal');
+      if (modal) modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    });
+  };
+
+  window.famCloseModal = function(result) {
+    var modal = document.getElementById('famGlobalModal');
+    if (modal) {
+      modal.classList.remove('active');
+    }
+    document.body.style.overflow = '';
+    if (_famConfirmResolver) {
+      var res = _famConfirmResolver;
+      _famConfirmResolver = null;
+      res(!!result);
+    }
+  };
+
+  // Close on Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      var modal = document.getElementById('famGlobalModal');
+      if (modal && modal.classList.contains('active')) {
+        famCloseModal(false);
+      }
+    }
+  });
+
+  // Safe global override of window.alert
+  window.alert = function(msg) {
+    return window.famAlert(msg);
+  };
+
+  // Universal Strict Numeric-Only Enforcer for all OTP Inputs
+  document.addEventListener('input', function(e) {
+    if (e.target && (e.target.name === 'otp' || e.target.id === 'inputEnable2FAOTP' || e.target.id === 'twoFAOtpInput' || e.target.dataset.otp === 'true')) {
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+    }
+  }, true);
+
+  document.addEventListener('keydown', function(e) {
+    if (e.target && (e.target.name === 'otp' || e.target.id === 'inputEnable2FAOTP' || e.target.id === 'twoFAOtpInput' || e.target.dataset.otp === 'true')) {
+      if (!/^\d$/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(e.key) && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+      }
+    }
+  }, true);
+
+  document.addEventListener('paste', function(e) {
+    if (e.target && (e.target.name === 'otp' || e.target.id === 'inputEnable2FAOTP' || e.target.id === 'twoFAOtpInput' || e.target.dataset.otp === 'true')) {
+      e.preventDefault();
+      var pasted = (e.clipboardData || window.clipboardData).getData('text') || '';
+      e.target.value = pasted.replace(/\D/g, '').slice(0, 6);
+      e.target.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }, true);
+
+  // Helper function to extract confirm string
+  function extractConfirmMsg(str) {
+    if (!str) return 'Are you sure you want to proceed?';
+    var m = str.match(/confirm\s*\(\s*(['"`])((?:\.|(?!).)*)\s*\)/);
+    if (m && m[2]) {
+      return m[2].replace(/\\/g, '\\').replace(/\'/g, "'").replace(/\"/g, '"').replace(/\n/g, '\n');
+    }
+    return 'Are you sure you want to proceed?';
+  }
+
+  // Global Capture-Phase Interceptor for Forms with confirm()
+  document.addEventListener('submit', function(e) {
+    var form = e.target;
+    if (!form || form.dataset.famConfirmed === 'true') {
+      return;
+    }
+    var onsub = form.getAttribute('onsubmit') || '';
+    if (onsub.includes('confirm(')) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      var msg = extractConfirmMsg(onsub);
+
+      window.famConfirm(msg).then(function(confirmed) {
+        if (confirmed) {
+          form.dataset.famConfirmed = 'true';
+          form.removeAttribute('onsubmit');
+          if (typeof form.requestSubmit === 'function') {
+            form.requestSubmit();
+          } else {
+            form.submit();
+          }
+        }
+      });
+    }
+  }, true);
+
+  // Global Capture-Phase Interceptor for Buttons/Links with confirm()
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('button, a, input[type="submit"]');
+    if (!btn || btn.dataset.famConfirmed === 'true') {
+      return;
+    }
+    var onclick = btn.getAttribute('onclick') || '';
+    if (onclick.includes('confirm(')) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      var msg = extractConfirmMsg(onclick);
+
+      window.famConfirm(msg).then(function(confirmed) {
+        if (confirmed) {
+          btn.dataset.famConfirmed = 'true';
+          btn.removeAttribute('onclick');
+          if (btn.type === 'submit' && btn.form) {
+            var form = btn.form;
+            if (btn.name) {
+              var hidden = document.createElement('input');
+              hidden.type = 'hidden';
+              hidden.name = btn.name;
+              hidden.value = btn.value;
+              form.appendChild(hidden);
+            }
+            if (typeof form.requestSubmit === 'function') {
+              form.requestSubmit(btn);
+            } else {
+              form.submit();
+            }
+          } else {
+            btn.click();
+          }
+        }
+      });
+    }
+  }, true);
+})();
+</script>
+
+<main class="main-content">
+  <div class="status-container">
+    <div class="status-header">
+      <h1>System Status</h1>
+      <p>Real-time uptime monitoring for FamGateway APIs and Services.</p>
+      <div style="display:flex; justify-content:center; gap:10px; margin-top:14px; flex-wrap:wrap;">
+        <a href="https://famgateway.in/blog/famgateway-dpdp-act-2023-data-security-compliance-payment-gateway-india.php" style="display:inline-flex; align-items:center; gap:6px; background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; padding:5px 14px; border-radius:99px; font-size:12.5px; font-weight:600; text-decoration:none;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+          DPDP Act 2023 Compliant
+        </a>
+        <span style="display:inline-flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #e2e8f0; color:#475569; padding:5px 14px; border-radius:99px; font-size:12.5px; font-weight:600;">
+          MSME: UDYAM-BR-28-0050000
+        </span>
+      </div>
+    </div>
+    
+    <div class="iframe-card">
+      <div class="status-wrapper">
+        <!-- Elegant Status Loader: Displays instantly with 0ms delay while external iframe connects -->
+        <div class="status-loader-wrapper loaded" id="statusLoader" style="display: none;">
+          <div class="loader-spinner-box">
+            <div class="loader-spinner-ring"></div>
+            <div class="loader-spinner-inner">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+              </svg>
+            </div>
+          </div>
+          <div class="loader-title">Connecting to System Status</div>
+          <div class="loader-status-pill">
+            <span class="loader-status-dot"></span>
+            Fetching real-time uptime metrics...
+          </div>
+        </div>
+
+        <script type="text/javascript" src="./System Status &amp; Service Uptime _ FamGateway_files/iframeResizer.min.js.download"></script>
+        <iframe class="htframe loaded" id="htStatusFrame" src="./System Status &amp; Service Uptime _ FamGateway_files/saved_resource.html" width="100%" scrolling="no" sandbox="allow-scripts allow-same-origin allow-popups" onload="handleFrameLoaded(this)" style="overflow: hidden; height: 637px;"></iframe>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+<script>
+function handleFrameLoaded(iframe) {
+    if (window.iFrameResize) {
+        try { iFrameResize([{log:false}], iframe); } catch(e) {}
+    }
+    const loader = document.getElementById('statusLoader');
+    if (loader) {
+        loader.classList.add('loaded');
+        setTimeout(() => { loader.style.display = 'none'; }, 350);
+    }
+    iframe.classList.add('loaded');
+}
+
+// Safety fallback if iframe is slow or onload is delayed
+setTimeout(() => {
+    const iframe = document.getElementById('htStatusFrame');
+    if (iframe && !iframe.classList.contains('loaded')) {
+        handleFrameLoaded(iframe);
+    }
+}, 4500);
+
+if (window.lucide) {
+    lucide.createIcons();
+}
+</script>
+
+
+<div id="fs_div_all" style="all:initial;"><template shadowrootmode="open">
+        <div class="mainExtCont" style="position:fixed; top:20px;right:20px; z-index:2147483647;box-shadow: 1px -1px 17px #888888;border-radius:10px;">
+            <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;300;400;500;600;700&amp;display=swap" rel="stylesheet">
+            <div class="mainExtSubCont"></div>
+        </div>
+        <div class="extOtherPopups"></div>
+        <style>
+         /* devanagari */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTucXtAKPY.woff2) format('woff2');
+      unicode-range: U+0900-097F, U+1CD0-1CF6, U+1CF8-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FB;
+    }
+    /* latin-ext */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTufntAKPY.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    /* latin */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTucHtA.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+    /* devanagari */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z11lFc-K.woff2) format('woff2');
+      unicode-range: U+0900-097F, U+1CD0-1CF6, U+1CF8-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FB;
+    }
+    /* latin-ext */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z1JlFc-K.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    /* latin */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z1xlFQ.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins light */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 300;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Light.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+
+    /* poppins regular */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 400;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Regular.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins thin */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 100;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Thin.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins medium */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 500;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Medium.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins semi bold */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 600;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-SemiBold.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins bold */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 700;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Bold.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    
+        .extOtherPopups{
+          margin: 0;
+          padding: 0;
+          position: fixed;
+          top: 240px;
+          right: 0;
+          z-index: 2147483647;
+        }
+        [event_type="click"]{
+          cursor:pointer;
+        }
+        </style>
+        </template></div></body><div id="in-page-channel-node-id-v2" data-channel-name="in_page_channel_0Z5WUX" data-channel-owner-id="db95cfaa06ab673fec77bcdf8e283edc"></div></html>

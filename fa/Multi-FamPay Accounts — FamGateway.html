@@ -1,0 +1,1819 @@
+<!DOCTYPE html>
+<!-- saved from url=(0040)https://famgateway.in/multi-accounts.php -->
+<html lang="en" style="background-color: #f6f8fb;"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style>body {transition: opacity ease-in 0.2s; } 
+body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relative; } 
+</style>
+  
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+html, body {
+  background-color: #f6f8fb !important;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+.dashboard-layout {
+  background-color: #f6f8fb !important;
+}
+.sidebar {
+  background-color: #0b1329 !important;
+}
+.fam-legal-attribution {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+</style>
+<title>Multi-FamPay Accounts — FamGateway</title>
+<meta name="description" content="Automated peer-to-peer UPI payment gateway &amp; webhook verification API for developers in India. 100% free, Govt. recognized MSME with 0% transaction fees.">
+<meta name="keywords" content="UPI Gateway, UPI API, Free UPI API, UPI Webhooks, Automated UPI Verification, FamGateway, Payment Links, Accept UPI Payments India, Govt Recognized MSME, Aryan Gupta, Aryanispe">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+<meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+<meta name="author" content="Aryan Gupta">
+<meta name="author-registry" content="UDYAM-BR-28-0050000|Aryan Gupta|FamGateway">
+<meta name="copyright" content="Aryan Gupta / FamGateway (Aryanispe MSME UDYAM-BR-28-0050000)">
+<meta property="og:title" content="Multi-FamPay Accounts — FamGateway">
+<meta property="og:description" content="Automated peer-to-peer UPI payment gateway &amp; webhook verification API for developers in India. 100% free, Govt. recognized MSME with 0% transaction fees.">
+<meta property="og:image" content="https://cdn.famgateway.in/img/og-image.png">
+<meta property="og:url" content="https://famgateway.in/multi-accounts.php">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Multi-FamPay Accounts — FamGateway">
+<meta name="twitter:description" content="Automated peer-to-peer UPI payment gateway &amp; webhook verification API for developers in India. 100% free, Govt. recognized MSME with 0% transaction fees.">
+<meta name="twitter:image" content="https://cdn.famgateway.in/img/og-image.png">
+<link rel="canonical" href="https://famgateway.in/multi-accounts.php">
+<link rel="icon" type="image/x-icon" href="https://cdn.famgateway.in/favicon.ico">
+<link rel="icon" type="image/png" href="https://cdn.famgateway.in/favicon.png">
+<link rel="apple-touch-icon" href="https://cdn.famgateway.in/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+<link href="./Multi-FamPay Accounts — FamGateway_files/css2" rel="stylesheet">
+<link rel="stylesheet" href="./Multi-FamPay Accounts — FamGateway_files/style.css">
+<script defer="" src="./Multi-FamPay Accounts — FamGateway_files/lucide.min.js.download"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  if (window.lucide) { lucide.createIcons(); }
+});
+</script>
+<!-- Google tag (gtag.js) - Google Analytics 4 -->
+<script async="" src="./Multi-FamPay Accounts — FamGateway_files/js"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-6L45EVBBK3', {
+    cookie_flags: 'SameSite=None;Secure'
+  });
+</script>
+<!-- Google Preferred Sources Interactive Button Script (Manual Control) -->
+<script async="" preferred-sources-control="manual" src="./Multi-FamPay Accounts — FamGateway_files/publisher.js.download"></script>
+  <style>
+    .multi-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .multi-card {
+      background: #ffffff;
+      border: 1px solid var(--color-hairline);
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      margin-bottom: 20px;
+      transition: all 0.2s ease;
+    }
+    .multi-card-active {
+      border: 2px solid #10b981;
+      background: linear-gradient(to bottom, #ffffff, #f0fdf4);
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.08);
+    }
+    .multi-card-warning {
+      border: 2px solid #f59e0b;
+      background: linear-gradient(to bottom, #ffffff, #fffdfa);
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.08);
+    }
+    .badge-active {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #dcfce7;
+      color: #15803d;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 50px;
+      letter-spacing: 0.3px;
+      white-space: nowrap !important;
+      flex-shrink: 0 !important;
+    }
+    .badge-disconnected {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #fef2f2;
+      color: #b91c1c;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 50px;
+      letter-spacing: 0.3px;
+      border: 1px solid #fecaca;
+      white-space: nowrap !important;
+      flex-shrink: 0 !important;
+    }
+    .dot-pulse-warning {
+      width: 7px;
+      height: 7px;
+      background: #ef4444;
+      border-radius: 50%;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+    }
+    .badge-standby {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f1f5f9;
+      color: #64748b;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 50px;
+    }
+    .badge-primary-root {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.3px;
+    }
+    .dot-pulse {
+      width: 7px;
+      height: 7px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    }
+    .field-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--color-ink-mute);
+      margin-bottom: 3px;
+    }
+    .field-val {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-ink);
+      font-family: monospace;
+      word-break: break-all;
+    }
+    .progress-bar-bg {
+      background: #e2e8f0;
+      height: 6px;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .progress-bar-fill {
+      background: #10b981;
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s;
+    }
+    /* Modal */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(6px);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-box {
+      background: #ffffff;
+      border-radius: 20px;
+      max-width: 600px;
+      width: 100%;
+      padding: 32px;
+      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(226, 232, 240, 0.8);
+      animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-sizing: border-box;
+    }
+    .modal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .modal-footer-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 12px;
+      padding-top: 18px;
+      border-top: 1px solid #f1f5f9;
+      box-sizing: border-box;
+      width: 100%;
+    }
+    .standby-card-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .standby-card-actions-sub {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-input {
+      width: 100%;
+      height: 44px;
+      padding: 10px 14px;
+      font-size: 13.5px;
+      color: #0f172a;
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      transition: all 0.15s ease;
+      box-sizing: border-box;
+    }
+    .modal-input:focus {
+      outline: none;
+      background: #ffffff;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+    }
+    .modal-label {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 6px;
+      display: block;
+    }
+    .modal-hint {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 4px;
+      display: block;
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.96) translateY(8px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    @media (max-width: 620px) {
+      .multi-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+      .multi-header .btn {
+        width: 100%;
+        justify-content: center;
+      }
+      .multi-card {
+        padding: 16px 14px;
+        border-radius: 12px;
+      }
+      .modal-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+      .modal-box {
+        padding: 22px 16px;
+        border-radius: 16px;
+        max-width: 100%;
+      }
+      .modal-backdrop {
+        padding: 12px;
+      }
+      .modal-footer-actions {
+        flex-direction: column-reverse !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+      }
+      .modal-footer-actions .btn,
+      .modal-footer-actions button {
+        width: 100% !important;
+        justify-content: center !important;
+        margin: 0 !important;
+      }
+      .standby-card-actions {
+        width: 100% !important;
+        margin-top: 14px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+      }
+      .standby-card-actions form {
+        width: 100% !important;
+        margin: 0 !important;
+      }
+      .standby-card-actions form button {
+        width: 100% !important;
+        justify-content: center !important;
+      }
+      .standby-card-actions-sub {
+        display: flex !important;
+        width: 100% !important;
+        gap: 8px !important;
+      }
+      .standby-card-actions-sub button {
+        flex: 1 !important;
+        justify-content: center !important;
+      }
+    }
+  </style>
+<style> /* devanagari */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTucXtAKPY.woff2) format('woff2');
+      unicode-range: U+0900-097F, U+1CD0-1CF6, U+1CF8-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FB;
+    }
+    /* latin-ext */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTufntAKPY.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    /* latin */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTucHtA.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+    /* devanagari */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z11lFc-K.woff2) format('woff2');
+      unicode-range: U+0900-097F, U+1CD0-1CF6, U+1CF8-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FB;
+    }
+    /* latin-ext */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z1JlFc-K.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    /* latin */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z1xlFQ.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins light */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 300;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Light.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+
+    /* poppins regular */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 400;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Regular.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins thin */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 100;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Thin.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins medium */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 500;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Medium.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins semi bold */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 600;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-SemiBold.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins bold */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 700;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Bold.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    </style><style type="text/css">
+  /** Common styles across all window sizes. */
+  .swg-dialog,
+  .swg-toast,
+  .publisher-toast {
+    box-sizing: border-box;
+  }
+
+  .swg-toast {
+    background-color: rgba(255, 255, 255, 1) !important;
+    max-height: 46px !important;
+  }
+
+  .publisher-toast {
+    background-color: transparent !important;
+    color-scheme: normal !important;
+    max-width: 360px !important;
+  }
+
+  .swg-toast,
+  .publisher-toast {
+    position: fixed !important;
+    bottom: 0 !important;
+    z-index: 2147483647 !important;
+    border: none !important;
+  }
+
+  /**
+  * Wide desktop screen support, when width is >= 871px and height is >= 641px.
+  */
+  @media (min-width: 871px) and (min-height: 641px) {
+    .swg-dialog.swg-wide-dialog {
+      left: -435px !important;
+    }
+
+    .swg-dialog.swg-wide-dialog,
+    .swg-toast,
+    .publisher-toast {
+      width: 870px !important;
+    }
+  }
+
+  /** Tablet/Medium screen support, when width OR height is <= 640px. */
+  @media (max-width: 640px), (max-height: 640px) {
+    .swg-dialog,
+    .swg-toast {
+      width: 480px !important;
+      left: -240px !important;
+      margin-inline-start: calc(100vw - 100vw / 2) !important;
+      border-top-left-radius: 8px !important;
+      border-top-right-radius: 8px !important;
+      box-shadow:
+        rgba(60, 64, 67, 0.3) 0 1px 1px,
+        rgba(60, 64, 67, 0.15) 0 1px 4px 1px !important;
+    }
+
+    .publisher-toast {
+      width: 480px !important;
+      left: -240px !important;
+      margin-inline-start: calc(100vw - 100vw / 2) !important;
+    }
+
+    [dir='rtl'] .swg-dialog,
+    [dir='rtl'] .swg-toast,
+    [dir='rtl'] .publisher-toast {
+      margin-inline-start: calc(100vw - 100vw / 2 - 240px) !important;
+    }
+  }
+
+  /** Desktop/Large screen support, when width AND height are >= 641px. */
+  @media (min-width: 641px) and (min-height: 641px) {
+    .swg-dialog,
+    .swg-toast,
+    .publisher-toast {
+      width: 630px !important;
+    }
+
+    .swg-dialog {
+      left: -315px !important;
+      margin-inline-start: calc(100vw - 100vw / 2) !important;
+      background-color: transparent !important;
+      border: none !important;
+    }
+
+    [dir='rtl'] .swg-dialog {
+      margin-inline-start: calc(100vw - 100vw / 2 - 315px) !important;
+    }
+
+    .swg-toast {
+      border-radius: 4px !important;
+      bottom: 8px !important;
+      box-shadow:
+        0 3px 1px -2px rgb(0 0 0 / 20%),
+        0 2px 2px 0 rgb(0 0 0 / 14%),
+        0 1px 5px 0 rgb(0 0 0 / 12%) !important;
+      left: 8px !important;
+    }
+
+    .publisher-toast {
+      bottom: 8px !important;
+      right: 30px !important;
+    }
+  }
+
+  /** Phone/Small screen support, when width is <= 480px. */
+  @media (max-width: 480px) {
+    .swg-dialog,
+    .swg-toast,
+    .publisher-toast {
+      width: 100% !important;
+      max-width: 100% !important;
+      left: 0 !important;
+      right: 0 !important;
+      margin-inline-start: 0 !important;
+    }
+  }
+
+  /**
+  * Class applied to content page to disable scrolling.
+  */
+  html.swg-disable-scroll,
+  html.swg-disable-scroll * {
+    overflow: hidden !important;
+  }
+</style><style type="text/css" id="mytempCss">._8mqQwQ { display: none; } ._1TWLMK.icF5zO { opacity: 0.01; }</style></head>
+<body style="background-color: #f6f8fb; margin: 0;">
+      <div class="dashboard-layout" style="background-color: #f6f8fb;">
+  <!-- Mobile Top Bar -->
+  <div class="mobile-header">
+      <div class="mobile-brand">
+        <a href="https://famgateway.in/dashboard.php">
+          <img src="./Multi-FamPay Accounts — FamGateway_files/logo-navbar-bright.png" alt="FamGateway" style="height:26px;width:auto;display:block;object-fit:contain;">
+        </a>
+      </div>
+    <button class="mobile-menu-btn" onclick="openSidebar()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="menu" aria-hidden="true" style="width:22px;height:22px;" class="lucide lucide-menu"><path d="M4 5h16"></path><path d="M4 12h16"></path><path d="M4 19h16"></path></svg>
+    </button>
+  </div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar" style="background-color: #0b1329;">
+    <div class="sidebar-header">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div class="sidebar-brand">
+            <a href="https://famgateway.in/dashboard.php">
+              <img src="./Multi-FamPay Accounts — FamGateway_files/logo-navbar-bright.png" alt="FamGateway" style="height:26px;width:auto;display:block;object-fit:contain;">
+            </a>
+          </div>
+        <button class="mobile-menu-btn" id="closeSidebarBtn" style="display:none;" onclick="closeSidebar()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="x" aria-hidden="true" style="width:20px;height:20px;" class="lucide lucide-x"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <a href="https://famgateway.in/dashboard.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-dashboard"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg> Dashboard
+      </a>
+      <a href="https://famgateway.in/transactions.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-receipt"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"></path><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 17.5v-11"></path></svg> Transactions
+      </a>
+      <a href="https://famgateway.in/payment-links.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2"></path><path d="M15 7h2a5 5 0 1 1 0 10h-2"></path><line x1="8" x2="16" y1="12" y2="12"></line></svg> Payment Links
+      </a>
+      <a href="https://famgateway.in/api-keys.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-key-round"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"></path><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"></circle></svg> API Keys
+      </a>
+      <a href="https://famgateway.in/webhooks.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send"><line x1="22" x2="11" y1="2" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Webhooks
+      </a>
+      <div class="sidebar-section-label">Settings</div>
+      <a href="https://famgateway.in/integrations.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plug-zap"><path d="m13 2-2 2.5h3L12 7"></path><path d="M10 14v-3"></path><path d="M14 14v-3"></path><path d="M11 19c-1.7 0-3-1.3-3-3v-2h8v2c0 1.7-1.3 3-3 3Z"></path><path d="M12 22v-3"></path></svg> Integrations
+      </a>
+            <a href="https://famgateway.in/multi-accounts.php" class="sidebar-item active" style="color: #059669; font-weight: 600;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-wallet"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"></path><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path></svg>
+        <span>Multi-Accounts</span>
+      </a>
+                  <a href="https://famgateway.in/addons.php" class="sidebar-item " style="color: #6366f1; font-weight: 600;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-store"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"></path><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"></path><path d="M2 7h20"></path><path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 10V7"></path></svg>
+        <span>Addons</span>
+        <span class="sidebar-item-badge" style="background: linear-gradient(135deg, #6366f1, #4f46e5); color: #ffffff; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 9999px; letter-spacing: 0.5px; line-height: 1.1;">PRO</span>
+      </a>
+      <a href="https://famgateway.in/services.php" class="sidebar-item " style="color: #0284c7; font-weight: 600;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-package-check"><path d="m16 16 2 2 4-4"></path><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"></path><path d="m7.5 4.27 9 5.15"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" x2="12" y1="22" y2="12"></line></svg>
+        <span>My Services</span>
+      </a>
+      <a href="https://famgateway.in/invoices.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg>
+        <span>Invoices</span>
+      </a>
+      <a href="https://famgateway.in/profile.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-circle"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="10" r="3"></circle><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"></path></svg> Profile
+      </a>
+      <a href="https://famgateway.in/tickets.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ticket"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path><path d="M13 5v2"></path><path d="M13 17v2"></path><path d="M13 11v2"></path></svg>
+        <span>Support Tickets</span>
+              </a>
+      <a href="https://famgateway.in/docs.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg> Documentation
+      </a>
+      <a href="https://famgateway.in/status.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> System Status
+      </a>
+      <!-- Temporarily commented out during gateway downtime
+      <a href="https://wa.me/919771348544?text=Hello%2C%20I%20came%20from%20your%20FamGateway%20website%2C%20and%20I%20need%20support." target="_blank" class="sidebar-item" style="color: #10b981; font-weight: 600;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg> WhatsApp Support
+      </a>
+      -->
+
+          </nav>
+
+    <div class="sidebar-footer">
+      <a href="https://famgateway.in/profile.php" class="sidebar-user-card" title="View Profile">
+        <img src="./Multi-FamPay Accounts — FamGateway_files/unnamed.png" class="sidebar-avatar" alt="ShadowGamer Ind">
+        <div style="overflow:hidden; min-width:0; flex:1;">
+          <div class="sidebar-user-name" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">ShadowGamer Ind</div>
+        </div>
+      </a>
+
+                  <div class="sidebar-mid-pill" onclick="copyNavMid('7576902029', this)" title="Click to copy Merchant ID">
+        <span class="sidebar-mid-label">
+          <span class="sidebar-mid-dot"></span>
+          MID: <code>7576902029</code>
+        </span>
+        <span class="sidebar-mid-copy-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+        </span>
+      </div>
+      
+      <a href="https://famgateway.in/logout.php" class="sidebar-logout">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-log-out"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" x2="9" y1="12" y2="12"></line></svg> Sign Out
+      </a>
+    </div>
+  </aside>
+
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  
+<script>
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebarOverlay').style.display = 'block';
+  if(document.getElementById('closeSidebarBtn')) document.getElementById('closeSidebarBtn').style.display = 'flex';
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').style.display = 'none';
+  if(document.getElementById('closeSidebarBtn')) document.getElementById('closeSidebarBtn').style.display = 'none';
+}
+function copyNavMid(mid, el) {
+  navigator.clipboard.writeText(mid).then(function() {
+    var copyBtn = el.querySelector('.sidebar-mid-copy-btn');
+    if (!copyBtn) return;
+    var original = copyBtn.innerHTML;
+    copyBtn.innerHTML = '<span style="color:#22c55e; font-size:10.5px; font-weight:700;">Copied!</span>';
+    setTimeout(function() {
+      copyBtn.innerHTML = original;
+    }, 1500);
+  });
+}
+</script>
+
+<script>
+/* Dashboard entrance animations — IntersectionObserver */
+(function() {
+  if (!window.IntersectionObserver) {
+    /* Fallback: just show everything immediately */
+    document.querySelectorAll('.dash-anim-up,.dash-anim-in,.dash-anim-right,.dash-stagger').forEach(function(el) {
+      el.style.opacity = '1';
+    });
+    return;
+  }
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target); /* fire once only */
+      }
+    });
+  }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+
+  /* Run after DOM is ready */
+  function initObserver() {
+    document.querySelectorAll(
+      '.dash-anim-up, .dash-anim-in, .dash-anim-right, .dash-stagger'
+    ).forEach(function(el) { observer.observe(el); });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initObserver);
+  } else {
+    initObserver();
+  }
+})();
+</script>
+
+
+<!-- FAMGATEWAY GLOBAL CONFIRMATION & ALERT MODAL -->
+<style>
+.fam-modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9999999;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.fam-modal-backdrop.active {
+  display: flex !important;
+  opacity: 1;
+}
+.fam-modal-box {
+  background: #ffffff;
+  border-radius: 20px;
+  max-width: 440px;
+  width: 100%;
+  padding: 28px 24px;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
+  border: 1px solid #e2e8f0;
+  box-sizing: border-box;
+  transform: scale(0.94) translateY(8px);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.fam-modal-backdrop.active .fam-modal-box {
+  transform: scale(1) translateY(0);
+}
+.fam-modal-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+.fam-modal-icon-wrap.type-danger {
+  background: #fef2f2;
+  color: #ef4444;
+  border: 1px solid #fee2e2;
+}
+.fam-modal-icon-wrap.type-warning {
+  background: #fffbeb;
+  color: #f59e0b;
+  border: 1px solid #fef3c7;
+}
+.fam-modal-icon-wrap.type-success {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+.fam-modal-icon-wrap.type-info {
+  background: #eff6ff;
+  color: #3b82f6;
+  border: 1px solid #dbeafe;
+}
+.fam-modal-title {
+  font-size: 19px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px;
+  letter-spacing: -0.3px;
+  line-height: 1.3;
+}
+.fam-modal-text {
+  font-size: 13.5px;
+  color: #64748b;
+  line-height: 1.55;
+  margin: 0 0 22px;
+  word-break: break-word;
+  white-space: pre-line;
+}
+.fam-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.fam-modal-btn {
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 100px;
+  flex: 1;
+}
+.fam-modal-btn-cancel {
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+.fam-modal-btn-cancel:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+.fam-modal-btn-confirm {
+  background: #0284c7;
+  color: #ffffff;
+}
+.fam-modal-btn-confirm:hover {
+  background: #0369a1;
+}
+.fam-modal-btn-confirm.btn-danger {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+}
+.fam-modal-btn-confirm.btn-danger:hover {
+  background: #b91c1c !important;
+}
+.fam-modal-btn-confirm.btn-success {
+  background: #16a34a !important;
+  color: #ffffff !important;
+}
+.fam-modal-btn-confirm.btn-success:hover {
+  background: #15803d !important;
+}
+
+@media (max-width: 480px) {
+  .fam-modal-backdrop {
+    padding: 12px;
+  }
+  .fam-modal-box {
+    padding: 24px 18px;
+    border-radius: 18px;
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .fam-modal-title {
+    font-size: 17px;
+  }
+  .fam-modal-text {
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+  .fam-modal-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+  .fam-modal-btn {
+    width: 100%;
+    min-height: 44px;
+    font-size: 14px;
+    flex: none;
+  }
+}
+</style>
+
+<div class="fam-modal-backdrop" id="famGlobalModal" onclick="if(event.target===this)famCloseModal(false)">
+  <div class="fam-modal-box">
+    <div class="fam-modal-icon-wrap" id="famModalIconWrap">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="help-circle" aria-hidden="true" id="famModalIcon" style="width:28px;height:28px;" class="lucide lucide-help-circle"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
+    </div>
+    <h3 class="fam-modal-title" id="famModalTitle">Confirm Action</h3>
+    <p class="fam-modal-text" id="famModalText">Are you sure you want to proceed?</p>
+    <div class="fam-modal-actions" id="famModalActions">
+      <button type="button" class="fam-modal-btn fam-modal-btn-cancel" id="famModalCancelBtn" onclick="famCloseModal(false)">Cancel</button>
+      <button type="button" class="fam-modal-btn fam-modal-btn-confirm" id="famModalConfirmBtn" onclick="famCloseModal(true)">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var _famConfirmResolver = null;
+
+  window.famConfirm = function(options) {
+    return new Promise(function(resolve) {
+      if (typeof options === 'string') {
+        options = { text: options };
+      }
+      options = options || {};
+
+      var text = options.text || '';
+      var title = options.title || '';
+      var isDanger = options.danger || options.type === 'danger' || /delete|clear|purge|ban|remove|wipe|critical|erase|disconnect|unlink/i.test(text + ' ' + title);
+      var isSuccess = options.type === 'success';
+      var isWarning = options.type === 'warning' || (!isDanger && !isSuccess);
+
+      var titleEl = document.getElementById('famModalTitle');
+      var textEl = document.getElementById('famModalText');
+      var confirmBtn = document.getElementById('famModalConfirmBtn');
+      var cancelBtn = document.getElementById('famModalCancelBtn');
+      var iconWrap = document.getElementById('famModalIconWrap');
+      var icon = document.getElementById('famModalIcon');
+
+      if (!title) {
+        if (/delete/i.test(text)) title = 'Confirm Deletion';
+        else if (/clear/i.test(text)) title = 'Clear Records?';
+        else if (/purge|wipe/i.test(text)) title = 'Purge Records?';
+        else if (/ban/i.test(text)) title = 'Ban User?';
+        else if (/unban/i.test(text)) title = 'Unban User?';
+        else if (/unlink|disconnect/i.test(text)) title = 'Disconnect Account?';
+        else if (/remove/i.test(text)) title = 'Remove Item?';
+        else if (isDanger) title = 'Confirm Dangerous Action';
+        else title = 'Please Confirm';
+      }
+
+      if (titleEl) titleEl.textContent = title;
+      if (textEl) textEl.textContent = text || 'Do you want to proceed with this action?';
+      if (confirmBtn) confirmBtn.textContent = options.confirmText || (isDanger ? 'Yes, Proceed' : 'Confirm');
+      if (cancelBtn) {
+        cancelBtn.textContent = options.cancelText || 'Cancel';
+        cancelBtn.style.display = 'inline-flex';
+      }
+
+      if (iconWrap) {
+        iconWrap.className = 'fam-modal-icon-wrap ' + (isDanger ? 'type-danger' : isSuccess ? 'type-success' : isWarning ? 'type-warning' : 'type-info');
+      }
+      if (icon) {
+        icon.setAttribute('data-lucide', isDanger ? 'alert-triangle' : isSuccess ? 'check-circle-2' : isWarning ? 'alert-circle' : 'info');
+      }
+      if (confirmBtn) {
+        confirmBtn.className = 'fam-modal-btn fam-modal-btn-confirm' + (isDanger ? ' btn-danger' : isSuccess ? ' btn-success' : '');
+      }
+
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
+
+      _famConfirmResolver = resolve;
+      var modal = document.getElementById('famGlobalModal');
+      if (modal) modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    });
+  };
+
+  window.famAlert = function(options) {
+    return new Promise(function(resolve) {
+      if (typeof options === 'string') {
+        options = { text: options };
+      }
+      options = options || {};
+
+      var text = options.text || '';
+      var title = options.title || '';
+      var isDanger = options.type === 'danger' || options.type === 'error' || /failed|error|wrong/i.test(text + ' ' + title);
+      var isSuccess = options.type === 'success' || /success|copied/i.test(text + ' ' + title);
+
+      var titleEl = document.getElementById('famModalTitle');
+      var textEl = document.getElementById('famModalText');
+      var confirmBtn = document.getElementById('famModalConfirmBtn');
+      var cancelBtn = document.getElementById('famModalCancelBtn');
+      var iconWrap = document.getElementById('famModalIconWrap');
+      var icon = document.getElementById('famModalIcon');
+
+      if (titleEl) titleEl.textContent = title || (isDanger ? 'Notice' : isSuccess ? 'Success' : 'Notice');
+      if (textEl) textEl.textContent = text;
+      if (confirmBtn) confirmBtn.textContent = options.okText || 'OK';
+      if (cancelBtn) cancelBtn.style.display = 'none';
+
+      if (iconWrap) {
+        iconWrap.className = 'fam-modal-icon-wrap ' + (isDanger ? 'type-danger' : isSuccess ? 'type-success' : 'type-info');
+      }
+      if (icon) {
+        icon.setAttribute('data-lucide', isDanger ? 'alert-triangle' : isSuccess ? 'check-circle-2' : 'info');
+      }
+      if (confirmBtn) {
+        confirmBtn.className = 'fam-modal-btn fam-modal-btn-confirm' + (isDanger ? ' btn-danger' : isSuccess ? ' btn-success' : '');
+      }
+
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
+
+      _famConfirmResolver = function() { resolve(true); };
+      var modal = document.getElementById('famGlobalModal');
+      if (modal) modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    });
+  };
+
+  window.famCloseModal = function(result) {
+    var modal = document.getElementById('famGlobalModal');
+    if (modal) {
+      modal.classList.remove('active');
+    }
+    document.body.style.overflow = '';
+    if (_famConfirmResolver) {
+      var res = _famConfirmResolver;
+      _famConfirmResolver = null;
+      res(!!result);
+    }
+  };
+
+  // Close on Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      var modal = document.getElementById('famGlobalModal');
+      if (modal && modal.classList.contains('active')) {
+        famCloseModal(false);
+      }
+    }
+  });
+
+  // Safe global override of window.alert
+  window.alert = function(msg) {
+    return window.famAlert(msg);
+  };
+
+  // Universal Strict Numeric-Only Enforcer for all OTP Inputs
+  document.addEventListener('input', function(e) {
+    if (e.target && (e.target.name === 'otp' || e.target.id === 'inputEnable2FAOTP' || e.target.id === 'twoFAOtpInput' || e.target.dataset.otp === 'true')) {
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+    }
+  }, true);
+
+  document.addEventListener('keydown', function(e) {
+    if (e.target && (e.target.name === 'otp' || e.target.id === 'inputEnable2FAOTP' || e.target.id === 'twoFAOtpInput' || e.target.dataset.otp === 'true')) {
+      if (!/^\d$/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(e.key) && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+      }
+    }
+  }, true);
+
+  document.addEventListener('paste', function(e) {
+    if (e.target && (e.target.name === 'otp' || e.target.id === 'inputEnable2FAOTP' || e.target.id === 'twoFAOtpInput' || e.target.dataset.otp === 'true')) {
+      e.preventDefault();
+      var pasted = (e.clipboardData || window.clipboardData).getData('text') || '';
+      e.target.value = pasted.replace(/\D/g, '').slice(0, 6);
+      e.target.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }, true);
+
+  // Helper function to extract confirm string
+  function extractConfirmMsg(str) {
+    if (!str) return 'Are you sure you want to proceed?';
+    var m = str.match(/confirm\s*\(\s*(['"`])((?:\.|(?!).)*)\s*\)/);
+    if (m && m[2]) {
+      return m[2].replace(/\\/g, '\\').replace(/\'/g, "'").replace(/\"/g, '"').replace(/\n/g, '\n');
+    }
+    return 'Are you sure you want to proceed?';
+  }
+
+  // Global Capture-Phase Interceptor for Forms with confirm()
+  document.addEventListener('submit', function(e) {
+    var form = e.target;
+    if (!form || form.dataset.famConfirmed === 'true') {
+      return;
+    }
+    var onsub = form.getAttribute('onsubmit') || '';
+    if (onsub.includes('confirm(')) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      var msg = extractConfirmMsg(onsub);
+
+      window.famConfirm(msg).then(function(confirmed) {
+        if (confirmed) {
+          form.dataset.famConfirmed = 'true';
+          form.removeAttribute('onsubmit');
+          if (typeof form.requestSubmit === 'function') {
+            form.requestSubmit();
+          } else {
+            form.submit();
+          }
+        }
+      });
+    }
+  }, true);
+
+  // Global Capture-Phase Interceptor for Buttons/Links with confirm()
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('button, a, input[type="submit"]');
+    if (!btn || btn.dataset.famConfirmed === 'true') {
+      return;
+    }
+    var onclick = btn.getAttribute('onclick') || '';
+    if (onclick.includes('confirm(')) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      var msg = extractConfirmMsg(onclick);
+
+      window.famConfirm(msg).then(function(confirmed) {
+        if (confirmed) {
+          btn.dataset.famConfirmed = 'true';
+          btn.removeAttribute('onclick');
+          if (btn.type === 'submit' && btn.form) {
+            var form = btn.form;
+            if (btn.name) {
+              var hidden = document.createElement('input');
+              hidden.type = 'hidden';
+              hidden.name = btn.name;
+              hidden.value = btn.value;
+              form.appendChild(hidden);
+            }
+            if (typeof form.requestSubmit === 'function') {
+              form.requestSubmit(btn);
+            } else {
+              form.submit();
+            }
+          } else {
+            btn.click();
+          }
+        }
+      });
+    }
+  }, true);
+})();
+</script>
+
+  <main class="main-content" style="background-color: #f6f8fb;">
+    <div class="wrap" style="max-width: 860px;">
+
+      
+      <div class="multi-header">
+        <div>
+          <h1 style="font-size: 22px; font-weight: 700; color: var(--color-ink); letter-spacing: -0.5px;">
+            Multi-FamPay Account Manager
+          </h1>
+          <p style="font-size: 13px; color: var(--color-ink-mute); margin-top: 4px;">
+            Connect multiple FamPay wallets and switch active receiving account with 1 click.
+          </p>
+        </div>
+        <div>
+                                <button class="btn btn-primary" id="openAddModalBtn" onclick="openAddModal()" style="display:inline-flex; align-items:center; gap:8px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Add FamPay Account (0/5)
+            </button>
+                  </div>
+      </div>
+
+      <!-- ACTIVE HERO WALLET -->
+              <div class="callout callout-error" style="margin-bottom: 24px;">
+          No active FamPay account configured. Please add an account below.
+        </div>
+      
+      <!-- STANDBY ACCOUNTS LIST -->
+      <div style="margin-top: 32px;">
+        <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--color-ink-mute); margin-bottom: 12px;">
+          Standby Accounts (0)
+        </div>
+
+                  <div style="text-align: center; padding: 32px 20px; background: #ffffff; border: 1px dashed var(--color-hairline); border-radius: 12px; color: var(--color-ink-mute); font-size: 13px;">
+            No standby accounts added yet. Tap <strong>"Add FamPay Account"</strong> to link your backup wallets.
+          </div>
+              </div>
+
+    </div>
+  </main>
+  </div><!-- /.dashboard-layout -->
+
+  <!-- ADD ACCOUNT MODAL -->
+  <div class="modal-backdrop" id="addAccountModal" onclick="if(event.target === this) closeAddModal()">
+    <div class="modal-box">
+      <!-- Header -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px;">
+        <div>
+          <h3 style="font-size: 20px; font-weight: 700; color: #0f172a; margin: 0; letter-spacing: -0.4px;">
+            Add FamPay Account
+          </h3>
+          <p style="font-size: 13px; color: #64748b; margin: 4px 0 0 0;">
+            Link a backup FamPay wallet for instant 1-click active receiving switch.
+          </p>
+        </div>
+        <button onclick="closeAddModal()" style="width: 32px; height: 32px; border-radius: 50%; background: #f1f5f9; border: none; cursor: pointer; color: #64748b; font-size: 20px; line-height: 1; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">×</button>
+      </div>
+
+      <form method="POST" id="addAccountForm" autocomplete="off" onsubmit="return validateAndSubmitAdd()" data-form-type="other">
+        <!-- Prevent browser autofill from capturing credentials -->
+        <div style="position: absolute; left: -9999px; top: -9999px; opacity: 0; pointer-events: none;" aria-hidden="true">
+            <input type="text" name="fake_user_trap_add" tabindex="-1" autocomplete="off">
+            <input type="password" name="fake_pass_trap_add" tabindex="-1" autocomplete="new-password">
+        </div>
+        <input type="hidden" name="csrf_token" value="974a467a407e70691353b8c333bc344e61ce63185bd2c9f29116156442cd0466">
+        <input type="hidden" name="action" value="add_account">
+
+        <!-- Informational banner -->
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px 14px; margin-bottom: 18px; font-size: 12.5px; color: #1e40af; line-height: 1.4;">
+          <strong>Notice:</strong> This is for linking a <u>secondary backup wallet</u> (different UPI ID &amp; Gmail). Do not enter your already configured Primary Account credentials. Max 5 accounts allowed.
+        </div>
+
+        <!-- Row 1: Nickname & UPI ID -->
+        <div class="modal-grid">
+          <div>
+            <label class="modal-label">Account Label / Nickname</label>
+            <input type="text" name="account_label" class="modal-input" placeholder="e.g. Backup Wallet, Brother FamPay" required="" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
+          </div>
+
+          <div>
+            <label class="modal-label">FamPay UPI ID</label>
+            <input type="text" name="fampay_upi_id" id="addAccountUpiInput" class="modal-input" placeholder="9876543210@fam" pattern=".+@(yes)?fam" required="" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
+            <span class="modal-hint">Must end with @fam or @yesfam</span>
+          </div>
+        </div>
+
+        <!-- Row 2: Gmail & App Password -->
+        <div class="modal-grid" style="margin-bottom: 24px;">
+          <div>
+            <label class="modal-label">FamPay-linked Gmail</label>
+            <input type="text" name="fampay_gmail" id="addAccountGmailInput" class="modal-input" placeholder="registered.fampay@gmail.com" required="" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
+          </div>
+
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label class="modal-label" style="margin: 0;">Google App Password</label>
+              <button type="button" onclick="toggleMultiPass()" style="background: none; border: none; cursor: pointer; color: #2563eb; font-size: 11.5px; font-weight: 600; padding: 0;">
+                <span id="toggleMultiPassText">Show</span>
+              </button>
+            </div>
+            <input type="text" name="fampay_app_token" id="multiAppPassInput" class="modal-input" placeholder="xxxx xxxx xxxx xxxx" required="" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" style="font-family: monospace; -webkit-text-security: disc; text-security: disc;">
+            <span class="modal-hint">16-digit code from Google Security</span>
+          </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="modal-footer-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeAddModal()" style="padding: 10px 18px; font-size: 13.5px; font-weight: 600; border-radius: 10px; border: 1.5px solid #e2e8f0;">
+            Cancel
+          </button>
+          <button type="submit" id="btnSubmitAdd" class="btn btn-primary" style="padding: 10px 22px; font-size: 13.5px; font-weight: 600; border-radius: 10px; background: #2563eb; box-shadow: 0 4px 12px rgba(37,99,235,0.2);">
+            Connect &amp; Save Account
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- EDIT ACCOUNT MODAL -->
+  <div class="modal-backdrop" id="editAccountModal" onclick="if(event.target === this) closeEditModal()">
+    <div class="modal-box">
+      <!-- Header -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px;">
+        <div>
+          <h3 style="font-size: 20px; font-weight: 700; color: #0f172a; margin: 0; letter-spacing: -0.4px;">
+            Edit FamPay Account
+          </h3>
+          <p style="font-size: 13px; color: #64748b; margin: 4px 0 0 0;">
+            Update wallet details or reconnect Gmail IMAP credentials.
+          </p>
+        </div>
+        <button onclick="closeEditModal()" style="width: 32px; height: 32px; border-radius: 50%; background: #f1f5f9; border: none; cursor: pointer; color: #64748b; font-size: 20px; line-height: 1; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">×</button>
+      </div>
+
+      <form method="POST" id="editAccountForm" autocomplete="off" onsubmit="showEditConnectingState()" data-form-type="other">
+        <!-- Prevent browser autofill from capturing credentials -->
+        <div style="position: absolute; left: -9999px; top: -9999px; opacity: 0; pointer-events: none;" aria-hidden="true">
+            <input type="text" name="fake_user_trap_edit" tabindex="-1" autocomplete="off">
+            <input type="password" name="fake_pass_trap_edit" tabindex="-1" autocomplete="new-password">
+        </div>
+        <input type="hidden" name="csrf_token" value="974a467a407e70691353b8c333bc344e61ce63185bd2c9f29116156442cd0466">
+        <input type="hidden" name="action" value="edit_account">
+        <input type="hidden" name="account_id" id="editAccountId" value="">
+
+        <!-- Row 1: Nickname & UPI ID -->
+        <div class="modal-grid">
+          <div>
+            <label class="modal-label">Account Label / Nickname</label>
+            <input type="text" name="account_label" id="editAccountLabel" class="modal-input" placeholder="e.g. Backup Wallet" required="" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
+          </div>
+
+          <div>
+            <label class="modal-label">FamPay UPI ID</label>
+            <input type="text" name="fampay_upi_id" id="editAccountUpi" class="modal-input" placeholder="9876543210@fam" pattern=".+@(yes)?fam" required="" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
+            <span class="modal-hint">Must end with @fam or @yesfam</span>
+          </div>
+        </div>
+
+        <!-- Row 2: Gmail & App Password -->
+        <div class="modal-grid" style="margin-bottom: 24px;">
+          <div>
+            <label class="modal-label">FamPay-linked Gmail</label>
+            <input type="text" name="fampay_gmail" id="editAccountGmail" class="modal-input" placeholder="registered.fampay@gmail.com" required="" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other">
+          </div>
+
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label class="modal-label" style="margin: 0;">Google App Password</label>
+              <button type="button" onclick="toggleEditPass()" style="background: none; border: none; cursor: pointer; color: #2563eb; font-size: 11.5px; font-weight: 600; padding: 0;">
+                <span id="toggleEditPassText">Show</span>
+              </button>
+            </div>
+            <input type="text" name="fampay_app_token" id="editAppPassword" class="modal-input" placeholder="Leave blank to keep unchanged" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" style="font-family: monospace; -webkit-text-security: disc; text-security: disc;">
+            <span class="modal-hint" id="editAppPasswordHint">Leave blank to keep unchanged, or enter new 16-digit code</span>
+          </div>
+        </div>
+
+        <!-- Security Check: Password OR Email OTP required to modify UPI ID -->
+        <div id="editAccountOtpSection" style="display:none; margin-bottom: 20px; padding: 14px 16px; background: #fffbeb; border: 1.5px solid #fef3c7; border-radius: 10px;">
+          <label class="modal-label" style="color: #92400e; font-size: 13px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="shield-check" aria-hidden="true" style="width: 15px; height: 15px; color: #d97706;" class="lucide lucide-shield-check"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></svg> Security Check: Authorize UPI Change
+          </label>
+          <span class="modal-hint" style="color: #b45309; margin-bottom: 8px; font-size: 12px; line-height: 1.4;">
+            Modifying payout UPI ID requires authorization. Enter your account password <strong>OR</strong> verify via 6-digit Email OTP sent to <strong>s****7@gmail.com</strong>.
+          </span>
+          <div style="margin-bottom: 10px;">
+            <label style="font-size: 11.5px; font-weight: 600; color: #92400e; display: block; margin-bottom: 4px;">Option A: Enter Account Password</label>
+            <input type="password" name="account_password" id="editAccountPassword" class="modal-input" placeholder="Enter your FamGateway password" autocomplete="current-password" style="background:#fff;">
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; margin: 12px 0 10px; color: #b45309; font-size: 11px; font-weight: 700;">
+            <div style="flex: 1; height: 1px; background: #fde68a;"></div>
+            <span>OR OPTION B: VERIFY VIA EMAIL OTP</span>
+            <div style="flex: 1; height: 1px; background: #fde68a;"></div>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <input type="text" name="upi_otp" id="editUpiOtp" class="modal-input" placeholder="Enter 6-digit OTP" maxlength="6" pattern="[0-9]{6}" autocomplete="one-time-code" style="font-size: 14px; font-weight: 700; letter-spacing: 3px; font-family: monospace; background: #fff; max-width: 170px; text-align: center;">
+            <button type="button" id="btnSendModalUpiOtp" onclick="sendModalUpiOtp()" class="btn btn-secondary" style="font-size: 12.5px; font-weight: 600; padding: 8px 14px; background: #fef3c7; border-color: #fde68a; color: #92400e; white-space: nowrap;">
+              Send OTP to Email
+            </button>
+          </div>
+          <div id="modalOtpStatusMsg" style="font-size: 12px; margin-top: 8px; display: none;"></div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="modal-footer-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeEditModal()" style="padding: 10px 18px; font-size: 13.5px; font-weight: 600; border-radius: 10px; border: 1.5px solid #e2e8f0;">
+            Cancel
+          </button>
+          <button type="submit" id="btnSubmitEdit" class="btn btn-primary" style="padding: 10px 22px; font-size: 13.5px; font-weight: 600; border-radius: 10px; background: #2563eb; box-shadow: 0 4px 12px rgba(37,99,235,0.2);">
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- DELETE ACCOUNT CONFIRMATION MODAL -->
+  <div class="modal-backdrop" id="deleteAccountModal" onclick="if(event.target === this) closeDeleteModal()">
+    <div class="modal-box" style="max-width: 440px; padding: 26px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 38px; height: 38px; border-radius: 50%; background: #fee2e2; display: flex; align-items: center; justify-content: center; color: #ef4444; flex-shrink: 0;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+          </div>
+          <div>
+            <h3 style="font-size: 17px; font-weight: 700; color: #0f172a; margin: 0;">Remove Account?</h3>
+            <span style="font-size: 12px; color: #64748b;">Standby wallet deletion</span>
+          </div>
+        </div>
+        <button onclick="closeDeleteModal()" style="width: 28px; height: 28px; border-radius: 50%; background: #f1f5f9; border: none; cursor: pointer; color: #64748b; font-size: 18px; line-height: 1; display: flex; align-items: center; justify-content: center;">×</button>
+      </div>
+
+      <div style="padding: 10px 0 20px 0; font-size: 13.5px; color: #475569; line-height: 1.5;">
+        Are you sure you want to remove <strong id="deleteAccountLabelText" style="color: #0f172a;"></strong> (<span id="deleteAccountUpiText" style="font-family: monospace; color: #0f172a; font-weight: 600;"></span>)? This wallet will no longer be available for standby switching.
+      </div>
+
+      <form method="POST" id="deleteAccountForm" style="margin: 0;">
+        <input type="hidden" name="csrf_token" value="974a467a407e70691353b8c333bc344e61ce63185bd2c9f29116156442cd0466">
+        <input type="hidden" name="action" value="delete_account">
+        <input type="hidden" name="account_id" id="deleteAccountIdInput" value="">
+
+        <div class="modal-footer-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()" style="padding: 9px 16px; font-size: 13px; font-weight: 600; border-radius: 8px;">
+            Cancel
+          </button>
+          <button type="submit" class="btn" style="padding: 9px 18px; font-size: 13px; font-weight: 600; border-radius: 8px; background: #dc2626; color: #ffffff; border: none; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25); cursor: pointer;">
+            Yes, Remove Account
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- DISCONNECT ACCOUNT CONFIRMATION MODAL -->
+  <div class="modal-backdrop" id="disconnectAccountModal" onclick="if(event.target === this) closeDisconnectModal()">
+    <div class="modal-box" style="max-width: 440px; padding: 26px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 38px; height: 38px; border-radius: 50%; background: #fee2e2; display: flex; align-items: center; justify-content: center; color: #ef4444; flex-shrink: 0;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
+          </div>
+          <div>
+            <h3 style="font-size: 17px; font-weight: 700; color: #0f172a; margin: 0;">Disconnect Wallet IMAP?</h3>
+            <span style="font-size: 12px; color: #64748b;">Automated payment verifications will pause</span>
+          </div>
+        </div>
+        <button onclick="closeDisconnectModal()" style="width: 28px; height: 28px; border-radius: 50%; background: #f1f5f9; border: none; cursor: pointer; color: #64748b; font-size: 18px; line-height: 1; display: flex; align-items: center; justify-content: center;">×</button>
+      </div>
+
+      <div style="padding: 10px 0 20px 0; font-size: 13.5px; color: #475569; line-height: 1.5;">
+        Are you sure you want to disconnect <strong id="disconnectAccountLabelText" style="color: #0f172a;"></strong>? Its Google App Password will be removed, and automated payment verifications will pause immediately until reconnected.
+      </div>
+
+      <form method="POST" id="disconnectAccountForm" style="margin: 0;">
+        <input type="hidden" name="csrf_token" value="974a467a407e70691353b8c333bc344e61ce63185bd2c9f29116156442cd0466">
+        <input type="hidden" name="action" value="disconnect_account">
+        <input type="hidden" name="account_id" id="disconnectAccountIdInput" value="">
+
+        <div class="modal-footer-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeDisconnectModal()" style="padding: 9px 16px; font-size: 13px; font-weight: 600; border-radius: 8px;">
+            Cancel
+          </button>
+          <button type="submit" class="btn" style="padding: 9px 18px; font-size: 13px; font-weight: 600; border-radius: 8px; background: #dc2626; color: #ffffff; border: none; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25); cursor: pointer;">
+            Yes, Disconnect
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var editUpiEl = document.getElementById('editAccountUpi');
+      var editOtpSec = document.getElementById('editAccountOtpSection');
+      var editOtpInp = document.getElementById('editUpiOtp');
+      if (editUpiEl && editOtpSec && editOtpInp) {
+        function checkEditUpi() {
+          if (window.currentEditingUpi && editUpiEl.value.trim().toLowerCase() !== window.currentEditingUpi) {
+            editOtpSec.style.display = 'block';
+          } else {
+            editOtpSec.style.display = 'none';
+          }
+          if (window.lucide) lucide.createIcons();
+        }
+        editUpiEl.addEventListener('input', checkEditUpi);
+        editUpiEl.addEventListener('change', checkEditUpi);
+      }
+    });
+
+    function openAddModal() {
+      var m = document.getElementById('addAccountModal');
+      if (m) m.style.display = 'flex';
+    }
+    function closeAddModal() {
+      var m = document.getElementById('addAccountModal');
+      if (m) m.style.display = 'none';
+    }
+    function openEditModal(id, label, upi, gmail, pass) {
+      document.getElementById('editAccountId').value = id;
+      document.getElementById('editAccountLabel').value = label;
+      document.getElementById('editAccountUpi').value = upi;
+      document.getElementById('editAccountGmail').value = gmail;
+      var passInput = document.getElementById('editAppPassword');
+      var hintEl = document.getElementById('editAppPasswordHint');
+      var hasPass = !!(pass && pass.trim());
+      if (passInput) {
+        passInput.value = pass || '';
+        passInput.style.webkitTextSecurity = 'disc';
+        passInput.style.textSecurity = 'disc';
+        if (hasPass) {
+          passInput.placeholder = 'Leave blank to keep unchanged';
+          passInput.required = false;
+          if (hintEl) hintEl.innerText = 'Leave blank to keep unchanged, or enter new 16-digit code';
+        } else {
+          passInput.placeholder = 'Enter 16-digit Google App Password';
+          passInput.required = true;
+          if (hintEl) hintEl.innerText = '16-digit App Password is required to connect and configure this wallet';
+        }
+      }
+      var toggleTxt = document.getElementById('toggleEditPassText');
+      if (toggleTxt) toggleTxt.innerText = 'Show';
+      window.currentEditingUpi = (upi || '').trim().toLowerCase();
+      var editOtpSec = document.getElementById('editAccountOtpSection');
+      var editOtpInp = document.getElementById('editUpiOtp');
+      var editPwdInp = document.getElementById('editAccountPassword');
+      if (editOtpSec) {
+        editOtpSec.style.display = 'none';
+        if (editOtpInp) { editOtpInp.required = false; editOtpInp.value = ''; }
+        if (editPwdInp) { editPwdInp.value = ''; }
+      }
+      var modalMsg = document.getElementById('modalOtpStatusMsg');
+      if (modalMsg) modalMsg.style.display = 'none';
+      var m = document.getElementById('editAccountModal');
+      if (m) m.style.display = 'flex';
+      if (window.lucide) lucide.createIcons();
+    }
+    function closeEditModal() {
+      var m = document.getElementById('editAccountModal');
+      if (m) m.style.display = 'none';
+    }
+    function openDeleteModal(id, label, upi) {
+      document.getElementById('deleteAccountIdInput').value = id;
+      document.getElementById('deleteAccountLabelText').innerText = label;
+      document.getElementById('deleteAccountUpiText').innerText = upi;
+      var m = document.getElementById('deleteAccountModal');
+      if (m) m.style.display = 'flex';
+    }
+    function closeDeleteModal() {
+      var m = document.getElementById('deleteAccountModal');
+      if (m) m.style.display = 'none';
+    }
+    function openDisconnectModal(id, label) {
+      document.getElementById('disconnectAccountIdInput').value = id;
+      document.getElementById('disconnectAccountLabelText').innerText = label;
+      var m = document.getElementById('disconnectAccountModal');
+      if (m) m.style.display = 'flex';
+    }
+    function closeDisconnectModal() {
+      var m = document.getElementById('disconnectAccountModal');
+      if (m) m.style.display = 'none';
+    }
+    function validateAndSubmitAdd() {
+      var upiEl = document.getElementById('addAccountUpiInput');
+      var gmailEl = document.getElementById('addAccountGmailInput');
+      var upi = (upiEl ? upiEl.value : '').trim().toLowerCase();
+      var gmail = (gmailEl ? gmailEl.value : '').trim().toLowerCase();
+
+      var existingUpis = [];
+      var existingGmails = [];
+
+      if (existingUpis.indexOf(upi) !== -1) {
+        alert('This FamPay UPI ID is already linked to your account. You cannot add duplicate wallets.');
+        return false;
+      }
+      if (existingGmails.indexOf(gmail) !== -1) {
+        alert('This Gmail address is already linked to your account. You cannot add duplicate wallets.');
+        return false;
+      }
+
+      showConnectingState();
+      return true;
+    }
+    function showConnectingState() {
+      var btn = document.getElementById('btnSubmitAdd');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation: spin 0.8s linear infinite; vertical-align: middle; display: inline-block; margin-right: 6px;"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path></svg> Connecting & Testing IMAP...';
+      }
+    }
+    function showEditConnectingState() {
+      var btn = document.getElementById('btnSubmitEdit');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation: spin 0.8s linear infinite; vertical-align: middle; display: inline-block; margin-right: 6px;"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path></svg> Saving & Verifying...';
+      }
+    }
+    function toggleMultiPass() {
+      var inp = document.getElementById('multiAppPassInput');
+      var txt = document.getElementById('toggleMultiPassText');
+      if (!inp) return;
+      var isMasked = inp.style.webkitTextSecurity !== 'none' && inp.style.textSecurity !== 'none';
+      if (isMasked) {
+        inp.style.webkitTextSecurity = 'none';
+        inp.style.textSecurity = 'none';
+        if (txt) txt.innerText = 'Hide';
+      } else {
+        inp.style.webkitTextSecurity = 'disc';
+        inp.style.textSecurity = 'disc';
+        if (txt) txt.innerText = 'Show';
+      }
+    }
+    function toggleEditPass() {
+      var inp = document.getElementById('editAppPassword');
+      var txt = document.getElementById('toggleEditPassText');
+      if (!inp) return;
+      var isMasked = inp.style.webkitTextSecurity !== 'none' && inp.style.textSecurity !== 'none';
+      if (isMasked) {
+        inp.style.webkitTextSecurity = 'none';
+        inp.style.textSecurity = 'none';
+        if (txt) txt.innerText = 'Hide';
+      } else {
+        inp.style.webkitTextSecurity = 'disc';
+        inp.style.textSecurity = 'disc';
+        if (txt) txt.innerText = 'Show';
+      }
+    }
+
+    var modalOtpTimer = null;
+    function sendModalUpiOtp() {
+      var upiInput = document.getElementById('editAccountUpi');
+      var btnSend = document.getElementById('btnSendModalUpiOtp');
+      var msgEl = document.getElementById('modalOtpStatusMsg');
+      var targetUpi = upiInput ? upiInput.value.trim() : '';
+
+      if (!targetUpi || !targetUpi.toLowerCase().match(/@(yes)?fam$/)) {
+        alert('Please enter a valid FamPay UPI ID (@fam or @yesfam) before requesting OTP.');
+        if (upiInput) upiInput.focus();
+        return;
+      }
+
+      btnSend.disabled = true;
+      btnSend.innerText = 'Sending OTP...';
+      if (msgEl) msgEl.style.display = 'none';
+
+      var formData = new FormData();
+      formData.append('action', 'send_upi_otp');
+      formData.append('fampay_upi_id', targetUpi);
+      formData.append('csrf_token', "974a467a407e70691353b8c333bc344e61ce63185bd2c9f29116156442cd0466");
+
+      fetch('multi-accounts.php', {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success) {
+          if (msgEl) {
+            msgEl.style.display = 'block';
+            msgEl.style.color = '#15803d';
+            msgEl.innerText = data.message || 'OTP sent successfully to your email.';
+          }
+          startModalOtpCooldown(45);
+        } else {
+          btnSend.disabled = false;
+          btnSend.innerText = 'Send OTP to Email';
+          if (msgEl) {
+            msgEl.style.display = 'block';
+            msgEl.style.color = '#b91c1c';
+            msgEl.innerText = data.message || 'Failed to send OTP.';
+          }
+        }
+      })
+      .catch(function(err) {
+        btnSend.disabled = false;
+        btnSend.innerText = 'Send OTP to Email';
+        if (msgEl) {
+          msgEl.style.display = 'block';
+          msgEl.style.color = '#b91c1c';
+          msgEl.innerText = 'Network error while sending OTP. Please try again.';
+        }
+      });
+    }
+
+    function startModalOtpCooldown(seconds) {
+      var remaining = seconds;
+      var btnSend = document.getElementById('btnSendModalUpiOtp');
+      btnSend.disabled = true;
+      btnSend.innerText = 'Resend in ' + remaining + 's';
+      if (modalOtpTimer) clearInterval(modalOtpTimer);
+      modalOtpTimer = setInterval(function() {
+        remaining--;
+        if (remaining <= 0) {
+          clearInterval(modalOtpTimer);
+          btnSend.disabled = false;
+          btnSend.innerText = 'Resend OTP';
+        } else {
+          btnSend.innerText = 'Resend in ' + remaining + 's';
+        }
+      }, 1000);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var btn = document.getElementById('openAddModalBtn');
+      if (btn) btn.onclick = openAddModal;
+      if (window.lucide) lucide.createIcons();
+    });
+  </script>
+
+
+<div id="fs_div_all" style="all:initial;"><template shadowrootmode="open">
+        <div class="mainExtCont" style="position:fixed; top:20px;right:20px; z-index:2147483647;box-shadow: 1px -1px 17px #888888;border-radius:10px;">
+            <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;300;400;500;600;700&amp;display=swap" rel="stylesheet">
+            <div class="mainExtSubCont"></div>
+        </div>
+        <div class="extOtherPopups"></div>
+        <style>
+         /* devanagari */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTucXtAKPY.woff2) format('woff2');
+      unicode-range: U+0900-097F, U+1CD0-1CF6, U+1CF8-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FB;
+    }
+    /* latin-ext */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTufntAKPY.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    /* latin */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTucHtA.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+    /* devanagari */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z11lFc-K.woff2) format('woff2');
+      unicode-range: U+0900-097F, U+1CD0-1CF6, U+1CF8-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FB;
+    }
+    /* latin-ext */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z1JlFc-K.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    /* latin */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z1xlFQ.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins light */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 300;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Light.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+
+    /* poppins regular */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 400;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Regular.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins thin */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 100;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Thin.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins medium */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 500;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Medium.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins semi bold */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 600;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-SemiBold.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins bold */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 700;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Bold.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    
+        .extOtherPopups{
+          margin: 0;
+          padding: 0;
+          position: fixed;
+          top: 240px;
+          right: 0;
+          z-index: 2147483647;
+        }
+        [event_type="click"]{
+          cursor:pointer;
+        }
+        </style>
+        </template></div></body><div id="in-page-channel-node-id-v2" data-channel-name="in_page_channel_oV6JVo" data-channel-owner-id="16d9f54730b1aebe96b67a2e54845294"></div></html>

@@ -1,0 +1,265 @@
+function slacalc_export_has_data() {
+	return (($.trim($('#slacalc_out').text()) !== '') && ($('#slacalc_out table').length > 0));
+}
+function slacalc_export_hide() {
+	$('#slacalc_export_btn').hide();
+}
+function slacalc_export_toggle() {
+	if(slacalc_export_has_data()) {
+		$('#slacalc_export_btn').show();
+	} else {
+		slacalc_export_hide();
+	}
+}
+function slacalc_export_collect_table($table) {
+	var rows = [];
+	$table.find('tr').each(function() {
+		var row = [];
+		$(this).children('th,td').each(function() {
+			if($(this).attr('colspan')) {
+				return;
+			}
+			row.push($.trim($(this).text()).replace(/\s+/g, ' '));
+		});
+		if(row.length > 0) {
+			rows.push(row);
+		}
+	});
+	return rows;
+}
+function slacalc_export_data() {
+	var $tables = $('#slacalc_out table');
+	var monitor_rows = slacalc_export_collect_table($tables.eq(0));
+	var total_rows = slacalc_export_collect_table($tables.eq(1));
+
+	return {
+		start_time: $.trim($('#slacalc_start').val()),
+		end_time: $.trim($('#slacalc_end').val()),
+		time_zone: $.trim($('#slacalc_timezone option:selected').text()),
+		monitors: monitor_rows.length > 1 ? monitor_rows.slice(1) : [],
+		totals: total_rows.length > 1 ? total_rows.slice(1).filter(function(row) {
+			return row.length === 4;
+		}) : []
+	};
+}
+function slacalc_pdf_text(text) {
+	text = String(text || '');
+	text = text.replace(/[\u2018\u2019]/g, "'")
+		.replace(/[\u201C\u201D]/g, '"')
+		.replace(/[\u2013\u2014]/g, '-')
+		.replace(/\u00A0/g, ' ')
+		.replace(/[^\x20-\x7E]/g, '?');
+	return '(' + text.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)') + ')';
+}
+function slacalc_pdf_wrap_text(text, width, size) {
+	var max_chars = Math.max(8, Math.floor(width / (size * 0.52)));
+	var words = String(text || '').split(/\s+/);
+	var lines = [];
+	var line = '';
+
+	for(var i = 0; i < words.length; i++) {
+		if(words[i] === '') {
+			continue;
+		}
+		if(line === '') {
+			line = words[i];
+		} else if((line.length + words[i].length + 1) <= max_chars) {
+			line += ' ' + words[i];
+		} else {
+			lines.push(line);
+			line = words[i];
+		}
+	}
+
+	if(line !== '') {
+		lines.push(line);
+	}
+	return lines.length > 0 ? lines : [''];
+}
+function slacalc_pdf_build(data) {
+	var page_width = 595;
+	var page_height = 842;
+	var margin = 45;
+	var table_width = page_width - (margin * 2);
+	var y_start = 792;
+	var y_min = 55;
+	var pages = [[]];
+	var y = y_start;
+
+	var add = function(cmd) {
+		pages[pages.length - 1].push(cmd);
+	};
+	var ensure = function(height) {
+		if((y - height) < y_min) {
+			pages.push([]);
+			y = y_start;
+		}
+	};
+	var color = function(rgb) {
+		return rgb.join(' ') + ' rg';
+	};
+	var stroke = function(rgb) {
+		return rgb.join(' ') + ' RG';
+	};
+	var rect = function(x, yy, w, h, rgb) {
+		add('q ' + color(rgb) + ' ' + x + ' ' + yy + ' ' + w + ' ' + h + ' re f Q');
+	};
+	var line = function(x1, y1, x2, y2, rgb) {
+		add('q ' + stroke(rgb) + ' 0.6 w ' + x1 + ' ' + y1 + ' m ' + x2 + ' ' + y2 + ' l S Q');
+	};
+	var text = function(x, yy, value, size, font, rgb) {
+		add('BT /' + (font || 'F1') + ' ' + size + ' Tf ' + color(rgb || ['0.15', '0.18', '0.21']) + ' 1 0 0 1 ' + x + ' ' + yy + ' Tm ' + slacalc_pdf_text(value) + ' Tj ET');
+	};
+	var section_title = function(title) {
+		ensure(34);
+		y -= 12;
+		text(margin, y, title, 13, 'F2', ['0.13', '0.16', '0.19']);
+		y -= 16;
+		line(margin, y, margin + table_width, y, ['0.79', '0.82', '0.85']);
+		y -= 10;
+	};
+	var add_key_value = function(label, value) {
+		ensure(18);
+		text(margin, y, label, 9, 'F2', ['0.33', '0.38', '0.43']);
+		text(margin + 82, y, value, 10, 'F1', ['0.12', '0.15', '0.18']);
+		y -= 17;
+	};
+	var add_table = function(headers, rows, widths) {
+		var x;
+		var i;
+		var j;
+		var cell_lines;
+		var row_height;
+		var row_y;
+
+		ensure(28);
+		rect(margin, y - 17, table_width, 22, ['0.92', '0.94', '0.96']);
+		x = margin;
+		for(i = 0; i < headers.length; i++) {
+			text(x + 6, y - 9, headers[i], 9, 'F2', ['0.19', '0.23', '0.27']);
+			x += widths[i];
+		}
+		y -= 24;
+
+		for(i = 0; i < rows.length; i++) {
+			cell_lines = [];
+			row_height = 26;
+			for(j = 0; j < headers.length; j++) {
+				cell_lines[j] = slacalc_pdf_wrap_text(rows[i][j] || '', widths[j] - 12, 9);
+				row_height = Math.max(row_height, 14 + (cell_lines[j].length * 12));
+			}
+			ensure(row_height + 4);
+			row_y = y;
+			if((i % 2) === 1) {
+				rect(margin, row_y - row_height + 7, table_width, row_height, ['0.98', '0.99', '1']);
+			}
+			x = margin;
+			for(j = 0; j < headers.length; j++) {
+				var text_y = row_y - ((row_height - (cell_lines[j].length * 12)) / 2) - 3;
+				for(var k = 0; k < cell_lines[j].length; k++) {
+					text(x + 6, text_y - (k * 12), cell_lines[j][k], 9, 'F1', ['0.18', '0.22', '0.26']);
+				}
+				x += widths[j];
+			}
+			y -= row_height;
+			line(margin, y + 7, margin + table_width, y + 7, ['0.88', '0.90', '0.92']);
+		}
+		y -= 12;
+	};
+
+	text(margin, y, 'SLA Uptime', 20, 'F2', ['0.08', '0.12', '0.16']);
+	y -= 28;
+	rect(margin, y - 48, table_width, 64, ['0.96', '0.98', '0.99']);
+	add_key_value('Start time', data.start_time);
+	add_key_value('End time', data.end_time);
+	add_key_value('Time zone', data.time_zone);
+	y -= 12;
+
+	if(data.totals.length > 0) {
+		section_title('Totals');
+		add_table(
+			['Type', 'Downtime', 'Outages', 'Uptime'],
+			data.totals,
+			[210, 105, 80, 110]
+		);
+		ensure(18);
+		text(margin, y, '*Including Maintenance - all downtime, both unexpected outages and planned maintenance.', 8, 'F1', ['0.35', '0.39', '0.43']);
+		y -= 14;
+	}
+
+	if(data.monitors.length > 0) {
+		section_title('Monitors');
+		add_table(
+			['Name', 'Time', 'Downtime', 'Outages', 'Uptime'],
+			data.monitors,
+			[205, 65, 85, 65, 85]
+		);
+	}
+
+	var objects = [
+		'<< /Type /Catalog /Pages 2 0 R >>',
+		'',
+		'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+		'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>'
+	];
+	var page_ids = [];
+
+	for(var p = 0; p < pages.length; p++) {
+		var content = 'q 1 1 1 rg 0 0 ' + page_width + ' ' + page_height + ' re f Q\n' + pages[p].join('\n') + '\n';
+		var content_id = objects.length + 1;
+		objects.push('<< /Length ' + content.length + ' >>\nstream\n' + content + 'endstream');
+		var page_id = objects.length + 1;
+		page_ids.push(page_id + ' 0 R');
+		objects.push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + page_width + ' ' + page_height + '] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ' + content_id + ' 0 R >>');
+	}
+
+	objects[1] = '<< /Type /Pages /Kids [' + page_ids.join(' ') + '] /Count ' + page_ids.length + ' >>';
+
+	var pdf = '%PDF-1.4\n';
+	var offsets = [0];
+	for(var o = 0; o < objects.length; o++) {
+		offsets.push(pdf.length);
+		pdf += (o + 1) + ' 0 obj\n' + objects[o] + '\nendobj\n';
+	}
+	var xref = pdf.length;
+	pdf += 'xref\n0 ' + (objects.length + 1) + '\n';
+	pdf += '0000000000 65535 f \n';
+	for(var x = 1; x < offsets.length; x++) {
+		pdf += ('0000000000' + offsets[x]).slice(-10) + ' 00000 n \n';
+	}
+	pdf += 'trailer\n<< /Size ' + (objects.length + 1) + ' /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF';
+
+	return new Blob([pdf], {type: 'application/pdf'});
+}
+function slacalc_download_blob(blob, filename) {
+	if(window.navigator.msSaveOrOpenBlob) {
+		window.navigator.msSaveBlob(blob, filename);
+		return;
+	}
+
+	var elem = document.createElement('a');
+	var url = window.URL.createObjectURL(blob);
+	elem.href = url;
+	elem.download = filename;
+	document.body.appendChild(elem);
+	elem.click();
+	document.body.removeChild(elem);
+	setTimeout(function() {
+		window.URL.revokeObjectURL(url);
+	}, 1000);
+}
+function slacalc_export_pdf() {
+	if(!slacalc_export_has_data()) {
+		toastr['error']('Run the SLA calculation before exporting.', '');
+		slacalc_export_hide();
+		return false;
+	}
+
+	var $button = $('#slacalc_export_btn');
+	$button.attr('disabled', true).text('Exporting...');
+	try {
+		slacalc_download_blob(slacalc_pdf_build(slacalc_export_data()), 'sla.pdf');
+	} finally {
+		$button.attr('disabled', false).text('Export');
+	}
+}

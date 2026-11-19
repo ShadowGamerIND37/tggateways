@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<!-- saved from url=(0031)https://famgateway.in/index.php -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style>body {transition: opacity ease-in 0.2s; } 
+body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relative; } 
+</style>
+  <!-- Structured Data (JSON-LD) for AI & Search Engines -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "SoftwareApplication",
+          "name": "FamGateway",
+          "alternateName": [
+            "FamGateway UPI",
+            "FamGateway API"
+          ],
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "Web",
+          "description": "100% Free Automated Peer-to-Peer UPI Payment verification gateway & webhook engine for developers in India. DPDP Act 2023 compliant.",
+          "knowsAbout": [
+            "Peer-to-Peer UPI Gateway",
+            "DPDP Act 2023 Compliance",
+            "Automated IMAP Receipt Verification",
+            "Dynamic UPI QR Generation",
+            "Developer Webhooks"
+          ],
+          "publisher": {
+            "@type": "Organization",
+            "name": "Aryanispe",
+            "legalName": "Aryanispe",
+            "identifier": {
+              "@type": "PropertyValue",
+              "name": "Udyam Registration Number",
+              "value": "UDYAM-BR-28-0050000"
+            },
+            "description": "Govt. of India Recognized MSME",
+            "url": "https://famgateway.in",
+            "logo": "https://cdn.famgateway.in/img/logo.png",
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "telephone": "+91-9771348544",
+              "contactType": "customer support",
+              "areaServed": "IN",
+              "availableLanguage": ["en", "hi"]
+            },
+            "sameAs": [
+              "https://t.me/ARYANISPE",
+              "https://t.me/aryanispe_related",
+              "https://www.youtube.com/@aryanispe",
+              "https://www.instagram.com/aryanispe/",
+              "https://github.com/aryanispe",
+              "https://x.com/aryanispe",
+              "http://www.linkedin.com/in/aryanispe",
+              "https://aryanispehost.in/"
+            ]
+          },
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "INR"
+          }
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Does Fam Pay (FamPay) have an official payment gateway API for developers?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "No, Fam Pay / FamPay (now FamApp) does not offer an official public payment gateway API or webhooks for website checkouts. FamGateway solves this by providing an automated IMAP-based bridge that verifies payments instantly into your personal Fam Pay account."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How does FamGateway automate Fam Pay payments?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "FamGateway generates dynamic UPI QRs with Bank UTR Idempotency locking, verifying clean exact amounts with zero decimal changes. When payment is received, FamGateway matches the incoming email confirmation and triggers automated webhooks to your server within 3-5 seconds."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Do I need GST or business registration to use FamGateway with Fam Pay?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "No. FamGateway is built specifically for solo developers, students, and micro-merchants who do not have GST registration or corporate bank accounts. You can collect payments directly to your personal Fam Pay UPI ID."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Is FamGateway free to use for Fam Pay payment verification?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes, FamGateway provides 100% free transaction fee processing with zero commission forever."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Can I integrate Paytm for Business with FamGateway?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. FamGateway offers a dedicated Paytm for Business Multi-Gateway add-on enabling merchants to accept direct bank UPI payments with 0% platform commission, sub-250ms webhook verification, and uncapped daily transaction limits."
+              }
+            }
+          ]
+        }
+      ]
+    }
+  </script>
+
+  
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+html, body {
+  background-color: #f6f8fb !important;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+.dashboard-layout {
+  background-color: #f6f8fb !important;
+}
+.sidebar {
+  background-color: #0b1329 !important;
+}
+.fam-legal-attribution {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+</style>
+<title>Automated UPI Payment Gateway &amp; Webhooks for Developers | FamGateway</title>
+<meta name="description" content="Accept automated peer-to-peer UPI payments with FamGateway. 100% free, DPDP Act 2023 compliant non-custodial webhook engine for developers in India. Instant webhooks &amp; Python SDK.">
+<meta name="keywords" content="UPI Gateway, UPI API, Free UPI API, UPI Webhooks, Automated UPI Verification, FamGateway, Payment Links, Accept UPI Payments India, Govt Recognized MSME, Aryan Gupta, Aryanispe">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+<meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+<meta name="author" content="Aryan Gupta">
+<meta name="author-registry" content="UDYAM-BR-28-0050000|Aryan Gupta|FamGateway">
+<meta name="copyright" content="Aryan Gupta / FamGateway (Aryanispe MSME UDYAM-BR-28-0050000)">
+<meta property="og:title" content="Automated UPI Payment Gateway &amp; Webhooks for Developers | FamGateway">
+<meta property="og:description" content="Accept automated peer-to-peer UPI payments with FamGateway. 100% free, DPDP Act 2023 compliant non-custodial webhook engine for developers in India. Instant webhooks &amp; Python SDK.">
+<meta property="og:image" content="https://cdn.famgateway.in/img/og-image.png">
+<meta property="og:url" content="https://famgateway.in/index.php">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Automated UPI Payment Gateway &amp; Webhooks for Developers | FamGateway">
+<meta name="twitter:description" content="Accept automated peer-to-peer UPI payments with FamGateway. 100% free, DPDP Act 2023 compliant non-custodial webhook engine for developers in India. Instant webhooks &amp; Python SDK.">
+<meta name="twitter:image" content="https://cdn.famgateway.in/img/og-image.png">
+<link rel="canonical" href="https://famgateway.in/index.php">
+<link rel="icon" type="image/x-icon" href="https://cdn.famgateway.in/favicon.ico">
+<link rel="icon" type="image/png" href="https://cdn.famgateway.in/favicon.png">
+<link rel="apple-touch-icon" href="https://cdn.famgateway.in/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+<link href="./Automated UPI Payment Gateway &amp; Webhooks for Developers _ FamGateway_files/css2" rel="stylesheet">
+<link rel="stylesheet" href="./Automated UPI Payment Gateway &amp; Webhooks for Developers _ FamGateway_files/style.css">
+<script defer="" src="./Automated UPI Payment Gateway &amp; Webhooks for Developers _ FamGateway_files/lucide.min.js.download"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  if (window.lucide) { lucide.createIcons(); }
+});
+</script>
+<!-- Google tag (gtag.js) - Google Analytics 4 -->
+<script async="" src="./Automated UPI Payment Gateway &amp; Webhooks for Developers _ FamGateway_files/js"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-6L45EVBBK3', {
+    cookie_flags: 'SameSite=None;Secure'
+  });
+</script>
+<!-- Google Preferred Sources Interactive Button Script (Manual Control) -->
+<script async="" preferred-sources-control="manual" src="./Automated UPI Payment Gateway &amp; Webhooks for Developers _ FamGateway_files/publisher.js.download"></script>
+  <link rel="stylesheet" href="./Automated UPI Payment Gateway &amp; Webhooks for Developers _ FamGateway_files/landing.css">
+<style> /* devanagari */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTucXtAKPY.woff2) format('woff2');
+      unicode-range: U+0900-097F, U+1CD0-1CF6, U+1CF8-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FB;
+    }
+    /* latin-ext */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTufntAKPY.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    /* latin */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTucHtA.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+    /* devanagari */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z11lFc-K.woff2) format('woff2');
+      unicode-range: U+0900-097F, U+1CD0-1CF6, U+1CF8-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FB;
+    }
+    /* latin-ext */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z1JlFc-K.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    /* latin */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z1xlFQ.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins light */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 300;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Light.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+
+    /* poppins regular */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 400;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Regular.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins thin */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 100;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Thin.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins medium */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 500;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Medium.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins semi bold */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 600;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-SemiBold.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins bold */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 700;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Bold.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    </style><style type="text/css">
+  /** Common styles across all window sizes. */
+  .swg-dialog,
+  .swg-toast,
+  .publisher-toast {
+    box-sizing: border-box;
+  }
+
+  .swg-toast {
+    background-color: rgba(255, 255, 255, 1) !important;
+    max-height: 46px !important;
+  }
+
+  .publisher-toast {
+    background-color: transparent !important;
+    color-scheme: normal !important;
+    max-width: 360px !important;
+  }
+
+  .swg-toast,
+  .publisher-toast {
+    position: fixed !important;
+    bottom: 0 !important;
+    z-index: 2147483647 !important;
+    border: none !important;
+  }
+
+  /**
+  * Wide desktop screen support, when width is >= 871px and height is >= 641px.
+  */
+  @media (min-width: 871px) and (min-height: 641px) {
+    .swg-dialog.swg-wide-dialog {
+      left: -435px !important;
+    }
+
+    .swg-dialog.swg-wide-dialog,
+    .swg-toast,
+    .publisher-toast {
+      width: 870px !important;
+    }
+  }
+
+  /** Tablet/Medium screen support, when width OR height is <= 640px. */
+  @media (max-width: 640px), (max-height: 640px) {
+    .swg-dialog,
+    .swg-toast {
+      width: 480px !important;
+      left: -240px !important;
+      margin-inline-start: calc(100vw - 100vw / 2) !important;
+      border-top-left-radius: 8px !important;
+      border-top-right-radius: 8px !important;
+      box-shadow:
+        rgba(60, 64, 67, 0.3) 0 1px 1px,
+        rgba(60, 64, 67, 0.15) 0 1px 4px 1px !important;
+    }
+
+    .publisher-toast {
+      width: 480px !important;
+      left: -240px !important;
+      margin-inline-start: calc(100vw - 100vw / 2) !important;
+    }
+
+    [dir='rtl'] .swg-dialog,
+    [dir='rtl'] .swg-toast,
+    [dir='rtl'] .publisher-toast {
+      margin-inline-start: calc(100vw - 100vw / 2 - 240px) !important;
+    }
+  }
+
+  /** Desktop/Large screen support, when width AND height are >= 641px. */
+  @media (min-width: 641px) and (min-height: 641px) {
+    .swg-dialog,
+    .swg-toast,
+    .publisher-toast {
+      width: 630px !important;
+    }
+
+    .swg-dialog {
+      left: -315px !important;
+      margin-inline-start: calc(100vw - 100vw / 2) !important;
+      background-color: transparent !important;
+      border: none !important;
+    }
+
+    [dir='rtl'] .swg-dialog {
+      margin-inline-start: calc(100vw - 100vw / 2 - 315px) !important;
+    }
+
+    .swg-toast {
+      border-radius: 4px !important;
+      bottom: 8px !important;
+      box-shadow:
+        0 3px 1px -2px rgb(0 0 0 / 20%),
+        0 2px 2px 0 rgb(0 0 0 / 14%),
+        0 1px 5px 0 rgb(0 0 0 / 12%) !important;
+      left: 8px !important;
+    }
+
+    .publisher-toast {
+      bottom: 8px !important;
+      right: 30px !important;
+    }
+  }
+
+  /** Phone/Small screen support, when width is <= 480px. */
+  @media (max-width: 480px) {
+    .swg-dialog,
+    .swg-toast,
+    .publisher-toast {
+      width: 100% !important;
+      max-width: 100% !important;
+      left: 0 !important;
+      right: 0 !important;
+      margin-inline-start: 0 !important;
+    }
+  }
+
+  /**
+  * Class applied to content page to disable scrolling.
+  */
+  html.swg-disable-scroll,
+  html.swg-disable-scroll * {
+    overflow: hidden !important;
+  }
+</style><link id="googleidentityservice" type="text/css" media="all" href="./Automated UPI Payment Gateway &amp; Webhooks for Developers _ FamGateway_files/style" rel="stylesheet"><style id="googleidentityservice_button_styles">.qJTHM{-moz-user-select:none;-webkit-user-select:none;-ms-user-select:none;color:#202124;direction:ltr;-webkit-touch-callout:none;font-family:Roboto-Regular,arial,sans-serif;-webkit-font-smoothing:antialiased;font-weight:400;margin:0;overflow:hidden;-webkit-text-size-adjust:100%}.ynRLnc{left:-9999px;position:absolute;top:-9999px}.L6cTce{display:none}.bltWBb{overflow-wrap:break-word;word-break:break-word}.hSRGPd{color:#1a73e8;cursor:pointer;font-weight:500;text-decoration:none}.Bz112c-W3lGp{height:16px;width:16px}.Bz112c-E3DyYd{height:20px;width:20px}.Bz112c-r9oPif{height:24px;width:24px}.Bz112c-u2z5K{height:36px;width:36px}.Bz112c-uaxL4e{border-radius:10px}.LgbsSe-Bz112c{display:block}.S9gUrf-YoZ4jf{border:none;margin:0;padding:0}.S9gUrf-YoZ4jf *{border:none;margin:0;padding:0}.fFW7wc-ibnC6b>.aZ2wEe>div{border-color:#4285f4}.P1ekSe-ZMv3u{-webkit-transition:height .2s linear;transition:height .2s linear}.P1ekSe-ZMv3u>div:first-child{background-color:#1a73e8!important;-webkit-transition:width .3s linear;transition:width .3s linear}.P1ekSe-ZMv3u>div:nth-child(2){background-image:-webkit-gradient(linear,left top,right top,from(rgba(255,255,255,.7)),to(rgba(255,255,255,.7))),-webkit-gradient(linear,left top,right top,from(#1a73e8),to(#1a73e8))!important;background-image:-webkit-linear-gradient(left,rgba(255,255,255,.7),rgba(255,255,255,.7)),-webkit-linear-gradient(left,#1a73e8,#1a73e8)!important;background-image:linear-gradient(90deg,rgba(255,255,255,.7),rgba(255,255,255,.7)),linear-gradient(90deg,#1a73e8,#1a73e8)!important}.P1ekSe-ZMv3u>div:nth-child(3){background-image:-webkit-gradient(linear,left top,right top,from(rgba(255,255,255,.7)),to(rgba(255,255,255,.7))),-webkit-gradient(linear,left top,right top,from(#1a73e8),to(#1a73e8))!important;background-image:-webkit-linear-gradient(left,rgba(255,255,255,.7),rgba(255,255,255,.7)),-webkit-linear-gradient(left,#1a73e8,#1a73e8)!important;background-image:linear-gradient(90deg,rgba(255,255,255,.7),rgba(255,255,255,.7)),linear-gradient(90deg,#1a73e8,#1a73e8)!important}.haAclf{display:inline-block}.nsm7Bb-HzV7m-LgbsSe{border-radius:4px;box-sizing:border-box;-webkit-transition:background-color .218s,border-color .218s;transition:background-color .218s,border-color .218s;-moz-user-select:none;-webkit-user-select:none;-ms-user-select:none;-webkit-appearance:none;background-color:#fff;background-image:none;border:1px solid #dadce0;color:#3c4043;cursor:pointer;font-family:Google Sans,arial,sans-serif;font-size:.875rem;height:40px;letter-spacing:.25px;outline:none;overflow:hidden;padding:0 12px;position:relative;text-align:center;vertical-align:middle;white-space:nowrap;width:auto}.nsm7Bb-HzV7m-LgbsSe.TzA9Ye-LgbsSe{font-size:14px}@media screen and (-ms-high-contrast:active){.nsm7Bb-HzV7m-LgbsSe{border:2px solid windowText;color:windowText}}@media screen and (preferes-contrast:more){.nsm7Bb-HzV7m-LgbsSe{color:#000}}.nsm7Bb-HzV7m-LgbsSe.pSzOP-SxQuSe{font-size:.875rem;height:32px;letter-spacing:.25px;padding:0 10px}.nsm7Bb-HzV7m-LgbsSe.pSzOP-SxQuSe.TzA9Ye-LgbsSe{font-size:14px}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe{font-size:.6875rem;height:20px;letter-spacing:.3px;padding:0 8px}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe.TzA9Ye-LgbsSe{font-size:11px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe{padding:0;width:40px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe.pSzOP-SxQuSe{width:32px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe.purZT-SxQuSe{width:20px}.nsm7Bb-HzV7m-LgbsSe.JGcpL-RbRzK{border-radius:20px}.nsm7Bb-HzV7m-LgbsSe.JGcpL-RbRzK.pSzOP-SxQuSe{border-radius:16px}.nsm7Bb-HzV7m-LgbsSe.JGcpL-RbRzK.purZT-SxQuSe{border-radius:10px}.nsm7Bb-HzV7m-LgbsSe.i5vt6e-to915-Ia7Qfc{border:1px solid #8e918f;background-color:#131314;color:#e3e3e3}.nsm7Bb-HzV7m-LgbsSe.MFS4be-Ia7Qfc{border:none;color:#fff}.nsm7Bb-HzV7m-LgbsSe.MFS4be-v3pZbf-Ia7Qfc{background-color:#1a73e8}.nsm7Bb-HzV7m-LgbsSe.MFS4be-JaPV2b-Ia7Qfc{background-color:#202124;color:#e8eaed}@media screen and (prefers-contrast:more){.nsm7Bb-HzV7m-LgbsSe.MFS4be-JaPV2b-Ia7Qfc{color:#fff}}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{height:18px;margin-right:8px;min-width:18px;width:18px}.nsm7Bb-HzV7m-LgbsSe.pSzOP-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{height:14px;min-width:14px;width:14px}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{height:10px;min-width:10px;width:10px}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-Bz112c{margin-left:8px;margin-right:-4px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{margin:0;padding:10px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe.pSzOP-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{padding:8px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe.purZT-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c{padding:4px}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-top-left-radius:3px;border-bottom-left-radius:3px;display:-webkit-box;display:-webkit-flex;display:flex;-webkit-box-pack:center;-webkit-justify-content:center;justify-content:center;-webkit-box-align:center;-webkit-align-items:center;align-items:center;background-color:#fff;height:36px;margin-left:-10px;margin-right:12px;min-width:36px;width:36px}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf .nsm7Bb-HzV7m-LgbsSe-Bz112c,.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf .nsm7Bb-HzV7m-LgbsSe-Bz112c{margin:0;padding:0}.nsm7Bb-HzV7m-LgbsSe.pSzOP-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{height:28px;margin-left:-8px;margin-right:10px;min-width:28px;width:28px}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{height:16px;margin-left:-6px;margin-right:8px;min-width:16px;width:16px}.nsm7Bb-HzV7m-LgbsSe.Bz112c-LgbsSe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:3px;margin-left:2px;margin-right:0;padding:0}.nsm7Bb-HzV7m-LgbsSe.JGcpL-RbRzK .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:18px}.nsm7Bb-HzV7m-LgbsSe.pSzOP-SxQuSe.JGcpL-RbRzK .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:14px}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe.JGcpL-RbRzK .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:8px}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-bN97Pc-sM5MNb{display:-webkit-box;display:-webkit-flex;display:flex;-webkit-align-items:center;-webkit-box-align:center;align-items:center;-webkit-flex-direction:row;-webkit-box-orient:horizontal;-webkit-box-direction:normal;flex-direction:row;-webkit-box-pack:justify;-webkit-justify-content:space-between;justify-content:space-between;-webkit-flex-wrap:nowrap;flex-wrap:nowrap;height:100%;position:relative;width:100%}.nsm7Bb-HzV7m-LgbsSe .oXtfBe-l4eHX{-webkit-box-pack:center;-webkit-justify-content:center;justify-content:center}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-BPrWId{-webkit-flex-grow:1;-webkit-box-flex:1;flex-grow:1;font-family:Google Sans,arial,sans-serif;font-weight:500;overflow:hidden;text-overflow:ellipsis;vertical-align:top}.nsm7Bb-HzV7m-LgbsSe.purZT-SxQuSe .nsm7Bb-HzV7m-LgbsSe-BPrWId{font-weight:300}.nsm7Bb-HzV7m-LgbsSe .oXtfBe-l4eHX .nsm7Bb-HzV7m-LgbsSe-BPrWId{-webkit-flex-grow:0;-webkit-box-flex:0;flex-grow:0}.nsm7Bb-HzV7m-LgbsSe .nsm7Bb-HzV7m-LgbsSe-MJoBVe{-webkit-transition:background-color .218s;transition:background-color .218s;bottom:0;left:0;position:absolute;right:0;top:0}.nsm7Bb-HzV7m-LgbsSe:focus,.nsm7Bb-HzV7m-LgbsSe:hover{box-shadow:none;border-color:rgb(210,227,252);outline:none}.nsm7Bb-HzV7m-LgbsSe:focus-within{outline:2px solid #00639b;border-color:transparent}.nsm7Bb-HzV7m-LgbsSe:hover .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(66,133,244,.08)}.nsm7Bb-HzV7m-LgbsSe:active .nsm7Bb-HzV7m-LgbsSe-MJoBVe,.nsm7Bb-HzV7m-LgbsSe:focus .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(66,133,244,.1)}.nsm7Bb-HzV7m-LgbsSe.i5vt6e-to915-Ia7Qfc:hover .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(255,255,255,.08)}.nsm7Bb-HzV7m-LgbsSe.i5vt6e-to915-Ia7Qfc:active .nsm7Bb-HzV7m-LgbsSe-MJoBVe,.nsm7Bb-HzV7m-LgbsSe.i5vt6e-to915-Ia7Qfc:focus .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(255,255,255,.12)}.nsm7Bb-HzV7m-LgbsSe.MFS4be-Ia7Qfc:hover .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(255,255,255,.24)}.nsm7Bb-HzV7m-LgbsSe.MFS4be-Ia7Qfc:active .nsm7Bb-HzV7m-LgbsSe-MJoBVe,.nsm7Bb-HzV7m-LgbsSe.MFS4be-Ia7Qfc:focus .nsm7Bb-HzV7m-LgbsSe-MJoBVe{background:rgba(255,255,255,.32)}.nsm7Bb-HzV7m-LgbsSe .n1UuX-DkfjY{border-radius:50%;display:-webkit-box;display:-webkit-flex;display:flex;height:20px;margin-left:-4px;margin-right:8px;min-width:20px;width:20px}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId{font-family:Roboto;font-size:12px;text-align:left}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff .fmcmS,.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .ssJRIf{overflow:hidden;text-overflow:ellipsis}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff{display:-webkit-box;display:-webkit-flex;display:flex;-webkit-align-items:center;-webkit-box-align:center;align-items:center;color:#5f6368;fill:#5f6368;font-size:11px;font-weight:400}.nsm7Bb-HzV7m-LgbsSe.jVeSEe.i5vt6e-to915-Ia7Qfc .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff{color:#c4c7c5;fill:#c4c7c5}.nsm7Bb-HzV7m-LgbsSe.jVeSEe.MFS4be-Ia7Qfc .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff{color:#e8eaed;fill:#e8eaed}@media screen and (prefers-contrast:more){.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff,.nsm7Bb-HzV7m-LgbsSe.jVeSEe.MFS4be-Ia7Qfc .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff{color:#000;fill:#000}}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-BPrWId .K4efff .Bz112c{height:18px;margin:-3px -3px -3px 2px;min-width:18px;width:18px}.nsm7Bb-HzV7m-LgbsSe.jVeSEe .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-top-left-radius:0;border-bottom-left-radius:0;border-top-right-radius:3px;border-bottom-right-radius:3px;margin-left:12px;margin-right:-10px}.nsm7Bb-HzV7m-LgbsSe.jVeSEe.JGcpL-RbRzK .nsm7Bb-HzV7m-LgbsSe-Bz112c-haAclf{border-radius:18px}.L5Fo6c-sM5MNb{border:0;display:block;left:0;position:relative;top:0}.L5Fo6c-bF1uUb{border-radius:4px;bottom:0;cursor:pointer;left:0;position:absolute;right:0;top:0}.L5Fo6c-bF1uUb:focus{border:none;outline:none}sentinel{}</style><style type="text/css" id="mytempCss">._8mqQwQ { display: none; } ._1TWLMK.icF5zO { opacity: 0.01; }</style></head>
+
+<body>
+<!-- Google One Tap Sign-In for Homepage Visitors -->
+<script src="./Automated UPI Payment Gateway &amp; Webhooks for Developers _ FamGateway_files/client" async="" defer=""></script>
+<div id="g_id_onload" data-client_id="86073538173-t2pv108ss8k3plb3n3q4bkv90jgp82je.apps.googleusercontent.com" data-context="signin" data-ux_mode="popup" data-login_uri="https://famgateway.in/auth-google-onetap.php" data-auto_prompt="true" data-auto_select="true" data-itp_support="true">
+</div>
+  <header class="nav nav-sticky">
+    <div class="shell nav-inner">
+      <a class="brand" href="https://famgateway.in/index.php" style="padding:0;"><img src="./Automated UPI Payment Gateway &amp; Webhooks for Developers _ FamGateway_files/logo-navbar-bright.png" alt="FamGateway" style="height:28px;width:auto;display:block;object-fit:contain;"></a>
+      <ul class="links">
+        <li><a href="https://famgateway.in/index.php#flow">How it works</a></li>
+        <li><a href="https://famgateway.in/index.php#api">API</a></li>
+        <li><a href="https://famgateway.in/index.php#paytm-gateway" style="color:#0284c7; font-weight:700;"><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#0284c7; margin-right:5px; vertical-align:middle;"></span>Paytm</a></li>
+        <li><a href="https://famgateway.in/blog/how-it-works.php">Architecture</a></li>
+        <li><a href="https://famgateway.in/docs.php">Docs</a></li>
+        <li><a href="https://famgateway.in/blog/index.php">Blog</a></li>
+        <li><a href="https://famgateway.in/reports/index.php">Reports</a></li>
+      </ul>
+      <div class="nav-actions"><a class="login" href="https://famgateway.in/login.php">Sign in</a><a class="nav-cta" href="https://famgateway.in/register.php">Get API key <span>↗</span></a></div>
+      <button class="menu" aria-label="Open menu" onclick="toggleMobileNav()"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 7h16M4 12h16M4 17h16"></path>
+        </svg></button>
+    </div>
+  </header>
+  <nav id="mobile-nav" class="mobile-nav"><a href="https://famgateway.in/index.php#flow">How it works</a><a href="https://famgateway.in/index.php#api">API</a><a href="https://famgateway.in/index.php#paytm-gateway" style="color:#0284c7; font-weight:700;">Paytm Gateway</a><a href="https://famgateway.in/blog/how-it-works.php">Architecture</a><a href="https://famgateway.in/docs.php">Docs</a><a href="https://famgateway.in/blog/index.php">Blog</a><a href="https://famgateway.in/reports/index.php">Reports</a>
+    <div class="mobile-menu-actions"><a class="mobile-register" href="https://famgateway.in/register.php">Register</a><a class="mobile-login" href="https://famgateway.in/login.php">Login</a></div>
+  </nav>
+  <div id="mobile-overlay" class="mobile-overlay" onclick="closeMobileNav()"></div>
+  <main>
+    <section class="hero">
+      <div class="shell hero-grid">
+        <div>
+          <div class="hero-eyebrow-wrap"><div class="eyebrow"><svg class="hero-fampay-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="UPI Engine">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg> Non-Custodial UPI Automation &amp; Webhook Engine</div></div>
+          <div class="hero-h1-wrap"><h1 style="font-size:clamp(40px, 5vw, 68px);">The <em>100% Free</em> Developer UPI API.</h1></div>
+          <div class="hero-copy-wrap"><p class="hero-copy">Create a direct peer-to-peer payment link, display a dynamic UPI QR, and know exactly when the money arrives via automated webhook notifications. FamGateway gives Indian developers a simple path from checkout to confirmation — <b>100% Free Forever with 0% Transaction Fees.</b></p></div>
+          <div class="hero-actions-wrap"><div class="hero-actions"><a class="primary" href="https://famgateway.in/register.php">Create your free account <span>→</span></a><a class="secondary" href="https://famgateway.in/docs.php">Read the API docs <span>↗</span></a></div></div>
+          <div class="hero-proof-wrap"><div class="proof"><span><b>✓</b> 100% Free Forever</span><span><b>✓</b> 0% Transaction Fees</span><span><b>✓</b> Unlimited API Calls</span></div></div>
+        </div>
+        <div class="hero-visual">
+          <div class="hero-card-wrap">
+            <div class="product">
+              <div class="product-head">
+                <div class="dots"><i></i><i></i><i></i></div><span>famgateway.in/pay.php</span><span>LIVE</span>
+              </div>
+              <div class="product-main">
+                <div class="gateway-brand"><img src="./Automated UPI Payment Gateway &amp; Webhooks for Developers _ FamGateway_files/logo-dark.png" alt="FamGateway" style="height:24px;width:auto;display:block;object-fit:contain;"></div>
+                <div class="product-label">Order total</div>
+                <div class="money">₹499 <small>INR</small></div>
+                <div class="pay-card">
+                  <div class="pay-row"><span>Order ID</span><b>order_8H2KQ</b></div>
+                  <div class="pay-row"><span>UPI payment link</span><b>Created</b></div>
+                  <div class="pay-row"><span>Verification</span><span class="status"><i></i>Payment received</span></div>
+                </div>
+                <div class="flow">
+                  <div>Link created</div><span>→</span>
+                  <div>Pay with UPI</div><span>→</span>
+                  <div class="active">Confirmed</div>
+                </div>
+              </div>
+              <div class="hero-note">Verified in seconds ✓</div>
+            </div>
+          </div><!-- /.hero-card-wrap -->
+        </div>
+      </div>
+    </section>
+    <div class="ticker">
+      <div class="ticker-track shell"><span>UPI Gateway</span><span>UPI QR Generation</span><span>Paytm Multi-Gateway</span><span>Instant Payment Links</span><span>Stateless Verification</span><span>Hosted Checkout</span></div>
+    </div>
+    
+    <section class="section anim-fade-up visible" style="padding-top: 60px; padding-bottom: 40px; background: var(--surface-page, #f8fafc);">
+      <div class="shell" style="max-width: 860px; margin: 0 auto; text-align: center;">
+          <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(37,99,235,0.08); color:#2563eb; border:1px solid rgba(37,99,235,0.2); border-radius:99px; padding:6px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:16px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            Developer Walkthrough
+          </div>
+          <h2 id="homeVideoMainTitle" style="font-size:clamp(26px, 4vw, 36px); margin: 0 auto 24px auto !important; max-width: 100% !important; color: #0f172a; letter-spacing:-0.5px; text-align: center !important; font-weight: 800; transition: color 0.3s ease; width: 100%; display: block;">How to Add FamGateway in Telegram Bot</h2>
+          
+          <style>
+            .home-video-carousel {
+              position: relative;
+              border-radius: 16px;
+              overflow: hidden;
+              box-shadow: 0 20px 40px -15px rgba(15,23,42,0.18);
+              border: 1px solid #e2e8f0;
+              background: #090d16;
+              width: 100%;
+            }
+            .home-video-track {
+              display: flex;
+              width: 300%;
+              transition: transform 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+            }
+            .home-video-slide {
+              width: 33.333333%;
+              position: relative;
+              flex-shrink: 0;
+            }
+            .home-video-aspect {
+              position: relative;
+              padding-bottom: 56.25%;
+              height: 0;
+            }
+            .home-video-aspect iframe {
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              border: 0;
+            }
+            .home-slider-btn {
+              position: absolute;
+              top: 50%;
+              transform: translateY(-50%);
+              width: 40px;
+              height: 40px;
+              border-radius: 50%;
+              background: rgba(15, 23, 42, 0.85);
+              border: 1px solid rgba(255, 255, 255, 0.25);
+              color: #ffffff;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              cursor: pointer;
+              z-index: 10;
+              transition: all 0.2s ease;
+              backdrop-filter: blur(6px);
+              box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+              padding: 0;
+            }
+            .home-slider-btn:hover {
+              background: #2563eb;
+              border-color: #3b82f6;
+              transform: translateY(-50%) scale(1.08);
+              color: #ffffff;
+            }
+            .home-slider-btn.prev-btn {
+              left: 14px;
+            }
+            .home-slider-btn.next-btn {
+              right: 14px;
+            }
+            .home-video-badge {
+              position: absolute;
+              top: 14px;
+              left: 14px;
+              z-index: 9;
+              background: rgba(15, 23, 42, 0.85);
+              backdrop-filter: blur(6px);
+              border: 1px solid rgba(255, 255, 255, 0.18);
+              color: #f8fafc;
+              font-size: 12px;
+              font-weight: 600;
+              letter-spacing: 0.3px;
+              padding: 5px 12px;
+              border-radius: 20px;
+              display: inline-flex;
+              align-items: center;
+              gap: 8px;
+              pointer-events: none;
+            }
+            .home-video-badge-dot {
+              width: 7px;
+              height: 7px;
+              border-radius: 50%;
+              background: #ef4444;
+              box-shadow: 0 0 8px #ef4444;
+            }
+            .home-slider-dots-wrap {
+              position: absolute;
+              bottom: 14px;
+              left: 0;
+              right: 0;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 8px;
+              z-index: 10;
+              pointer-events: none;
+            }
+            .home-slider-dot {
+              width: 8px;
+              height: 8px;
+              border-radius: 4px;
+              background: rgba(255, 255, 255, 0.45);
+              cursor: pointer;
+              transition: all 0.25s ease;
+              pointer-events: auto;
+            }
+            .home-slider-dot.active {
+              width: 26px;
+              background: #38bdf8;
+              box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+            }
+          </style>
+
+          <div class="home-video-carousel" id="homeVideoCarousel">
+            <div class="home-video-badge" id="homeVideoBadge">
+              <span class="home-video-badge-dot"></span>
+              <span id="homeVideoSlideTitle">Video 3/3: Telegram Bot Integration</span>
+            </div>
+
+            <button type="button" class="home-slider-btn prev-btn" id="homeVideoPrevBtn" title="Previous Video" aria-label="Previous Video">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+            </button>
+            <button type="button" class="home-slider-btn next-btn" id="homeVideoNextBtn" title="Next Video" aria-label="Next Video">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"></path></svg>
+            </button>
+
+            <div class="home-video-track" id="homeVideoTrack" style="transform: translateX(-66.6667%);">
+              <!-- Slide 1: Paytm for Business (Newest Tutorial) -->
+              <div class="home-video-slide">
+                <div class="home-video-aspect">
+                  <iframe src="./Automated UPI Payment Gateway &amp; Webhooks for Developers _ FamGateway_files/iiZgzb1VAzo.html" title="Paytm Business in FamGateway | Setup Tutorial" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen=""></iframe>
+                </div>
+              </div>
+              <!-- Slide 2: Quick Setup -->
+              <div class="home-video-slide">
+                <div class="home-video-aspect">
+                  <iframe src="./Automated UPI Payment Gateway &amp; Webhooks for Developers _ FamGateway_files/bRdAjP0XXB8.html" title="FREE FAM PAY API FOR DEVS | FAMGATEWAY SETUP" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen=""></iframe>
+                </div>
+              </div>
+              <!-- Slide 3: Telegram Bot -->
+              <div class="home-video-slide">
+                <div class="home-video-aspect">
+                  <iframe src="./Automated UPI Payment Gateway &amp; Webhooks for Developers _ FamGateway_files/LD1lkESC7YA.html" title="How to Add FamGateway in Telegram Bot" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen=""></iframe>
+                </div>
+              </div>
+            </div>
+
+            <div class="home-slider-dots-wrap">
+              <div class="home-slider-dot" data-slide="0" title="1. Paytm for Business"></div>
+              <div class="home-slider-dot" data-slide="1" title="2. FamGateway Setup"></div>
+              <div class="home-slider-dot active" data-slide="2" title="3. Telegram Bot Integration"></div>
+            </div>
+          </div>
+
+          <script>
+            (function() {
+              const videoTrack = document.getElementById('homeVideoTrack');
+              const videoPrev = document.getElementById('homeVideoPrevBtn');
+              const videoNext = document.getElementById('homeVideoNextBtn');
+              const videoDots = document.querySelectorAll('.home-slider-dot');
+              const videoTitle = document.getElementById('homeVideoSlideTitle');
+              const mainHeading = document.getElementById('homeVideoMainTitle');
+              const videoContainer = document.getElementById('homeVideoCarousel');
+
+              const slideData = [
+                {
+                  badge: 'Video 1/3: Paytm for Business Integration',
+                  heading: 'Integrating Paytm for Business on FamGateway'
+                },
+                {
+                  badge: 'Video 2/3: FamGateway Core Setup',
+                  heading: 'Setting up FamGateway in Minutes'
+                },
+                {
+                  badge: 'Video 3/3: Telegram Bot Integration',
+                  heading: 'How to Add FamGateway in Telegram Bot'
+                }
+              ];
+              const totalSlides = slideData.length;
+              let currentSlide = 0;
+              let slideInterval = null;
+
+              function goToSlide(idx) {
+                currentSlide = (idx + totalSlides) % totalSlides;
+                if (videoTrack) {
+                  videoTrack.style.transform = `translateX(-${currentSlide * (100 / totalSlides)}%)`;
+                }
+                if (videoTitle) {
+                  videoTitle.textContent = slideData[currentSlide].badge;
+                }
+                if (mainHeading) {
+                  mainHeading.textContent = slideData[currentSlide].heading;
+                }
+                videoDots.forEach((dot, i) => {
+                  dot.classList.toggle('active', i === currentSlide);
+                });
+              }
+
+              if (videoPrev && videoNext && videoTrack) {
+                videoPrev.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  goToSlide(currentSlide - 1);
+                  resetAutoSlide();
+                });
+                videoNext.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  goToSlide(currentSlide + 1);
+                  resetAutoSlide();
+                });
+
+                videoDots.forEach(function(dot) {
+                  dot.addEventListener('click', function() {
+                    const target = parseInt(dot.getAttribute('data-slide'));
+                    goToSlide(target);
+                    resetAutoSlide();
+                  });
+                });
+
+                function startAutoSlide() {
+                  slideInterval = setInterval(function() {
+                    goToSlide(currentSlide + 1);
+                  }, 7000);
+                }
+
+                function stopAutoSlide() {
+                  if (slideInterval) clearInterval(slideInterval);
+                }
+
+                function resetAutoSlide() {
+                  stopAutoSlide();
+                  startAutoSlide();
+                }
+
+                if (videoContainer) {
+                  videoContainer.addEventListener('mouseenter', stopAutoSlide);
+                  videoContainer.addEventListener('mouseleave', startAutoSlide);
+                }
+
+                startAutoSlide();
+              }
+            })();
+          </script>
+      </div>
+    </section>
+    <section id="flow" class="section">
+      <div class="shell">
+        <div class="flow-intro">
+          <div class="anim-slide-left visible">
+            <div class="kicker">How FamGateway Architecture Works</div>
+            <h2 style="font-size:clamp(30px, 4vw, 42px);">Automated Peer-to-Peer UPI Notification &amp; Verification Engine.</h2>
+            <p class="section-intro">Generate a dynamic UPI QR, display the exact payable amount, then automatically verify incoming bank UTR references via webhook.</p>
+          </div>
+          <div class="api-flow-card anim-slide-right"><b>YOUR APP → FAMGATEWAY</b>
+            <div class="api-flow-line">
+              <div class="api-flow-node">API request<small>UPI + amount</small></div><span class="api-flow-arrow">→</span>
+              <div class="api-flow-node">QR response<small>order + QR URL</small></div><span class="api-flow-arrow">→</span>
+              <div class="api-flow-node">Status check<small>pending / paid</small></div>
+            </div>
+            <div class="api-flow-result">{ "status": "success", "utr": "..." }</div>
+          </div>
+        </div>
+        <div class="steps anim-stagger">
+          <article class="step">
+            <div class="step-no">01 / CONNECT</div>
+            <h3>Get your API key.</h3>
+            <p>Create an account and configure your merchant transaction notification listener for automated verification.</p>
+          </article>
+          <article class="step">
+            <div class="step-no">02 / CREATE</div>
+            <h3>Generate a QR.</h3>
+            <p>Send a UPI ID and amount. The API returns an order ID, QR URL, and unique payable amount.</p>
+          </article>
+          <article class="step">
+            <div class="step-no">03 / CHECK</div>
+            <h3>Check payment status.</h3>
+            <p>Use the order ID to check whether payment is pending, successful, or expired.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+    <section id="api" class="section section-dark anim-fade-up">
+      <div class="shell integration">
+        <div class="anim-slide-left">
+          <div class="kicker">Small API surface. Big control.</div>
+          <h2>Two calls. One clear answer.</h2>
+          <p class="section-intro">Create a payment session, then ask for its status. The response is clean JSON, so it fits into whatever you already build with.</p>
+          <div class="code">
+            <div class="code-top"><span>create-payment.py</span><span>copy</span></div>
+            <pre><span class="dim"># create a payment link</span>
+<span class="green">GET</span> /api/qr.php
+<span class="orange">upi</span>: "username@fam"
+<span class="orange">amount</span>: 499
+
+<span class="dim"># response</span>
+order_id, qr_url, payable_amount</pre>
+          </div>
+        </div>
+        <div class="feature-list anim-stagger">
+          <div class="feature"><span class="feature-num" style="color:#60a5fa; font-weight:800;">01</span>
+            <div>
+              <h3>Bank UTR Idempotency</h3>
+              <p>Verify clean exact amounts with atomic database locking, zero decimal changes needed.</p>
+            </div><span class="arrow">↗</span>
+          </div>
+          <div class="feature"><span class="feature-num" style="color:#60a5fa; font-weight:800;">02</span>
+            <div>
+              <h3>UPI QR generation</h3>
+              <p>Create a QR code for a UPI ID and the exact payable amount.</p>
+            </div><span class="arrow">↗</span>
+          </div>
+          <div class="feature"><span class="feature-num" style="color:#60a5fa; font-weight:800;">03</span>
+            <div>
+              <h3>Hosted payment page</h3>
+              <p>Use the built-in checkout page for a payment link when you need a ready UI.</p>
+            </div><span class="arrow">↗</span>
+          </div>
+          <div class="feature"><span class="feature-num" style="color:#60a5fa; font-weight:800;">04</span>
+            <div>
+              <h3>Status verification</h3>
+              <p>Check an order and receive its pending, successful, or expired state.</p>
+            </div><span class="arrow">↗</span>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section id="use-cases" class="section">
+      <div class="shell">
+        <div class="checkout-showcase">
+          <div class="checkout-side anim-slide-left">
+            <div>
+              <div class="kicker">Checkout view</div>
+              <h2>Show the payment screen before the user pays.</h2>
+              <p class="section-intro">This is the real checkout screenshot from the project.</p>
+            </div>
+            <div class="checkout-card">
+              <h3>What the user sees</h3>
+              <p>Exact amount, UPI destination, QR scan, and live waiting state all stay visible at once. That makes the payment flow feel direct instead of hidden behind extra steps.</p>
+            </div>
+            <div class="checkout-metrics">
+              <div class="checkout-metric"><b>Amount</b><span>₹100</span></div>
+              <div class="checkout-metric"><b>Status</b><span>Waiting</span></div>
+            </div>
+          </div>
+          <div class="checkout-panel"><img src="./Automated UPI Payment Gateway &amp; Webhooks for Developers _ FamGateway_files/checkout-screenshot.png" alt="FamPay checkout screenshot"></div>
+        </div>
+      </div>
+    </section>
+    <section class="section section-dark">
+      <div class="shell">
+        <div class="checkout-showcase" style="grid-template-columns:minmax(300px,420px) minmax(0,1.05fr);">
+          <div class="checkout-panel"><img src="./Automated UPI Payment Gateway &amp; Webhooks for Developers _ FamGateway_files/checkout-success.png" alt="Payment Confirmed"></div>
+          <div class="checkout-side anim-slide-right">
+            <div>
+              <div class="kicker">Built around the current API</div>
+              <h2>QR generation, payment links, and verification.</h2>
+              <p class="section-intro">Generate a FamPay UPI QR directly from your application.</p>
+            </div>
+            <div class="checkout-card">
+              <h3>Hosted payment links</h3>
+              <p>Create a shareable link with an expiry time and a built-in payment page.</p>
+            </div>
+            <div class="checkout-card" style="background:var(--ink-2); border-color:rgba(255,255,255,.1); color:var(--white);">
+              <h3>Manual status polling</h3>
+              <p style="color:#afc0b4;">Poll the verification endpoint to check whether a payment has been received.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAYTM FOR BUSINESS MULTI-GATEWAY SECTION -->
+    <section id="paytm-gateway" class="section anim-fade-up" style="scroll-margin-top:80px; background:#ffffff; border-top:1px solid #e2e8f0; border-bottom:1px solid #e2e8f0;">
+      <div class="shell">
+        <div class="checkout-showcase">
+          <div class="checkout-side anim-slide-left">
+            <div>
+              <div class="kicker">Paytm for Business Integration</div>
+              <h2>Direct bank settlements. Zero gateway commission.</h2>
+              <p class="section-intro">Accept high-volume customer UPI payments directly into your Paytm Business account with automated webhooks and sub-250ms bank verification.</p>
+            </div>
+            <div class="checkout-card">
+              <h3>0% Platform commission</h3>
+              <p>Keep 100% of every customer UPI payment. Funds route straight to your linked business bank account with zero intermediate escrow holding.</p>
+            </div>
+            <div class="checkout-card">
+              <h3>Sub-250ms automated verification</h3>
+              <p>Bypasses personal UPI wallet limits with real-time webhook callbacks for Telegram bots, SMM panels, and web checkouts.</p>
+            </div>
+            <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin-top:8px;">
+              <a class="primary" href="https://famgateway.in/addons.php" style="background:#2563eb; color:#ffffff; font-weight:700; border-radius:10px; padding:13px 26px; font-size:15px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 14px rgba(37,99,235,0.3); transition:all 0.2s;">
+                <span>Get Paytm Gateway</span>
+                <span style="font-size:16px;">→</span>
+              </a>
+              <a class="secondary" href="https://famgateway.in/blog/how-to-setup-paytm-for-business-payment-gateway-famgateway.php" style="border:1px solid #cbd5e1; background:#ffffff; color:#334155; font-weight:600; border-radius:10px; padding:13px 22px; font-size:14.5px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; transition:all 0.2s;">
+                <span>Read Setup Guide</span>
+                <span>→</span>
+              </a>
+            </div>
+          </div>
+          <div class="checkout-panel">
+            <img src="./Automated UPI Payment Gateway &amp; Webhooks for Developers _ FamGateway_files/paytm-for-business.png" alt="Paytm for Business Gateway Addon - FamGateway" width="427" height="547" loading="lazy" decoding="async">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="background:#0f172a; padding:70px 0; border-top:1px solid rgba(255,255,255,0.1); border-bottom:1px solid rgba(255,255,255,0.1); text-align:center; position:relative; overflow:hidden;">
+      <div style="position:absolute; top:-50%; left:50%; transform:translateX(-50%); width:600px; height:600px; background:radial-gradient(circle, rgba(96,165,250,0.1) 0%, transparent 70%); pointer-events:none;"></div>
+      <div class="shell" style="position:relative; z-index:1;">
+        <div class="anim-fade-in" style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;">
+          <div style="display:inline-flex; align-items:center; gap:8px; color:#4ade80; background:rgba(74,222,128,0.1); border:1px solid rgba(74,222,128,0.2); padding:8px 18px; border-radius:99px; font-size:12px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+            Loved by Udyam Registration directed
+          </div>
+          <h2 style="margin:0; color:#fff; font-size:32px; font-weight:600; letter-spacing:-0.5px;">Govt. of India Recognized MSME</h2>
+          <div style="margin-top:4px; font-family:ui-monospace, SFMono-Regular, Consolas, monospace; font-size:26px; color:#93c5fd; letter-spacing:3px; font-weight:800; background:rgba(96,165,250,0.15); padding:16px 32px; border-radius:16px; border:1px solid rgba(96,165,250,0.3); box-shadow:0 10px 30px rgba(96,165,250,0.1);">UDYAM-BR-28-0050000</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Proudly Built in India Section -->
+    <section style="background:#fff; padding:100px 0; text-align:center; position:relative; overflow:hidden; border-bottom:1px solid #e2e8f0;">
+      <div style="position:absolute; top:0; left:0; width:100%; height:4px; background:linear-gradient(90deg, #FF9933 0%, #FFFFFF 50%, #138808 100%);"></div>
+      <div class="shell anim-fade-up">
+        <div style="display:inline-flex; align-items:center; justify-content:center; width:80px; height:80px; border-radius:50%; background:#fff; border:2px solid #e2e8f0; box-shadow:0 12px 32px rgba(0,0,0,0.05); margin-bottom:24px; position:relative;">
+          <img src="./Automated UPI Payment Gateway &amp; Webhooks for Developers _ FamGateway_files/Flag_of_India.svg" alt="Flag of India" style="width:40px; border-radius:4px; display:block;">
+        </div>
+        
+        <h2 style="font-size:clamp(32px, 5vw, 48px); font-weight:800; color:#0f172a; margin:0 0 20px; letter-spacing:-1px;">
+          Proudly Built in <span style="background:linear-gradient(90deg, #FF9933, #138808); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">India</span>
+        </h2>
+        
+        <p style="font-size:18px; color:#475569; max-width:680px; margin:0 auto 40px; line-height:1.7;">
+          FamGateway is engineered entirely in India, dedicated to empowering Indian developers and businesses with zero-fee, robust UPI payment infrastructure.
+        </p>
+
+        <div style="display:flex; justify-content:center; gap:32px; flex-wrap:wrap;">
+          <div style="text-align:center;">
+            <div style="font-size:32px; font-weight:800; color:#0f172a; margin-bottom:4px;">100%</div>
+            <div style="font-size:14px; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:1px;">Free UPI Gateway</div>
+          </div>
+          <div style="width:1px; background:#e2e8f0; align-self:stretch;"></div>
+          <div style="text-align:center;">
+            <div style="font-size:32px; font-weight:800; color:#0f172a; margin-bottom:4px;">Zero</div>
+            <div style="font-size:14px; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:1px;">Hidden Charges</div>
+          </div>
+          <div style="width:1px; background:#e2e8f0; align-self:stretch;"></div>
+          <div style="text-align:center;">
+            <div style="font-size:32px; font-weight:800; color:#0f172a; margin-bottom:4px;">Secure</div>
+            <div style="font-size:14px; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:1px;">Data Privacy</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Grid -->
+    <section class="section section-dark" style="padding:100px 0;">
+      <div class="shell">
+        <div style="text-align:center; max-width:600px; margin:0 auto 60px;">
+          <div class="kicker" style="margin-bottom:12px; display:inline-block;">Why FamGateway?</div>
+          <h2 style="font-size:clamp(32px, 5vw, 48px); margin-bottom:20px; letter-spacing:-1px;">Built for scale, designed for speed.</h2>
+          <p class="section-intro" style="font-size:18px; line-height:1.6; margin:0 auto;">Everything you need to automate FamPay payments, without the headache of banking APIs, KYC, or monthly fees.</p>
+        </div>
+        
+        <div class="anim-stagger" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:32px;">
+          <!-- Feature 1 -->
+          <div style="background:var(--ink-2); padding:32px; border-radius:24px; border:1px solid rgba(255,255,255,.1); transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-6px)'" onmouseout="this.style.transform=''">
+            <div style="width:48px; height:48px; background:rgba(59,130,246,0.15); color:#60a5fa; border-radius:12px; display:flex; align-items:center; justify-content:center; margin-bottom:24px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            </div>
+            <h3 style="font-size:20px; color:var(--white); margin-bottom:12px; font-weight:700;">Zero KYC &amp; GST</h3>
+            <p style="color:#afc0b4; line-height:1.6; font-size:15px; margin:0;">Start accepting payments instantly. No paperwork, no business registration, and no tax hurdles for freelancers.</p>
+          </div>
+          
+          <!-- Feature 2 -->
+          <div style="background:var(--ink-2); padding:32px; border-radius:24px; border:1px solid rgba(255,255,255,.1); transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-6px)'" onmouseout="this.style.transform=''">
+            <div style="width:48px; height:48px; background:rgba(34,197,94,0.15); color:#4ade80; border-radius:12px; display:flex; align-items:center; justify-content:center; margin-bottom:24px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+            </div>
+            <h3 style="font-size:20px; color:var(--white); margin-bottom:12px; font-weight:700;">Direct Settlements</h3>
+            <p style="color:#afc0b4; line-height:1.6; font-size:15px; margin:0;">Money doesn't pass through our servers. It goes straight to your personal UPI ID instantly and securely.</p>
+          </div>
+          
+          <!-- Feature 3 -->
+          <div style="background:var(--ink-2); padding:32px; border-radius:24px; border:1px solid rgba(255,255,255,.1); transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-6px)'" onmouseout="this.style.transform=''">
+            <div style="width:48px; height:48px; background:rgba(244,63,94,0.15); color:#fb7185; border-radius:12px; display:flex; align-items:center; justify-content:center; margin-bottom:24px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            </div>
+            <h3 style="font-size:20px; color:var(--white); margin-bottom:12px; font-weight:700;">100% Free Forever</h3>
+            <p style="color:#afc0b4; line-height:1.6; font-size:15px; margin:0;">We don't charge any transaction fees or monthly subscriptions. Keep 100% of your hard-earned revenue.</p>
+          </div>
+          
+          <!-- Feature 4 -->
+          <div style="background:var(--ink-2); padding:32px; border-radius:24px; border:1px solid rgba(255,255,255,.1); transition: transform 0.3s;" onmouseover="this.style.transform='translateY(-6px)'" onmouseout="this.style.transform=''">
+            <div style="width:48px; height:48px; background:rgba(168,85,247,0.15); color:#c084fc; border-radius:12px; display:flex; align-items:center; justify-content:center; margin-bottom:24px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            </div>
+            <h3 style="font-size:20px; color:var(--white); margin-bottom:12px; font-weight:700;">Instant Webhooks</h3>
+            <p style="color:#afc0b4; line-height:1.6; font-size:15px; margin:0;">Receive real-time HTTP callbacks on your server the moment a payment is verified. Automate digital delivery flawlessly.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DPDP Act 2023 Statutory Compliance & Credential Security Section -->
+    <section id="compliance" class="section anim-fade-up" style="background:#0b1120; padding:90px 0; border-top:1px solid rgba(255,255,255,0.08); border-bottom:1px solid rgba(255,255,255,0.08); position:relative; overflow:hidden;">
+      <div style="position:absolute; top:-40%; left:50%; transform:translateX(-50%); width:700px; height:700px; background:radial-gradient(circle, rgba(37,99,235,0.09) 0%, transparent 70%); pointer-events:none;"></div>
+      <div class="shell" style="position:relative; z-index:1;">
+        <div style="text-align:center; max-width:760px; margin:0 auto 50px;">
+          <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(37,99,235,0.12); color:#60a5fa; border:1px solid rgba(37,99,235,0.25); border-radius:99px; padding:6px 16px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:16px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+            Statutory Data Protection &amp; Compliance
+          </div>
+          <h2 style="font-size:clamp(30px, 4vw, 42px); color:#fff; font-weight:800; letter-spacing:-1px; margin:0 0 16px;">DPDP Act 2023 Compliant Architecture</h2>
+          <p style="color:#94a3b8; font-size:16px; line-height:1.7; margin:0;">
+            FamGateway operates as a statutory Data Fiduciary under India's Digital Personal Data Protection (DPDP) Act, 2023 and the Information Technology Act, 2000. Merchant credential protection is our legal duty and architectural foundation.
+          </p>
+        </div>
+
+        <div class="anim-stagger" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:24px; margin-bottom:40px;">
+          <!-- Pillar 1 -->
+          <div style="background:rgba(15,23,42,0.65); border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:32px; backdrop-filter:blur(10px); transition:transform 0.3s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+            <div style="width:44px; height:44px; background:rgba(59,130,246,0.15); color:#60a5fa; border-radius:12px; display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            </div>
+            <h3 style="color:#fff; font-size:18px; font-weight:700; margin-bottom:10px;">Dual-Key AES-256-GCM</h3>
+            <p style="color:#94a3b8; font-size:14px; line-height:1.65; margin:0;">
+              Merchant App Passwords are never stored in plaintext. They are encrypted at rest with dedicated initialization vectors and isolated master keys separated from database dumps.
+            </p>
+          </div>
+
+          <!-- Pillar 2 -->
+          <div style="background:rgba(15,23,42,0.65); border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:32px; backdrop-filter:blur(10px); transition:transform 0.3s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+            <div style="width:44px; height:44px; background:rgba(34,197,94,0.15); color:#4ade80; border-radius:12px; display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            </div>
+            <h3 style="color:#fff; font-size:18px; font-weight:700; margin-bottom:10px;">Stateless RAM-Only Parsing</h3>
+            <p style="color:#94a3b8; font-size:14px; line-height:1.65; margin:0;">
+              Payment notifications are queried via scoped RFC 3501 filters (<code style="color:#cbd5e1; font-family:monospace; font-size:12px;">FROM "no-reply@famapp.in"</code>), verified in volatile RAM for under 5ms, and purged immediately. Zero disk logs.
+            </p>
+          </div>
+
+          <!-- Pillar 3 -->
+          <div style="background:rgba(15,23,42,0.65); border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:32px; backdrop-filter:blur(10px); transition:transform 0.3s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+            <div style="width:44px; height:44px; background:rgba(168,85,247,0.15); color:#c084fc; border-radius:12px; display:flex; align-items:center; justify-content:center; margin-bottom:20px;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            </div>
+            <h3 style="color:#fff; font-size:18px; font-weight:700; margin-bottom:10px;">Statutory Data Fiduciary</h3>
+            <p style="color:#94a3b8; font-size:14px; line-height:1.65; margin:0;">
+              Direct compliance with Section 8 of DPDP Act 2023, guaranteed merchant revocation rights without platform permission, and absolute zero third-party commercial data sharing.
+            </p>
+          </div>
+        </div>
+
+        <div style="text-align:center;">
+          <a href="https://famgateway.in/blog/famgateway-dpdp-act-2023-data-security-compliance-payment-gateway-india.php" style="display:inline-flex; align-items:center; gap:10px; background:rgba(37,99,235,0.15); border:1px solid rgba(37,99,235,0.35); color:#93c5fd; padding:14px 28px; border-radius:12px; font-weight:700; font-size:14px; text-decoration:none; transition:all 0.2s;" onmouseover="this.style.background='rgba(37,99,235,0.25)'; this.style.borderColor='rgba(96,165,250,0.6)';" onmouseout="this.style.background='rgba(37,99,235,0.15)'; this.style.borderColor='rgba(37,99,235,0.35)';">
+            <span>Read DPDP Act 2023 Compliance &amp; Credential Protection Architecture</span>
+            <span style="font-size:16px;">→</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Live System Status Section -->
+    <section id="status" class="section section-dark" style="padding:80px 0; border-top:1px solid rgba(255,255,255,0.05); border-bottom:1px solid rgba(255,255,255,0.05);">
+      <div class="shell">
+        <div class="anim-fade-up" style="background:linear-gradient(135deg, var(--ink-2), rgba(15,23,42,0.85)); border-radius:24px; padding:48px 40px; border:1px solid rgba(255,255,255,0.08); display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:32px; box-shadow:0 20px 40px rgba(0,0,0,0.25);">
+          
+          <div style="flex:1 1 450px;">
+            <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(74,222,128,0.1); color:#4ade80; border-radius:99px; padding:6px 14px; font-size:12px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:16px; border:1px solid rgba(74,222,128,0.2);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+              100% Transparency
+            </div>
+            <h2 style="font-size:clamp(28px, 4vw, 38px); margin-bottom:12px; letter-spacing:-1px; color:#fff; font-weight:800;">Live System Status</h2>
+            <p style="font-size:15px; color:#94a3b8; margin:0 0 24px; line-height:1.6; max-width:540px;">We believe in absolute transparency. Monitor our API, SMTP parsers, and website uptime in real-time on our dedicated public status page backed by independent monitoring.</p>
+            <div>
+              <a href="https://famgateway.in/status.php" style="display:inline-flex; align-items:center; gap:10px; background:#2563eb; color:#fff; padding:14px 28px; border-radius:12px; font-weight:700; font-size:15px; text-decoration:none; box-shadow:0 10px 25px rgba(37,99,235,0.3); transition:transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 14px 30px rgba(37,99,235,0.4)'" onmouseout="this.style.transform='';this.style.boxShadow='0 10px 25px rgba(37,99,235,0.3)'">
+                View Detailed Status →
+              </a>
+            </div>
+          </div>
+          
+          <div style="flex:1 1 300px; display:flex; flex-direction:column; gap:12px;">
+            <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px 20px; display:flex; align-items:center; justify-content:space-between;">
+              <span style="color:#e2e8f0; font-weight:600; font-size:14px;">API Endpoint Gateway</span>
+              <span style="color:#4ade80; font-weight:700; font-size:13px; display:flex; align-items:center; gap:6px;"><span style="width:8px; height:8px; background:#4ade80; border-radius:50%; display:inline-block;"></span> Operational</span>
+            </div>
+            <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px 20px; display:flex; align-items:center; justify-content:space-between;">
+              <span style="color:#e2e8f0; font-weight:600; font-size:14px;">IMAP Receipt Parser</span>
+              <span style="color:#4ade80; font-weight:700; font-size:13px; display:flex; align-items:center; gap:6px;"><span style="width:8px; height:8px; background:#4ade80; border-radius:50%; display:inline-block;"></span> Operational</span>
+            </div>
+            <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px 20px; display:flex; align-items:center; justify-content:space-between;">
+              <span style="color:#e2e8f0; font-weight:600; font-size:14px;">Historical Uptime SLA</span>
+              <span style="color:#60a5fa; font-weight:800; font-size:14px;">99.98%</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+
+    <!-- Meet the Founder Section -->
+    <section style="background:#f8fafc; padding:80px 0; border-bottom:1px solid #e2e8f0; position:relative; overflow:hidden;">
+      <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:800px; height:800px; background:radial-gradient(circle, rgba(37,99,235,0.05) 0%, transparent 60%); pointer-events:none;"></div>
+      <div class="shell anim-fade-up" style="position:relative; z-index:1; max-width:900px; margin:0 auto;">
+        <div style="background:#fff; border-radius:24px; padding:48px; display:flex; align-items:center; gap:48px; border:1px solid rgba(226,232,240,0.8); box-shadow:0 20px 40px rgba(15,23,42,0.04); flex-wrap:wrap;">
+          
+          <div style="position:relative; flex-shrink:0; margin:0 auto;">
+            <div style="position:absolute; inset:-8px; border-radius:50%; background:linear-gradient(135deg, #3b82f6, #8b5cf6); opacity:0.2; filter:blur(12px);"></div>
+            <img src="./Automated UPI Payment Gateway &amp; Webhooks for Developers _ FamGateway_files/aryanispe.png" alt="Aryan Gupta (Aryanispe)" style="position:relative; width:160px; height:160px; border-radius:50%; object-fit:cover; border:4px solid #fff; box-shadow:0 12px 32px rgba(15,23,42,0.12);">
+            <div style="position:absolute; bottom:8px; right:8px; width:28px; height:28px; background:#10b981; border:4px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(16,185,129,0.3); z-index:2;"></div>
+          </div>
+          
+          <div style="flex:1 1 300px; text-align:left;">
+            <div class="kicker" style="display:inline-flex; align-items:center; gap:8px; color:#2563eb; font-weight:700; text-transform:uppercase; letter-spacing:1px; font-size:12px; margin-bottom:16px; background:rgba(37,99,235,0.08); padding:6px 12px; border-radius:99px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+              Verified Official Developer
+            </div>
+            <h2 style="font-size:clamp(28px, 4vw, 36px); color:#0f172a; margin:0 0 12px; letter-spacing:-1px; font-weight:800;">Aryan Gupta <span style="color:#64748b; font-weight:500;">(Aryanispe)</span></h2>
+            <p style="font-size:16px; color:#475569; margin:0 0 24px; line-height:1.7;">FamGateway is exclusively built, maintained, and operated by Aryan Gupta, widely known as <strong>Aryanispe</strong>. By providing a 100% free API infrastructure, Aryanispe empowers developers to automate their UPI flows flawlessly.</p>
+            <div style="display:flex; gap:16px; flex-wrap:wrap;">
+              <a href="https://famgateway.in/blog/who-is-the-official-developer-of-famgateway.php" style="display:inline-flex; align-items:center; gap:8px; background:#0f172a; color:#fff; padding:14px 28px; border-radius:12px; font-weight:700; font-size:14px; text-decoration:none; box-shadow:0 8px 20px rgba(15,23,42,0.2); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 12px 24px rgba(15,23,42,0.3)'" onmouseout="this.style.transform='';this.style.boxShadow='0 8px 20px rgba(15,23,42,0.2)'">Read the Full Story →</a>
+              <a href="https://wa.me/919771348544?text=Hello%20Aryan%2C%20I%20came%20from%20your%20FamGateway%20website." target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:8px; background:rgba(15,23,42,0.05); color:#0f172a; padding:14px 28px; border-radius:12px; font-weight:700; font-size:14px; text-decoration:none; transition: background 0.2s;" onmouseover="this.style.background='rgba(15,23,42,0.08)'" onmouseout="this.style.background='rgba(15,23,42,0.05)'">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                Contact Directly
+              </a>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+    </section>
+
+    <!-- Sleek Unified Dark B2B CTA Section -->
+    <section style="background: linear-gradient(135deg, #0b1120 0%, #0f172a 50%, #1e293b 100%); padding:100px 0; border-top:1px solid rgba(255,255,255,0.08); position:relative; overflow:hidden;">
+      <div style="position:absolute; top:-30%; left:50%; transform:translateX(-50%); width:700px; height:700px; background:radial-gradient(circle, rgba(37,99,235,0.12) 0%, transparent 70%); pointer-events:none;"></div>
+      <div class="shell" style="display:flex; flex-wrap:wrap; align-items:center; gap:60px; justify-content:space-between; position:relative; z-index:1;">
+        <div class="anim-slide-left" style="flex:1 1 400px; min-width:300px;">
+          <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(37,99,235,0.15); border:1px solid rgba(37,99,235,0.3); border-radius:999px; padding:7px 16px; font-size:12px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:#60a5fa; margin-bottom:24px;">
+            <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+            </svg> Get started in minutes
+          </div>
+          <h2 style="color:#ffffff; font-size:clamp(36px, 5vw, 56px); letter-spacing:-2px; margin:0 0 20px; line-height:1.1; font-weight:800;">Ready to accept <br>UPI payments?</h2>
+          <p style="color:#94a3b8; font-size:16px; max-width:440px; margin:0 0 36px; line-height:1.7;">Create an account, generate an API key, and make your first payment link in minutes. No complex banking integration or KYC needed.</p>
+          <div style="display:flex; gap:14px; flex-wrap:wrap;">
+            <a href="https://famgateway.in/register.php" style="display:inline-flex; align-items:center; gap:8px; background:#2563eb; color:#fff; padding:16px 36px; border-radius:12px; font-weight:700; font-size:15px; text-decoration:none; box-shadow:0 10px 28px rgba(37,99,235,0.35); transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 14px 32px rgba(37,99,235,0.45)'" onmouseout="this.style.transform='';this.style.boxShadow='0 10px 28px rgba(37,99,235,0.35)'">Get your API key →</a>
+            <a href="https://famgateway.in/docs.php" style="display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); color:#e2e8f0; padding:16px 28px; border-radius:12px; font-weight:700; font-size:15px; text-decoration:none; transition: background 0.2s ease;" onmouseover="this.style.background='rgba(255,255,255,0.14)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">Read docs</a>
+          </div>
+          <div style="display:flex; gap:20px; margin-top:32px; flex-wrap:wrap;">
+            <span style="display:flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:#4ade80;">✓ 100% Free Forever</span>
+            <span style="display:flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:#4ade80;">✓ 0% Transaction Fees</span>
+            <span style="display:flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:#4ade80;">✓ Unlimited API Calls</span>
+          </div>
+        </div>
+        <div class="cta-closing-metrics anim-stagger" style="flex:1 1 450px; display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px;">
+          <div style="background:rgba(15,23,42,0.6); backdrop-filter:blur(12px); border-radius:20px; padding:28px 24px; border:1px solid rgba(255,255,255,0.08); transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+            <div class="cta-counter" data-target="2" style="font-size:38px; font-weight:800; letter-spacing:-1.5px; color:#ffffff;">0</div>
+            <div style="font-size:13px; font-weight:600; color:#94a3b8; margin-top:8px; line-height:1.4;">API calls to complete a payment</div>
+          </div>
+          <div style="background:rgba(15,23,42,0.6); backdrop-filter:blur(12px); border-radius:20px; padding:28px 24px; border:1px solid rgba(255,255,255,0.08); transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+            <div class="cta-counter" data-target="99" data-suffix="%" style="font-size:38px; font-weight:800; letter-spacing:-1.5px; color:#ffffff;">0%</div>
+            <div style="font-size:13px; font-weight:600; color:#94a3b8; margin-top:8px; line-height:1.4;">Uptime across all endpoints</div>
+          </div>
+          <div style="background:rgba(15,23,42,0.6); backdrop-filter:blur(12px); border-radius:20px; padding:28px 24px; border:1px solid rgba(255,255,255,0.08); transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+            <div style="font-size:38px; font-weight:800; letter-spacing:-1.5px; color:#38bdf8;">&lt;5s</div>
+            <div style="font-size:13px; font-weight:600; color:#94a3b8; margin-top:8px; line-height:1.4;">Average payment confirmation</div>
+          </div>
+          <div style="background:rgba(37,99,235,0.15); border-radius:20px; padding:28px 24px; border:1px solid rgba(37,99,235,0.3); transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+            <div style="font-size:38px; font-weight:800; letter-spacing:-1.5px; color:#60a5fa;">UPI</div>
+            <div style="font-size:13px; font-weight:600; color:#cbd5e1; margin-top:8px; line-height:1.4;">Direct UPI payments</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+  <footer style="background:#0b1120; color:#94a3b8; padding:64px 0 32px; font-size:14px; border-top:1px solid rgba(255,255,255,0.08);">
+    <div class="shell">
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:40px; margin-bottom:40px;">
+        <!-- Brand Info -->
+        <div style="max-width:360px;">
+          <a class="brand" href="https://famgateway.in/index.php" style="padding:0; margin-bottom:16px; display:inline-block;"><img src="./Automated UPI Payment Gateway &amp; Webhooks for Developers _ FamGateway_files/logo-navbar-bright.png" alt="FamGateway" style="height:28px;width:auto;display:block;object-fit:contain;"></a>
+          <p style="margin:0 0 18px; line-height:1.6; font-size:14px; color:#94a3b8;">Automated peer-to-peer UPI payment verification &amp; webhook gateway for developers with zero transaction fees.</p>
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <a href="https://famgateway.in/status.php" style="display:inline-flex; align-items:center; gap:8px; background:rgba(74,222,128,0.08); border:1px solid rgba(74,222,128,0.2); padding:6px 14px; border-radius:99px; font-size:12px; color:#4ade80; font-weight:600; text-decoration:none; transition:all 0.2s;" onmouseover="this.style.background='rgba(74,222,128,0.14)'; this.style.borderColor='#4ade80';" onmouseout="this.style.background='rgba(74,222,128,0.08)'; this.style.borderColor='rgba(74,222,128,0.2)';">
+              <span style="width:7px; height:7px; background:#4ade80; border-radius:50%; display:inline-block; box-shadow:0 0 8px #4ade80;"></span> All Systems Operational
+            </a>
+            <button id="indexGooglePreferredBtn" type="button" style="display:inline-flex; align-items:center; gap:7px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); padding:6px 14px; border-radius:99px; font-size:12px; color:#e2e8f0; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.12)'; this.style.borderColor='rgba(96,165,250,0.4)';" onmouseout="this.style.background='rgba(255,255,255,0.06)'; this.style.borderColor='rgba(255,255,255,0.12)';">
+              <svg viewBox="0 0 24 24" width="14" height="14" style="display:block; flex-shrink:0;">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"></path>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"></path>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"></path>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"></path>
+              </svg>
+              <span>Add to Preferred Sources</span>
+            </button>
+            <a href="https://famgateway.in/blog/famgateway-dpdp-act-2023-data-security-compliance-payment-gateway-india.php" style="display:inline-flex; align-items:center; gap:6px; background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.25); padding:6px 14px; border-radius:99px; font-size:12px; color:#93c5fd; font-weight:600; text-decoration:none; transition:all 0.2s;" onmouseover="this.style.background='rgba(59,130,246,0.15)'; this.style.borderColor='rgba(96,165,250,0.5)';" onmouseout="this.style.background='rgba(59,130,246,0.08)'; this.style.borderColor='rgba(59,130,246,0.25)';">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+              <span>DPDP Act 2023 Compliant</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Resources -->
+        <div>
+          <h3 style="color:#fff; font-size:16px; margin:0 0 20px; font-weight:700; letter-spacing:-0.2px;">Resources &amp; Guides</h3>
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <a href="https://famgateway.in/docs.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">API Documentation</a>
+            <a href="https://famgateway.in/blog/how-to-generate-dynamic-fampay-upi-qr-code.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Dynamic UPI QR Codes</a>
+            <a href="https://famgateway.in/blog/how-it-works.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Architecture &amp; Webhooks</a>
+            <a href="https://famgateway.in/blog/preventing-double-payments.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Handling Collisions</a>
+            <a href="https://famgateway.in/blog/best-free-payment-gateway-without-gst-kyc.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Zero GST &amp; KYC Guide</a>
+            <a href="https://famgateway.in/blog/best-upi-payment-gateway-for-discord-bots.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Discord Bots &amp; SMM Guide</a>
+            <a href="https://famgateway.in/blog/how-to-accept-fampay-upi-payments-on-whatsapp-automation-bot.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">WhatsApp Automation Bot</a>
+            <a href="https://famgateway.in/blog/razorpay-vs-cashfree-vs-famgateway-honest-comparison-2026.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">FamGateway vs Razorpay</a>
+            <a href="https://famgateway.in/blog/how-famgateway-prevents-fake-upi-payments-and-email-spoofing.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Security &amp; Anti-Fraud</a>
+          </div>
+        </div>
+
+        <!-- Ecosystem -->
+        <div>
+          <h3 style="color:#fff; font-size:16px; margin:0 0 20px; font-weight:700; letter-spacing:-0.2px;">Ecosystem &amp; Tech</h3>
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <a href="https://famgateway.in/blog/official-founder-of-famgateway-aryan-gupta.php" style="color:#60a5fa; font-weight:600; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#60a5fa'">Founder: Aryan Gupta (Aryanispe)</a>
+            <a href="https://aryanispehost.in/" target="_blank" rel="noopener noreferrer" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Aryanispe Host (Cloud Hosting)</a>
+            <a href="https://pypi.org/project/famgateway/" target="_blank" rel="noopener noreferrer" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Official PyPI Python SDK</a>
+            <a href="https://github.com/aryanispe/famgateway-php-sdk" target="_blank" rel="noopener noreferrer" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Official PHP Composer SDK</a>
+            <a href="https://github.com/aryanispe" target="_blank" rel="noopener noreferrer" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">GitHub Open Source</a>
+            <a href="https://famgateway.in/blog/famgateway-multi-wallet-general-availability-launch.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Multi-Wallet 5-Slot GA</a>
+            <a href="https://famgateway.in/blog/why-famgateway-upgraded-to-adaptive-concurrency-engine-2.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Adaptive Concurrency (ACE 2.0)</a>
+            <a href="https://famgateway.in/blog/udyam-br-28-0050000-msme-verification-aryanispe.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Govt MSME (UDYAM-BR-28-0050000)</a>
+            <a href="https://famgateway.in/blog/paytm-for-business-multi-gateway-integration-announcement.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Paytm Multi-Gateway GA Launch</a>
+            <a href="https://famgateway.in/blog/how-to-setup-paytm-for-business-payment-gateway-famgateway.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Paytm Setup Tutorial</a>
+          </div>
+        </div>
+
+        <!-- Legal & Disclosures -->
+        <div>
+          <h3 style="color:#fff; font-size:16px; margin:0 0 20px; font-weight:700; letter-spacing:-0.2px;">Legal &amp; Transparency</h3>
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <a href="https://famgateway.in/reports/index.php" style="color:#38bdf8; text-decoration:none; font-weight:600; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#38bdf8'">Reports &amp; Telemetry Hub</a>
+            <a href="https://famgateway.in/blog/index.php" style="color:#60a5fa; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#60a5fa'">Blog Hub</a>
+            <a href="https://famgateway.in/reports/famgateway-october-2026-traffic-transparency-report.php" style="color:#38bdf8; text-decoration:none; font-weight:600; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#38bdf8'">October 2026 Report (14.28M)</a>
+            <a href="https://famgateway.in/blog/famgateway-october-2026-traffic-transparency-report-india.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">October 2026 Traffic Blog</a>
+            <a href="https://famgateway.in/reports/famgateway-60-day-milestone-enterprise-valuation-report.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Enterprise Valuation (Audited)</a>
+            <a href="https://famgateway.in/reports/famgateway-dpdp-act-2023-statutory-security-audit-report.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">DPDP Act Security Audit</a>
+            <a href="https://famgateway.in/terms.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Terms of Service</a>
+            <a href="https://famgateway.in/privacy.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Privacy Policy</a>
+            <a href="https://famgateway.in/refund.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Refund &amp; Cancellation Policy</a>
+            <a href="https://famgateway.in/blog/beware-of-fake-famgateway-scams-online.php" style="color:#ef4444; text-decoration:none; font-weight:500;">Scam Warning</a>
+          </div>
+        </div>
+
+        <!-- Support & Socials -->
+        <div>
+          <h3 style="color:#fff; font-size:16px; margin:0 0 20px; font-weight:700; letter-spacing:-0.2px;">Community &amp; Portals</h3>
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <a href="https://famgateway.in/login.php" style="color:#38bdf8; text-decoration:none; font-weight:600; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#38bdf8'">Merchant Sign In →</a>
+            <a href="https://famgateway.in/register.php" style="color:#4ade80; text-decoration:none; font-weight:600; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#4ade80'">Create Free Account</a>
+            <a href="https://wa.me/919771348544?text=Hello%2C%20I%20came%20from%20your%20FamGateway%20website%2C%20and%20I%20need%20support." target="_blank" rel="noopener noreferrer" style="color:#4ade80; text-decoration:none; font-weight:500;">WhatsApp Direct Support</a>
+            <a href="https://t.me/aryanispe_related" target="_blank" rel="noopener noreferrer" style="color:#60a5fa; text-decoration:none; font-weight:500;">Telegram (3k+ Devs)</a>
+            <a href="https://www.youtube.com/@aryanispe" target="_blank" rel="noopener noreferrer" style="color:#ff4b4b; text-decoration:none; font-weight:500;">YouTube (1.39k+ Devs)</a>
+            <a href="https://famgateway.in/status.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Live Network Status (99.99%)</a>
+            <a href="https://famgateway.in/tickets.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Support Helpdesk Tickets</a>
+            <a href="https://famgateway.in/blog/best-zapupi-alternative-in-india-famgateway-vs-zapupi.php" style="color:#94a3b8; text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">ZapUPI Alternative Guide</a>
+            <div style="display:flex; gap:12px; margin-top:6px;">
+              <a href="http://www.linkedin.com/in/aryanispe" target="_blank" aria-label="LinkedIn" style="display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:10px; background:rgba(255,255,255,0.06); color:#94a3b8; border:1px solid rgba(255,255,255,0.1); transition: all 0.2s;" onmouseover="this.style.color='#fff'; this.style.background='rgba(255,255,255,0.12)';" onmouseout="this.style.color='#94a3b8'; this.style.background='rgba(255,255,255,0.06)';"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg></a>
+              <a href="https://x.com/aryanispe" target="_blank" aria-label="X/Twitter" style="display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:10px; background:rgba(255,255,255,0.06); color:#94a3b8; border:1px solid rgba(255,255,255,0.1); transition: all 0.2s;" onmouseover="this.style.color='#fff'; this.style.background='rgba(255,255,255,0.12)';" onmouseout="this.style.color='#94a3b8'; this.style.background='rgba(255,255,255,0.06)';"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l11.733 16h4.267l-11.733 -16z"></path><path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772"></path></svg></a>
+              <a href="https://www.instagram.com/aryanispe/" target="_blank" aria-label="Instagram" style="display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:10px; background:rgba(255,255,255,0.06); color:#94a3b8; border:1px solid rgba(255,255,255,0.1); transition: all 0.2s;" onmouseover="this.style.color='#fff'; this.style.background='rgba(255,255,255,0.12)';" onmouseout="this.style.color='#94a3b8'; this.style.background='rgba(255,255,255,0.06)';"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div style="border-top:1px solid rgba(255,255,255,0.08); padding-top:24px; margin-top:28px; font-size:13px; line-height:1.6;">
+        <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:16px; margin-bottom:14px;">
+          <p style="margin:0; color:#cbd5e1; font-size:13px;">© 2026 FamGateway. Built with ❤️ by <a href="https://aryanispehost.in/" target="_blank" style="color:#60a5fa; text-decoration:none; font-weight:600;">Aryan Gupta (Aryanispe)</a>. All rights reserved.</p>
+          <span style="font-size:12px; color:#94a3b8;">MSME: <code style="color:#cbd5e1; font-family:inherit; background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px;">UDYAM-BR-28-0050000</code> • <a href="https://famgateway.in/blog/famgateway-dpdp-act-2023-data-security-compliance-payment-gateway-india.php" style="color:#93c5fd; text-decoration:none; font-weight:600;">DPDP Act 2023 Compliant</a> • Govt. of India</span>
+        </div>
+        <div style="background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.07); border-radius:8px; padding:12px 16px; margin-top:10px;">
+          <p style="margin:0; font-size:12.5px; color:#94a3b8; line-height:1.7;">
+            <strong style="color:#f1f5f9;">Disclaimer:</strong> FamGateway is an independent developer automation utility operated by <strong>ARYANISPE</strong> (Govt. of India Recognized MSME). Operated under the statutory Data Fiduciary compliance framework of the <strong>Digital Personal Data Protection (DPDP) Act, 2023</strong> and Section 43A / 72A of the <strong>Information Technology Act, 2000</strong>. FamGateway is <strong>not</strong> affiliated with, authorized, maintained, sponsored, or endorsed by <strong>Tri O Tech Solutions Private Limited</strong>, <strong>FamApp</strong>, or <strong>FamPay</strong>. All product names, logos, brands, and registered trademarks belong to their respective owners.
+          </p>
+        </div>
+      </div>
+    </div>
+  </footer>
+  <script>
+    function toggleMobileNav() {
+      document.getElementById('mobile-nav').classList.toggle('open');
+      document.getElementById('mobile-overlay').classList.toggle('open')
+    }
+
+    function closeMobileNav() {
+      document.getElementById('mobile-nav').classList.remove('open');
+      document.getElementById('mobile-overlay').classList.remove('open')
+    }
+    document.querySelectorAll('#mobile-nav a').forEach(a => a.addEventListener('click', closeMobileNav));
+  </script>
+  <a href="https://famgateway.in/index.php#" class="back-to-top" aria-label="Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'}); return false;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 19V5M5 12l7-7 7 7"></path>
+    </svg></a>
+  <script>
+    // Sticky Navbar and Back-to-top button
+    window.addEventListener('scroll', function() {
+      var nav = document.querySelector('.nav');
+      if (window.scrollY > 50) nav.classList.add('nav-sticky');
+      else nav.classList.remove('nav-sticky');
+
+      var btn = document.querySelector('.back-to-top');
+      if (window.scrollY > 400) btn.classList.add('visible');
+      else btn.classList.remove('visible');
+    });
+
+    // Scroll animations via IntersectionObserver
+    (function() {
+      var targets = document.querySelectorAll(
+        '.anim-fade-up, .anim-fade-in, .anim-slide-left, .anim-slide-right, .anim-stagger'
+      );
+      if (!targets.length || !window.IntersectionObserver) {
+        targets.forEach(function(el) { el.style.opacity = '1'; });
+        return;
+      }
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12 });
+      targets.forEach(function(el) { observer.observe(el); });
+    })();
+
+    // Counter animation — counts up when scrolled into view
+    (function() {
+      function animateCounter(el) {
+        var target = parseInt(el.getAttribute('data-target'), 10);
+        var suffix = el.getAttribute('data-suffix') || '';
+        var duration = 1200;
+        var start = null;
+        function step(timestamp) {
+          if (!start) start = timestamp;
+          var progress = Math.min((timestamp - start) / duration, 1);
+          var eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+          el.textContent = Math.floor(eased * target) + suffix;
+          if (progress < 1) requestAnimationFrame(step);
+          else el.textContent = target + suffix;
+        }
+        requestAnimationFrame(step);
+      }
+      if (!window.IntersectionObserver) return;
+      var counterObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            animateCounter(entry.target);
+            counterObserver.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.5 });
+      document.querySelectorAll('.cta-counter').forEach(function(el) {
+        counterObserver.observe(el);
+      });
+    })();
+
+    // Google Preferred Sources listener
+    (function() {
+      var btn = document.getElementById('indexGooglePreferredBtn');
+      if (btn) {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          (self.PREFERRED_SOURCE = self.PREFERRED_SOURCE || []).push(function(preferredSource) {
+            preferredSource.init({ theme: 'dark', lang: 'en' });
+            preferredSource.addPreferredSource();
+          });
+        });
+      }
+    })();
+  </script>
+
+
+
+<div id="fs_div_all" style="all:initial;"><template shadowrootmode="open">
+        <div class="mainExtCont" style="position:fixed; top:20px;right:20px; z-index:2147483647;box-shadow: 1px -1px 17px #888888;border-radius:10px;">
+            <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;300;400;500;600;700&amp;display=swap" rel="stylesheet">
+            <div class="mainExtSubCont"></div>
+        </div>
+        <div class="extOtherPopups"></div>
+        <style>
+         /* devanagari */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTucXtAKPY.woff2) format('woff2');
+      unicode-range: U+0900-097F, U+1CD0-1CF6, U+1CF8-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FB;
+    }
+    /* latin-ext */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTufntAKPY.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    /* latin */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTucHtA.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+    /* devanagari */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z11lFc-K.woff2) format('woff2');
+      unicode-range: U+0900-097F, U+1CD0-1CF6, U+1CF8-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FB;
+    }
+    /* latin-ext */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z1JlFc-K.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    /* latin */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z1xlFQ.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins light */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 300;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Light.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+
+    /* poppins regular */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 400;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Regular.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins thin */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 100;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Thin.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins medium */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 500;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Medium.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins semi bold */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 600;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-SemiBold.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins bold */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 700;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Bold.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    
+        .extOtherPopups{
+          margin: 0;
+          padding: 0;
+          position: fixed;
+          top: 240px;
+          right: 0;
+          z-index: 2147483647;
+        }
+        [event_type="click"]{
+          cursor:pointer;
+        }
+        </style>
+        </template></div></body><div id="in-page-channel-node-id-v2" data-channel-name="in_page_channel_wY2_6v" data-channel-owner-id="16ff9a418c068289e9d5ef215ca6d67d"></div></html>

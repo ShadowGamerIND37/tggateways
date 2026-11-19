@@ -1,0 +1,2601 @@
+<!DOCTYPE html>
+<!-- saved from url=(0033)https://famgateway.in/profile.php -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style>body {transition: opacity ease-in 0.2s; } 
+body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relative; } 
+</style>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+html, body {
+  background-color: #f6f8fb !important;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+.dashboard-layout {
+  background-color: #f6f8fb !important;
+}
+.sidebar {
+  background-color: #0b1329 !important;
+}
+.fam-legal-attribution {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+</style>
+<title>My Profile — FamGateway</title>
+<meta name="description" content="Automated peer-to-peer UPI payment gateway &amp; webhook verification API for developers in India. 100% free, Govt. recognized MSME with 0% transaction fees.">
+<meta name="keywords" content="UPI Gateway, UPI API, Free UPI API, UPI Webhooks, Automated UPI Verification, FamGateway, Payment Links, Accept UPI Payments India, Govt Recognized MSME, Aryan Gupta, Aryanispe">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+<meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+<meta name="author" content="Aryan Gupta">
+<meta name="author-registry" content="UDYAM-BR-28-0050000|Aryan Gupta|FamGateway">
+<meta name="copyright" content="Aryan Gupta / FamGateway (Aryanispe MSME UDYAM-BR-28-0050000)">
+<meta property="og:title" content="My Profile — FamGateway">
+<meta property="og:description" content="Automated peer-to-peer UPI payment gateway &amp; webhook verification API for developers in India. 100% free, Govt. recognized MSME with 0% transaction fees.">
+<meta property="og:image" content="https://cdn.famgateway.in/img/og-image.png">
+<meta property="og:url" content="https://famgateway.in/profile.php">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="My Profile — FamGateway">
+<meta name="twitter:description" content="Automated peer-to-peer UPI payment gateway &amp; webhook verification API for developers in India. 100% free, Govt. recognized MSME with 0% transaction fees.">
+<meta name="twitter:image" content="https://cdn.famgateway.in/img/og-image.png">
+<link rel="canonical" href="https://famgateway.in/profile.php">
+<link rel="icon" type="image/x-icon" href="https://cdn.famgateway.in/favicon.ico">
+<link rel="icon" type="image/png" href="https://cdn.famgateway.in/favicon.png">
+<link rel="apple-touch-icon" href="https://cdn.famgateway.in/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+<link href="./My Profile — FamGateway_files/css2" rel="stylesheet">
+<link rel="stylesheet" href="./My Profile — FamGateway_files/style.css">
+<script defer="" src="./My Profile — FamGateway_files/lucide.min.js.download"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  if (window.lucide) { lucide.createIcons(); }
+});
+</script>
+<!-- Google tag (gtag.js) - Google Analytics 4 -->
+<script async="" src="./My Profile — FamGateway_files/js"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-6L45EVBBK3', {
+    cookie_flags: 'SameSite=None;Secure'
+  });
+</script>
+<!-- Google Preferred Sources Interactive Button Script (Manual Control) -->
+<script async="" preferred-sources-control="manual" src="./My Profile — FamGateway_files/publisher.js.download"></script>
+
+<style>
+    .avatar-row { display: flex; align-items: center; gap: 24px; }
+    .avatar-preview {
+        width: 88px; height: 88px; border-radius: 50%; object-fit: cover;
+        border: 2px solid var(--color-primary); background: var(--surface-page);
+        box-shadow: 0 4px 12px rgba(37,99,235,0.15);
+    }
+    .avatar-placeholder {
+        width: 88px; height: 88px; border-radius: 50%;
+        background: var(--surface-page); display: flex; align-items: center; justify-content: center;
+        color: var(--color-ink-mute); border: 2px dashed var(--color-hairline);
+    }
+
+    
+    /* Modal Styling */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4);
+        display: none; align-items: center; justify-content: center; z-index: 9999;
+        backdrop-filter: blur(2px); opacity: 0; transition: opacity 0.2s ease;
+    }
+    .modal-overlay.show { display: flex; opacity: 1; }
+    #modalEnable2FA.active, #modalEnable2FA.show,
+    #modalDisable2FA.active, #modalDisable2FA.show {
+        display: flex !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+    }
+    .modal-content {
+        background: #fff; width: 100%; max-width: 440px; border-radius: 12px;
+        padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+        transform: scale(0.95); transition: transform 0.2s ease; border: 1px solid var(--color-hairline);
+    }
+    .modal-overlay.show .modal-content { transform: scale(1); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .modal-title { font-size: 18px; font-weight: 700; color: var(--color-ink); }
+    .modal-close { background: none; border: none; cursor: pointer; color: var(--color-ink-mute); padding: 4px; display:flex; align-items:center; justify-content:center; border-radius:6px; transition: background 0.2s;}
+    .modal-close:hover { background: #f1f5f9; color: var(--color-ink); }
+
+    /* Tabs Styling */
+    .profile-tabs {
+        display: flex; gap: 24px; border-bottom: 1px solid var(--color-hairline); margin-bottom: 24px;
+        overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch;
+    }
+    .profile-tabs::-webkit-scrollbar { display: none; }
+    .tab-btn {
+        background: none; border: none; font-size: 15px; font-weight: 600; color: var(--color-ink-mute);
+        padding: 14px 8px; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s;
+        display: flex; align-items: center; gap: 8px; font-family: inherit;
+    }
+    .tab-btn:hover { color: var(--color-ink); }
+    .tab-btn.active {
+        color: var(--color-primary); border-bottom-color: var(--color-primary);
+    }
+    .tab-pane {
+        display: none;
+    }
+    .tab-pane.active {
+        display: block;
+    }
+    /* Modern Accessible Switch Control with Micro-Loader */
+    .fcm-switch {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        width: 48px;
+        height: 26px;
+        cursor: pointer;
+        flex-shrink: 0;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .fcm-switch input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    .fcm-slider {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #cbd5e1;
+        transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 26px;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.06);
+    }
+    .fcm-slider::before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        bottom: 3px;
+        background-color: #ffffff;
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s, border-color 0.2s;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(15, 23, 42, 0.16), 0 1px 1px rgba(15, 23, 42, 0.08);
+        box-sizing: border-box;
+    }
+    .fcm-switch input:checked + .fcm-slider {
+        background-color: #2563eb;
+    }
+    .fcm-switch input:checked + .fcm-slider::before {
+        transform: translateX(22px);
+    }
+    /* Micro-Spinner Loading State */
+    .fcm-switch.loading {
+        pointer-events: none;
+        cursor: not-allowed;
+    }
+    .fcm-switch.loading .fcm-slider {
+        opacity: 0.88;
+    }
+    .fcm-switch.loading .fcm-slider::before {
+        border: 2.5px solid #cbd5e1;
+        border-top-color: #2563eb;
+        background-color: #ffffff;
+        animation: fcmKnobSpinOff 0.7s linear infinite;
+    }
+    .fcm-switch.loading.checked .fcm-slider::before,
+    .fcm-switch.loading input:checked + .fcm-slider::before {
+        transform: translateX(22px);
+        border: 2.5px solid rgba(255, 255, 255, 0.35);
+        border-top-color: #ffffff;
+        background-color: #2563eb;
+        animation: fcmKnobSpinOn 0.7s linear infinite;
+    }
+    @keyframes fcmKnobSpinOff {
+        0% { transform: translateX(0) rotate(0deg); }
+        100% { transform: translateX(0) rotate(360deg); }
+    }
+    @keyframes fcmKnobSpinOn {
+        0% { transform: translateX(22px) rotate(0deg); }
+        100% { transform: translateX(22px) rotate(360deg); }
+    }
+    .spin-icon {
+        animation: fcmSpin 0.8s linear infinite;
+        display: inline-block;
+        vertical-align: -1px;
+    }
+    @keyframes fcmSpin {
+        100% { transform: rotate(360deg); }
+    }
+    @media (max-width: 600px) {
+        .notif-device-card { padding: 16px 14px !important; }
+        .notif-device-row { gap: 12px !important; align-items: flex-start !important; }
+        .notif-device-icon { width: 38px !important; height: 38px !important; }
+        .notif-device-icon svg { width: 18px !important; height: 18px !important; }
+        .notif-title-text { font-size: 14px !important; }
+        .notif-sub-text { font-size: 12px !important; }
+        .notif-preview-box { flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; }
+        .notif-device-item { padding: 10px 12px !important; }
+    }
+</style>
+
+<style> /* devanagari */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTucXtAKPY.woff2) format('woff2');
+      unicode-range: U+0900-097F, U+1CD0-1CF6, U+1CF8-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FB;
+    }
+    /* latin-ext */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTufntAKPY.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    /* latin */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTucHtA.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+    /* devanagari */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z11lFc-K.woff2) format('woff2');
+      unicode-range: U+0900-097F, U+1CD0-1CF6, U+1CF8-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FB;
+    }
+    /* latin-ext */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z1JlFc-K.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    /* latin */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z1xlFQ.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins light */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 300;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Light.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+
+    /* poppins regular */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 400;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Regular.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins thin */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 100;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Thin.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins medium */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 500;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Medium.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins semi bold */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 600;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-SemiBold.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins bold */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 700;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Bold.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    </style><style type="text/css">
+  /** Common styles across all window sizes. */
+  .swg-dialog,
+  .swg-toast,
+  .publisher-toast {
+    box-sizing: border-box;
+  }
+
+  .swg-toast {
+    background-color: rgba(255, 255, 255, 1) !important;
+    max-height: 46px !important;
+  }
+
+  .publisher-toast {
+    background-color: transparent !important;
+    color-scheme: normal !important;
+    max-width: 360px !important;
+  }
+
+  .swg-toast,
+  .publisher-toast {
+    position: fixed !important;
+    bottom: 0 !important;
+    z-index: 2147483647 !important;
+    border: none !important;
+  }
+
+  /**
+  * Wide desktop screen support, when width is >= 871px and height is >= 641px.
+  */
+  @media (min-width: 871px) and (min-height: 641px) {
+    .swg-dialog.swg-wide-dialog {
+      left: -435px !important;
+    }
+
+    .swg-dialog.swg-wide-dialog,
+    .swg-toast,
+    .publisher-toast {
+      width: 870px !important;
+    }
+  }
+
+  /** Tablet/Medium screen support, when width OR height is <= 640px. */
+  @media (max-width: 640px), (max-height: 640px) {
+    .swg-dialog,
+    .swg-toast {
+      width: 480px !important;
+      left: -240px !important;
+      margin-inline-start: calc(100vw - 100vw / 2) !important;
+      border-top-left-radius: 8px !important;
+      border-top-right-radius: 8px !important;
+      box-shadow:
+        rgba(60, 64, 67, 0.3) 0 1px 1px,
+        rgba(60, 64, 67, 0.15) 0 1px 4px 1px !important;
+    }
+
+    .publisher-toast {
+      width: 480px !important;
+      left: -240px !important;
+      margin-inline-start: calc(100vw - 100vw / 2) !important;
+    }
+
+    [dir='rtl'] .swg-dialog,
+    [dir='rtl'] .swg-toast,
+    [dir='rtl'] .publisher-toast {
+      margin-inline-start: calc(100vw - 100vw / 2 - 240px) !important;
+    }
+  }
+
+  /** Desktop/Large screen support, when width AND height are >= 641px. */
+  @media (min-width: 641px) and (min-height: 641px) {
+    .swg-dialog,
+    .swg-toast,
+    .publisher-toast {
+      width: 630px !important;
+    }
+
+    .swg-dialog {
+      left: -315px !important;
+      margin-inline-start: calc(100vw - 100vw / 2) !important;
+      background-color: transparent !important;
+      border: none !important;
+    }
+
+    [dir='rtl'] .swg-dialog {
+      margin-inline-start: calc(100vw - 100vw / 2 - 315px) !important;
+    }
+
+    .swg-toast {
+      border-radius: 4px !important;
+      bottom: 8px !important;
+      box-shadow:
+        0 3px 1px -2px rgb(0 0 0 / 20%),
+        0 2px 2px 0 rgb(0 0 0 / 14%),
+        0 1px 5px 0 rgb(0 0 0 / 12%) !important;
+      left: 8px !important;
+    }
+
+    .publisher-toast {
+      bottom: 8px !important;
+      right: 30px !important;
+    }
+  }
+
+  /** Phone/Small screen support, when width is <= 480px. */
+  @media (max-width: 480px) {
+    .swg-dialog,
+    .swg-toast,
+    .publisher-toast {
+      width: 100% !important;
+      max-width: 100% !important;
+      left: 0 !important;
+      right: 0 !important;
+      margin-inline-start: 0 !important;
+    }
+  }
+
+  /**
+  * Class applied to content page to disable scrolling.
+  */
+  html.swg-disable-scroll,
+  html.swg-disable-scroll * {
+    overflow: hidden !important;
+  }
+</style><style type="text/css" id="mytempCss">._8mqQwQ { display: none; } ._1TWLMK.icF5zO { opacity: 0.01; }</style></head>
+<body>
+    <div class="dashboard-layout" style="background-color: #f6f8fb;">
+  <!-- Mobile Top Bar -->
+  <div class="mobile-header">
+      <div class="mobile-brand">
+        <a href="https://famgateway.in/dashboard.php">
+          <img src="./My Profile — FamGateway_files/logo-navbar-bright.png" alt="FamGateway" style="height:26px;width:auto;display:block;object-fit:contain;">
+        </a>
+      </div>
+    <button class="mobile-menu-btn" onclick="openSidebar()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="menu" aria-hidden="true" style="width:22px;height:22px;" class="lucide lucide-menu"><path d="M4 5h16"></path><path d="M4 12h16"></path><path d="M4 19h16"></path></svg>
+    </button>
+  </div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar" style="background-color: #0b1329;">
+    <div class="sidebar-header">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div class="sidebar-brand">
+            <a href="https://famgateway.in/dashboard.php">
+              <img src="./My Profile — FamGateway_files/logo-navbar-bright.png" alt="FamGateway" style="height:26px;width:auto;display:block;object-fit:contain;">
+            </a>
+          </div>
+        <button class="mobile-menu-btn" id="closeSidebarBtn" style="display:none;" onclick="closeSidebar()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="x" aria-hidden="true" style="width:20px;height:20px;" class="lucide lucide-x"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <a href="https://famgateway.in/dashboard.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-dashboard"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg> Dashboard
+      </a>
+      <a href="https://famgateway.in/transactions.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-receipt"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"></path><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 17.5v-11"></path></svg> Transactions
+      </a>
+      <a href="https://famgateway.in/payment-links.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link-2"><path d="M9 17H7A5 5 0 0 1 7 7h2"></path><path d="M15 7h2a5 5 0 1 1 0 10h-2"></path><line x1="8" x2="16" y1="12" y2="12"></line></svg> Payment Links
+      </a>
+      <a href="https://famgateway.in/api-keys.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-key-round"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"></path><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"></circle></svg> API Keys
+      </a>
+      <a href="https://famgateway.in/webhooks.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send"><line x1="22" x2="11" y1="2" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Webhooks
+      </a>
+      <div class="sidebar-section-label">Settings</div>
+      <a href="https://famgateway.in/integrations.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plug-zap"><path d="m13 2-2 2.5h3L12 7"></path><path d="M10 14v-3"></path><path d="M14 14v-3"></path><path d="M11 19c-1.7 0-3-1.3-3-3v-2h8v2c0 1.7-1.3 3-3 3Z"></path><path d="M12 22v-3"></path></svg> Integrations
+      </a>
+            <a href="https://famgateway.in/multi-accounts.php" class="sidebar-item " style="color: #059669; font-weight: 600;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-wallet"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"></path><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path></svg>
+        <span>Multi-Accounts</span>
+      </a>
+                  <a href="https://famgateway.in/addons.php" class="sidebar-item " style="color: #6366f1; font-weight: 600;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-store"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"></path><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"></path><path d="M2 7h20"></path><path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 10V7"></path></svg>
+        <span>Addons</span>
+        <span class="sidebar-item-badge" style="background: linear-gradient(135deg, #6366f1, #4f46e5); color: #ffffff; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 9999px; letter-spacing: 0.5px; line-height: 1.1;">PRO</span>
+      </a>
+      <a href="https://famgateway.in/services.php" class="sidebar-item " style="color: #0284c7; font-weight: 600;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-package-check"><path d="m16 16 2 2 4-4"></path><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"></path><path d="m7.5 4.27 9 5.15"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" x2="12" y1="22" y2="12"></line></svg>
+        <span>My Services</span>
+      </a>
+      <a href="https://famgateway.in/invoices.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg>
+        <span>Invoices</span>
+      </a>
+      <a href="https://famgateway.in/profile.php" class="sidebar-item active">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-circle"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="10" r="3"></circle><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"></path></svg> Profile
+      </a>
+      <a href="https://famgateway.in/tickets.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ticket"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path><path d="M13 5v2"></path><path d="M13 17v2"></path><path d="M13 11v2"></path></svg>
+        <span>Support Tickets</span>
+              </a>
+      <a href="https://famgateway.in/docs.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg> Documentation
+      </a>
+      <a href="https://famgateway.in/status.php" class="sidebar-item ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> System Status
+      </a>
+      <!-- Temporarily commented out during gateway downtime
+      <a href="https://wa.me/919771348544?text=Hello%2C%20I%20came%20from%20your%20FamGateway%20website%2C%20and%20I%20need%20support." target="_blank" class="sidebar-item" style="color: #10b981; font-weight: 600;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg> WhatsApp Support
+      </a>
+      -->
+
+          </nav>
+
+    <div class="sidebar-footer">
+      <a href="https://famgateway.in/profile.php" class="sidebar-user-card" title="View Profile">
+        <img src="./My Profile — FamGateway_files/unnamed.png" class="sidebar-avatar" alt="ShadowGamer Ind">
+        <div style="overflow:hidden; min-width:0; flex:1;">
+          <div class="sidebar-user-name" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">ShadowGamer Ind</div>
+        </div>
+      </a>
+
+                  <div class="sidebar-mid-pill" onclick="copyNavMid('7576902029', this)" title="Click to copy Merchant ID">
+        <span class="sidebar-mid-label">
+          <span class="sidebar-mid-dot"></span>
+          MID: <code>7576902029</code>
+        </span>
+        <span class="sidebar-mid-copy-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>
+        </span>
+      </div>
+      
+      <a href="https://famgateway.in/logout.php" class="sidebar-logout">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-log-out"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" x2="9" y1="12" y2="12"></line></svg> Sign Out
+      </a>
+    </div>
+  </aside>
+
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  
+<script>
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebarOverlay').style.display = 'block';
+  if(document.getElementById('closeSidebarBtn')) document.getElementById('closeSidebarBtn').style.display = 'flex';
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').style.display = 'none';
+  if(document.getElementById('closeSidebarBtn')) document.getElementById('closeSidebarBtn').style.display = 'none';
+}
+function copyNavMid(mid, el) {
+  navigator.clipboard.writeText(mid).then(function() {
+    var copyBtn = el.querySelector('.sidebar-mid-copy-btn');
+    if (!copyBtn) return;
+    var original = copyBtn.innerHTML;
+    copyBtn.innerHTML = '<span style="color:#22c55e; font-size:10.5px; font-weight:700;">Copied!</span>';
+    setTimeout(function() {
+      copyBtn.innerHTML = original;
+    }, 1500);
+  });
+}
+</script>
+
+<script>
+/* Dashboard entrance animations — IntersectionObserver */
+(function() {
+  if (!window.IntersectionObserver) {
+    /* Fallback: just show everything immediately */
+    document.querySelectorAll('.dash-anim-up,.dash-anim-in,.dash-anim-right,.dash-stagger').forEach(function(el) {
+      el.style.opacity = '1';
+    });
+    return;
+  }
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target); /* fire once only */
+      }
+    });
+  }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+
+  /* Run after DOM is ready */
+  function initObserver() {
+    document.querySelectorAll(
+      '.dash-anim-up, .dash-anim-in, .dash-anim-right, .dash-stagger'
+    ).forEach(function(el) { observer.observe(el); });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initObserver);
+  } else {
+    initObserver();
+  }
+})();
+</script>
+
+
+<!-- FAMGATEWAY GLOBAL CONFIRMATION & ALERT MODAL -->
+<style>
+.fam-modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9999999;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.fam-modal-backdrop.active {
+  display: flex !important;
+  opacity: 1;
+}
+.fam-modal-box {
+  background: #ffffff;
+  border-radius: 20px;
+  max-width: 440px;
+  width: 100%;
+  padding: 28px 24px;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
+  border: 1px solid #e2e8f0;
+  box-sizing: border-box;
+  transform: scale(0.94) translateY(8px);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.fam-modal-backdrop.active .fam-modal-box {
+  transform: scale(1) translateY(0);
+}
+.fam-modal-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+.fam-modal-icon-wrap.type-danger {
+  background: #fef2f2;
+  color: #ef4444;
+  border: 1px solid #fee2e2;
+}
+.fam-modal-icon-wrap.type-warning {
+  background: #fffbeb;
+  color: #f59e0b;
+  border: 1px solid #fef3c7;
+}
+.fam-modal-icon-wrap.type-success {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+.fam-modal-icon-wrap.type-info {
+  background: #eff6ff;
+  color: #3b82f6;
+  border: 1px solid #dbeafe;
+}
+.fam-modal-title {
+  font-size: 19px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px;
+  letter-spacing: -0.3px;
+  line-height: 1.3;
+}
+.fam-modal-text {
+  font-size: 13.5px;
+  color: #64748b;
+  line-height: 1.55;
+  margin: 0 0 22px;
+  word-break: break-word;
+  white-space: pre-line;
+}
+.fam-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.fam-modal-btn {
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 100px;
+  flex: 1;
+}
+.fam-modal-btn-cancel {
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+.fam-modal-btn-cancel:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+.fam-modal-btn-confirm {
+  background: #0284c7;
+  color: #ffffff;
+}
+.fam-modal-btn-confirm:hover {
+  background: #0369a1;
+}
+.fam-modal-btn-confirm.btn-danger {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+}
+.fam-modal-btn-confirm.btn-danger:hover {
+  background: #b91c1c !important;
+}
+.fam-modal-btn-confirm.btn-success {
+  background: #16a34a !important;
+  color: #ffffff !important;
+}
+.fam-modal-btn-confirm.btn-success:hover {
+  background: #15803d !important;
+}
+
+@media (max-width: 480px) {
+  .fam-modal-backdrop {
+    padding: 12px;
+  }
+  .fam-modal-box {
+    padding: 24px 18px;
+    border-radius: 18px;
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .fam-modal-title {
+    font-size: 17px;
+  }
+  .fam-modal-text {
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+  .fam-modal-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+  .fam-modal-btn {
+    width: 100%;
+    min-height: 44px;
+    font-size: 14px;
+    flex: none;
+  }
+}
+</style>
+
+<div class="fam-modal-backdrop" id="famGlobalModal" onclick="if(event.target===this)famCloseModal(false)">
+  <div class="fam-modal-box">
+    <div class="fam-modal-icon-wrap" id="famModalIconWrap">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="help-circle" aria-hidden="true" id="famModalIcon" style="width:28px;height:28px;" class="lucide lucide-help-circle"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
+    </div>
+    <h3 class="fam-modal-title" id="famModalTitle">Confirm Action</h3>
+    <p class="fam-modal-text" id="famModalText">Are you sure you want to proceed?</p>
+    <div class="fam-modal-actions" id="famModalActions">
+      <button type="button" class="fam-modal-btn fam-modal-btn-cancel" id="famModalCancelBtn" onclick="famCloseModal(false)">Cancel</button>
+      <button type="button" class="fam-modal-btn fam-modal-btn-confirm" id="famModalConfirmBtn" onclick="famCloseModal(true)">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var _famConfirmResolver = null;
+
+  window.famConfirm = function(options) {
+    return new Promise(function(resolve) {
+      if (typeof options === 'string') {
+        options = { text: options };
+      }
+      options = options || {};
+
+      var text = options.text || '';
+      var title = options.title || '';
+      var isDanger = options.danger || options.type === 'danger' || /delete|clear|purge|ban|remove|wipe|critical|erase|disconnect|unlink/i.test(text + ' ' + title);
+      var isSuccess = options.type === 'success';
+      var isWarning = options.type === 'warning' || (!isDanger && !isSuccess);
+
+      var titleEl = document.getElementById('famModalTitle');
+      var textEl = document.getElementById('famModalText');
+      var confirmBtn = document.getElementById('famModalConfirmBtn');
+      var cancelBtn = document.getElementById('famModalCancelBtn');
+      var iconWrap = document.getElementById('famModalIconWrap');
+      var icon = document.getElementById('famModalIcon');
+
+      if (!title) {
+        if (/delete/i.test(text)) title = 'Confirm Deletion';
+        else if (/clear/i.test(text)) title = 'Clear Records?';
+        else if (/purge|wipe/i.test(text)) title = 'Purge Records?';
+        else if (/ban/i.test(text)) title = 'Ban User?';
+        else if (/unban/i.test(text)) title = 'Unban User?';
+        else if (/unlink|disconnect/i.test(text)) title = 'Disconnect Account?';
+        else if (/remove/i.test(text)) title = 'Remove Item?';
+        else if (isDanger) title = 'Confirm Dangerous Action';
+        else title = 'Please Confirm';
+      }
+
+      if (titleEl) titleEl.textContent = title;
+      if (textEl) textEl.textContent = text || 'Do you want to proceed with this action?';
+      if (confirmBtn) confirmBtn.textContent = options.confirmText || (isDanger ? 'Yes, Proceed' : 'Confirm');
+      if (cancelBtn) {
+        cancelBtn.textContent = options.cancelText || 'Cancel';
+        cancelBtn.style.display = 'inline-flex';
+      }
+
+      if (iconWrap) {
+        iconWrap.className = 'fam-modal-icon-wrap ' + (isDanger ? 'type-danger' : isSuccess ? 'type-success' : isWarning ? 'type-warning' : 'type-info');
+      }
+      if (icon) {
+        icon.setAttribute('data-lucide', isDanger ? 'alert-triangle' : isSuccess ? 'check-circle-2' : isWarning ? 'alert-circle' : 'info');
+      }
+      if (confirmBtn) {
+        confirmBtn.className = 'fam-modal-btn fam-modal-btn-confirm' + (isDanger ? ' btn-danger' : isSuccess ? ' btn-success' : '');
+      }
+
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
+
+      _famConfirmResolver = resolve;
+      var modal = document.getElementById('famGlobalModal');
+      if (modal) modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    });
+  };
+
+  window.famAlert = function(options) {
+    return new Promise(function(resolve) {
+      if (typeof options === 'string') {
+        options = { text: options };
+      }
+      options = options || {};
+
+      var text = options.text || '';
+      var title = options.title || '';
+      var isDanger = options.type === 'danger' || options.type === 'error' || /failed|error|wrong/i.test(text + ' ' + title);
+      var isSuccess = options.type === 'success' || /success|copied/i.test(text + ' ' + title);
+
+      var titleEl = document.getElementById('famModalTitle');
+      var textEl = document.getElementById('famModalText');
+      var confirmBtn = document.getElementById('famModalConfirmBtn');
+      var cancelBtn = document.getElementById('famModalCancelBtn');
+      var iconWrap = document.getElementById('famModalIconWrap');
+      var icon = document.getElementById('famModalIcon');
+
+      if (titleEl) titleEl.textContent = title || (isDanger ? 'Notice' : isSuccess ? 'Success' : 'Notice');
+      if (textEl) textEl.textContent = text;
+      if (confirmBtn) confirmBtn.textContent = options.okText || 'OK';
+      if (cancelBtn) cancelBtn.style.display = 'none';
+
+      if (iconWrap) {
+        iconWrap.className = 'fam-modal-icon-wrap ' + (isDanger ? 'type-danger' : isSuccess ? 'type-success' : 'type-info');
+      }
+      if (icon) {
+        icon.setAttribute('data-lucide', isDanger ? 'alert-triangle' : isSuccess ? 'check-circle-2' : 'info');
+      }
+      if (confirmBtn) {
+        confirmBtn.className = 'fam-modal-btn fam-modal-btn-confirm' + (isDanger ? ' btn-danger' : isSuccess ? ' btn-success' : '');
+      }
+
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
+
+      _famConfirmResolver = function() { resolve(true); };
+      var modal = document.getElementById('famGlobalModal');
+      if (modal) modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    });
+  };
+
+  window.famCloseModal = function(result) {
+    var modal = document.getElementById('famGlobalModal');
+    if (modal) {
+      modal.classList.remove('active');
+    }
+    document.body.style.overflow = '';
+    if (_famConfirmResolver) {
+      var res = _famConfirmResolver;
+      _famConfirmResolver = null;
+      res(!!result);
+    }
+  };
+
+  // Close on Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      var modal = document.getElementById('famGlobalModal');
+      if (modal && modal.classList.contains('active')) {
+        famCloseModal(false);
+      }
+    }
+  });
+
+  // Safe global override of window.alert
+  window.alert = function(msg) {
+    return window.famAlert(msg);
+  };
+
+  // Universal Strict Numeric-Only Enforcer for all OTP Inputs
+  document.addEventListener('input', function(e) {
+    if (e.target && (e.target.name === 'otp' || e.target.id === 'inputEnable2FAOTP' || e.target.id === 'twoFAOtpInput' || e.target.dataset.otp === 'true')) {
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+    }
+  }, true);
+
+  document.addEventListener('keydown', function(e) {
+    if (e.target && (e.target.name === 'otp' || e.target.id === 'inputEnable2FAOTP' || e.target.id === 'twoFAOtpInput' || e.target.dataset.otp === 'true')) {
+      if (!/^\d$/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(e.key) && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+      }
+    }
+  }, true);
+
+  document.addEventListener('paste', function(e) {
+    if (e.target && (e.target.name === 'otp' || e.target.id === 'inputEnable2FAOTP' || e.target.id === 'twoFAOtpInput' || e.target.dataset.otp === 'true')) {
+      e.preventDefault();
+      var pasted = (e.clipboardData || window.clipboardData).getData('text') || '';
+      e.target.value = pasted.replace(/\D/g, '').slice(0, 6);
+      e.target.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }, true);
+
+  // Helper function to extract confirm string
+  function extractConfirmMsg(str) {
+    if (!str) return 'Are you sure you want to proceed?';
+    var m = str.match(/confirm\s*\(\s*(['"`])((?:\.|(?!).)*)\s*\)/);
+    if (m && m[2]) {
+      return m[2].replace(/\\/g, '\\').replace(/\'/g, "'").replace(/\"/g, '"').replace(/\n/g, '\n');
+    }
+    return 'Are you sure you want to proceed?';
+  }
+
+  // Global Capture-Phase Interceptor for Forms with confirm()
+  document.addEventListener('submit', function(e) {
+    var form = e.target;
+    if (!form || form.dataset.famConfirmed === 'true') {
+      return;
+    }
+    var onsub = form.getAttribute('onsubmit') || '';
+    if (onsub.includes('confirm(')) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      var msg = extractConfirmMsg(onsub);
+
+      window.famConfirm(msg).then(function(confirmed) {
+        if (confirmed) {
+          form.dataset.famConfirmed = 'true';
+          form.removeAttribute('onsubmit');
+          if (typeof form.requestSubmit === 'function') {
+            form.requestSubmit();
+          } else {
+            form.submit();
+          }
+        }
+      });
+    }
+  }, true);
+
+  // Global Capture-Phase Interceptor for Buttons/Links with confirm()
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('button, a, input[type="submit"]');
+    if (!btn || btn.dataset.famConfirmed === 'true') {
+      return;
+    }
+    var onclick = btn.getAttribute('onclick') || '';
+    if (onclick.includes('confirm(')) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      var msg = extractConfirmMsg(onclick);
+
+      window.famConfirm(msg).then(function(confirmed) {
+        if (confirmed) {
+          btn.dataset.famConfirmed = 'true';
+          btn.removeAttribute('onclick');
+          if (btn.type === 'submit' && btn.form) {
+            var form = btn.form;
+            if (btn.name) {
+              var hidden = document.createElement('input');
+              hidden.type = 'hidden';
+              hidden.name = btn.name;
+              hidden.value = btn.value;
+              form.appendChild(hidden);
+            }
+            if (typeof form.requestSubmit === 'function') {
+              form.requestSubmit(btn);
+            } else {
+              form.submit();
+            }
+          } else {
+            btn.click();
+          }
+        }
+      });
+    }
+  }, true);
+})();
+</script>
+    
+<main class="main-content">
+    <div class="wrap" style="max-width: 900px;">
+
+    
+    <!-- Page Title -->
+    <div class="dash-anim-right is-visible" style="margin-top: 24px; margin-bottom: 24px;">
+      <h1 style="font-size: 22px; font-weight: 700; color: var(--color-ink); letter-spacing: -0.5px;">
+        Profile Settings
+      </h1>
+      <p style="font-size: 13px; color: var(--color-ink-mute); margin-top: 4px;">Manage your account details and custom brand QR avatar.</p>
+    </div>
+
+    <!-- TABS NAVIGATION -->
+    <div class="profile-tabs dash-anim-up is-visible">
+        <button class="tab-btn active" onclick="switchTab('general')" id="btn-general"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="user" aria-hidden="true" style="width:16px;height:16px;" class="lucide lucide-user"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> General</button>
+        <button class="tab-btn " onclick="switchTab('avatar')" id="btn-avatar"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="image" aria-hidden="true" style="width:16px;height:16px;" class="lucide lucide-image"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg> Branding</button>
+        <button class="tab-btn " onclick="switchTab('security')" id="btn-security"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="lock" aria-hidden="true" style="width:16px;height:16px;" class="lucide lucide-lock"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Security</button>
+        <button class="tab-btn " onclick="switchTab('notifications')" id="btn-notifications"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="bell" aria-hidden="true" style="width:16px;height:16px;" class="lucide lucide-bell"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg> Notifications</button>
+        <button class="tab-btn " onclick="switchTab('social')" id="btn-social"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="globe" aria-hidden="true" style="width:16px;height:16px;" class="lucide lucide-globe"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg> Social Logins</button>
+    </div>
+
+
+            <div class="tab-pane active" id="tab-general">
+        
+                <!-- PERSONAL DETAILS CARD -->
+        <div class="card dash-anim-up is-visible" style="margin-bottom: 24px;">
+            <div class="card-header" style="margin-bottom: 18px; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
+                <div>
+                    <div class="card-title" style="display: flex; align-items: center; justify-content: flex-start; gap: 8px;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="user" aria-hidden="true" style="width:18px;height:18px;color:var(--color-primary);" class="lucide lucide-user"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> Personal Details</div>
+                    <div class="card-sub">Update your personal information and contact details.</div>
+                </div>
+                <button type="button" onclick="openModal('editProfileModal')" class="btn btn-secondary" style="padding: 6px 12px; font-weight: 600; font-size: 12px;">Edit Details</button>
+            </div>
+            
+            <div style="display: flex; flex-direction: column;">
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 16px 0; border-bottom: 1px solid var(--color-hairline);">
+                    <div style="width: 30%; min-width: 160px; font-size: 13px; color: var(--color-ink-mute); font-weight: 500;">Merchant ID</div>
+                    <div style="flex: 1; min-width: 200px; font-weight: 700; font-family: monospace; font-size: 15px; color: var(--color-ink); word-break: break-word; letter-spacing: 1px;" id="merchantIdDisplay">7576902029</div>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 16px 0; border-bottom: 1px solid var(--color-hairline);">
+                    <div style="width: 30%; min-width: 160px; font-size: 13px; color: var(--color-ink-mute); font-weight: 500;">Full Name</div>
+                    <div style="flex: 1; min-width: 200px; font-weight: 500; font-size: 14px; color: var(--color-ink); word-break: break-word;" id="currentNameDisplay">ShadowGamer Ind</div>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 16px 0; border-bottom: 1px solid var(--color-hairline);">
+                    <div style="width: 30%; min-width: 160px; font-size: 13px; color: var(--color-ink-mute); font-weight: 500;">Phone Number</div>
+                    <div style="flex: 1; min-width: 200px; font-weight: 500; font-size: 14px; color: var(--color-ink); word-break: break-word;" id="currentPhoneDisplay">6123164100</div>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 16px 0;">
+                    <div style="width: 30%; min-width: 160px; font-size: 13px; color: var(--color-ink-mute); font-weight: 500;">Support / Contact</div>
+                    <div style="flex: 1; min-width: 200px; font-weight: 500; font-size: 14px; color: var(--color-ink); word-break: break-word;" id="currentSupportLinkDisplay"><span style="color:#9ca3af;font-size:13px;font-style:italic;">Not provided</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- EMAIL ADDRESS CARD -->
+        <div class="card dash-anim-up is-visible" style="animation-delay: 0.1s; margin-bottom: 24px;">
+            <div class="card-header" style="margin-bottom: 18px;">
+                <div class="card-title" style="display: flex; align-items: center; justify-content: flex-start; gap: 8px;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="mail" aria-hidden="true" style="width:18px;height:18px;color:var(--color-primary);" class="lucide lucide-mail"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"></path><rect x="2" y="4" width="20" height="16" rx="2"></rect></svg> Email Address</div>
+                <div class="card-sub">Manage the email address associated with your account.</div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+                <div>
+                    <div style="font-size: 13px; color: var(--color-ink-mute); margin-bottom: 4px;">Current Email</div>
+                    <div style="font-weight: 600; font-size: 15px; color: var(--color-ink);" id="currentEmailDisplay">shadowgamerind37@gmail.com</div>
+                </div>
+                <button type="button" onclick="openModal('changeEmailModal')" class="btn btn-secondary" style="padding: 8px 16px; font-weight: 600;">Change Email</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- EDIT PROFILE MODAL -->
+    <div class="modal-overlay" id="editProfileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Edit Personal Details</div>
+                <button class="modal-close" onclick="closeModal('editProfileModal')"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="x" aria-hidden="true" style="width:20px;height:20px;" class="lucide lucide-x"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button>
+            </div>
+            <div id="profileEditAlert" style="display:none; margin-bottom:16px; padding:12px; border-radius:8px; font-size:13px; font-weight:500;"></div>
+            <form id="updateProfileForm" style="display:flex; flex-direction:column; gap:16px;">
+                <input type="hidden" name="action" value="update_profile">
+                <input type="hidden" name="csrf_token" value="974a467a407e70691353b8c333bc344e61ce63185bd2c9f29116156442cd0466">
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label" style="font-size: 13px; font-weight: 600; color: var(--color-ink); margin-bottom: 6px; display: block;">Full Name</label>
+                    <input type="text" name="name" class="form-input" style="font-size: 14px;" required="" value="ShadowGamer Ind">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label" style="font-size: 13px; font-weight: 600; color: var(--color-ink); margin-bottom: 6px; display: block;">Phone Number</label>
+                    <div style="display: flex;">
+                        <span style="background: #f8fafc; border: 1px solid var(--color-border); border-right: none; border-radius: 8px 0 0 8px; padding: 10px 14px; color: var(--color-ink-secondary); font-weight: 600; font-size: 13px; display: flex; align-items: center;">+91</span>
+                        <input type="text" name="phone" class="form-input" style="border-radius: 0 8px 8px 0; border-left: 1px solid var(--color-border); font-size: 14px;" value="6123164100" placeholder="9876543210" pattern="[0-9]{10}">
+                    </div>
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label" style="font-size: 13px; font-weight: 600; color: var(--color-ink); margin-bottom: 6px; display: block;">Support Link</label>
+                    <input type="url" name="support_link" class="form-input" style="font-size: 14px;" value="" placeholder="https://t.me/yourusername">
+                </div>
+                <div style="display:flex; gap:12px; margin-top:8px;">
+                    <button type="submit" class="btn btn-primary" id="updateProfileBtn" style="flex:1; padding: 12px; font-weight: 600;">Save Changes</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editProfileModal')" style="flex:1; padding: 12px; font-weight: 600;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- CHANGE EMAIL MODAL -->
+    <div class="modal-overlay" id="changeEmailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Change Email Address</div>
+                <button class="modal-close" onclick="closeModal('changeEmailModal')"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="x" aria-hidden="true" style="width:20px;height:20px;" class="lucide lucide-x"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button>
+            </div>
+            <div id="emailChangeAlert" style="display:none; margin-bottom:16px; padding:12px; border-radius:8px; font-size:13px; font-weight:500;"></div>
+            
+            <form id="requestEmailForm" style="display:flex; flex-direction:column; gap:16px;">
+                <input type="hidden" name="action" value="request_email_change">
+                <input type="hidden" name="csrf_token" value="974a467a407e70691353b8c333bc344e61ce63185bd2c9f29116156442cd0466">
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label" style="font-size: 13px; font-weight: 600; color: var(--color-ink); margin-bottom: 6px; display: block;">New Email Address</label>
+                    <input type="email" name="new_email" class="form-input" style="font-size: 14px;" required="" placeholder="new@example.com">
+                </div>
+                <div style="display:flex; gap:12px; margin-top:8px;">
+                    <button type="submit" class="btn btn-primary" id="requestEmailBtn" style="flex:1; padding: 12px; font-weight: 600;">Send OTP</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('changeEmailModal')" style="flex:1; padding: 12px; font-weight: 600;">Cancel</button>
+                </div>
+            </form>
+            
+            <form id="verifyEmailForm" style="display:none; flex-direction:column; gap:16px;">
+                <input type="hidden" name="action" value="verify_email_change">
+                <input type="hidden" name="csrf_token" value="974a467a407e70691353b8c333bc344e61ce63185bd2c9f29116156442cd0466">
+                <div class="form-group" style="margin:0;">
+                    <label class="form-label" style="font-size: 13px; font-weight: 600; color: var(--color-ink); margin-bottom: 6px; display: block;">Enter 6-Digit OTP</label>
+                    <input type="text" name="otp" class="form-input" required="" placeholder="123456" maxlength="6" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'').slice(0,6);" onkeydown="if(!/^\d$/.test(event.key)&amp;&amp;!['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'].includes(event.key)&amp;&amp;!event.ctrlKey&amp;&amp;!event.metaKey){event.preventDefault();}" style="letter-spacing: 4px; font-size: 16px; font-weight: 700; text-align: center; box-sizing: border-box;" autocomplete="one-time-code">
+                </div>
+                <div style="display:flex; gap:12px; margin-top:8px;">
+                    <button type="submit" class="btn btn-primary" id="verifyEmailBtn" style="flex:1; padding: 12px; font-weight: 600;">Verify &amp; Update</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('changeEmailModal')" style="flex:1; padding: 12px; font-weight: 600;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="tab-pane " id="tab-avatar">
+    <!-- AVATAR CARD -->
+    <div class="card dash-anim-up" style="animation-delay: 0.05s;">
+        <div class="card-header" style="margin-bottom: 18px;">
+            <div class="card-title" style="display: flex; align-items: center; justify-content: flex-start; gap: 8px;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="image" aria-hidden="true" style="width:18px;height:18px;color:var(--color-primary);" class="lucide lucide-image"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg> Profile Avatar</div>
+            <div class="card-sub">This avatar automatically embeds in the center of your generated QR codes and profile card.</div>
+        </div>
+
+        <div class="avatar-row" style="margin-top: 14px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap;">
+            <div style="position: relative; width: 88px; height: 88px; border-radius: 50%; overflow: hidden; border: 2.5px solid #2563eb; box-shadow: 0 4px 12px rgba(37,99,235,0.18); flex-shrink: 0; background: #eff6ff;">
+                <img id="merchantAvatarPreviewImg" src="./My Profile — FamGateway_files/unnamed.png" class="avatar-preview" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%;">
+            </div>
+
+            <form method="POST" action="https://famgateway.in/profile.php#avatar" enctype="multipart/form-data" style="flex:1; min-width: 260px;" id="avatarUploadForm">
+                <input type="hidden" name="action" value="upload_avatar">
+                <input type="hidden" name="csrf_token" value="974a467a407e70691353b8c333bc344e61ce63185bd2c9f29116156442cd0466">
+                
+                <input type="file" id="merchantAvatarInput" name="avatar" accept="image/png,image/jpeg,image/gif,image/webp" style="display: none;" onchange="handleMerchantAvatarSelect(this)">
+
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px;">
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('merchantAvatarInput').click()" style="display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; font-weight: 600; cursor: pointer;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="camera" aria-hidden="true" style="width:16px;height:16px;" class="lucide lucide-camera"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z"></path><circle cx="12" cy="13" r="3"></circle></svg> Choose Photo...
+                    </button>
+                    
+                    <button type="submit" id="saveAvatarBtn" class="btn btn-primary" onclick="return onUploadAvatarClick(event)" style="display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px; font-weight: 600;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="upload" aria-hidden="true" style="width:16px;height:16px;" class="lucide lucide-upload"><path d="M12 3v12"></path><path d="m17 8-5-5-5 5"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path></svg> Upload New Avatar
+                    </button>
+                </div>
+
+                <div id="selectedAvatarFileText" style="font-size: 12px; color: #16a34a; font-weight: 600; margin-bottom: 6px; display: none;"></div>
+
+                <div style="font-size: 12px; color: var(--color-ink-mute); line-height: 1.4;">
+                    Supports JPG, PNG, WEBP, GIF (Square 1:1 auto-cropped, max 5 MB).
+                </div>
+            </form>
+
+                        <form method="POST" action="https://famgateway.in/profile.php#avatar" style="margin: 0;">
+                <input type="hidden" name="action" value="remove_avatar">
+                <input type="hidden" name="csrf_token" value="974a467a407e70691353b8c333bc344e61ce63185bd2c9f29116156442cd0466">
+                <button type="submit" class="btn btn-outline" style="color: #dc2626; border-color: #fecaca; font-size: 12px; padding: 8px 14px;" onclick="return confirm('Reset profile avatar to default?')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="trash-2" aria-hidden="true" style="width:14px;height:14px;" class="lucide lucide-trash-2"><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Reset Avatar
+                </button>
+            </form>
+                    </div>
+    </div>
+    </div>
+
+    <div class="tab-pane" id="tab-security">
+    <!-- PASSWORD CARD -->
+    <div class="card dash-anim-up" style="animation-delay: 0.12s;">
+        <div class="card-header" style="margin-bottom: 18px;">
+            <div class="card-title" style="display: flex; align-items: center; justify-content: flex-start; gap: 8px;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="lock" aria-hidden="true" style="width:18px;height:18px;color:var(--color-primary);" class="lucide lucide-lock"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Change Password</div>
+            <div class="card-sub">Update your account login credentials.</div>
+        </div>
+
+        <div id="resetLinkAlert" style="display:none; margin-bottom:16px; padding:12px 14px; border-radius:8px; font-size:13px; font-weight:500;"></div>
+
+        <form method="POST">
+            <input type="hidden" name="action" value="change_password">
+            <input type="hidden" name="csrf_token" value="974a467a407e70691353b8c333bc344e61ce63185bd2c9f29116156442cd0466">
+
+            <div class="form-group">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <label class="form-label" style="margin:0;">Current Password</label>
+                    <button type="button" id="sendResetLinkBtn" style="background:none; border:none; color:var(--color-primary); font-size:12.5px; font-weight:600; cursor:pointer; padding:0; text-decoration:underline;">Forgot password?</button>
+                </div>
+                <input type="password" name="current_password" class="form-input" placeholder="Enter current password" required="">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">New Password</label>
+                <input type="password" name="new_password" class="form-input" placeholder="At least 6 characters" required="">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Confirm New Password</label>
+                <input type="password" name="confirm_password" class="form-input" placeholder="Re-enter new password" required="">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 8px;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="shield-check" aria-hidden="true" style="width:16px;height:16px;" class="lucide lucide-shield-check"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></svg> Update Password</button>
+        </form>
+    </div>
+
+    
+    <!-- TWO-FACTOR AUTHENTICATION (2FA) CARD -->
+    <div class="card dash-anim-up" style="animation-delay: 0.14s; margin-top: 24px;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 16px; flex-wrap:wrap; gap:12px;">
+            <div>
+                <div class="card-title" style="display: flex; align-items: center; justify-content: flex-start; gap: 8px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="shield-check" aria-hidden="true" style="width:18px;height:18px;color:var(--color-primary);" class="lucide lucide-shield-check"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></svg> Two-Factor Authentication (2FA)
+                </div>
+                <div class="card-sub">Protect your merchant account with an email verification code on password logins.</div>
+            </div>
+            <div id="twoFAStatusBadge">
+                                    <span style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1; padding:6px 12px; border-radius:20px; font-weight:700; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
+                        <span style="width:7px; height:7px; border-radius:50%; background:#94a3b8;"></span> Disabled
+                    </span>
+                            </div>
+        </div>
+
+        <div id="twoFAAlert" style="display:none; margin-bottom:16px; padding:12px 14px; border-radius:8px; font-size:13px; font-weight:500;"></div>
+
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:18px 20px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px;">
+                <div style="max-width:540px;">
+                    <div style="font-size:14px; font-weight:700; color:#0f172a; margin-bottom:4px;">Email OTP Security Challenge</div>
+                    <div style="font-size:13px; color:#64748b; line-height:1.55;">
+                        When signing in with your email &amp; password, FamGateway will send a 6-digit one-time code to <strong>shadowgamerind37@gmail.com</strong>. Trusted devices are remembered for 7 days.
+                    </div>
+                </div>
+                <div id="twoFAActionsContainer">
+                                            <button type="button" onclick="startEnable2FA()" id="btnStartEnable2FA" class="btn btn-primary" style="font-size:13px; font-weight:600; padding:9px 18px; display:inline-flex; align-items:center; gap:6px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="shield-check" aria-hidden="true" style="width:15px;height:15px;" class="lucide lucide-shield-check"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></svg> Enable 2FA
+                        </button>
+                                    </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PASSKEYS CARD -->
+    <div class="card dash-anim-up" style="animation-delay: 0.16s; margin-top: 24px;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 18px; flex-wrap:wrap; gap:12px;">
+            <div>
+                <div class="card-title" style="display: flex; align-items: center; justify-content: flex-start; gap: 8px;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="fingerprint" aria-hidden="true" style="width:18px;height:18px;color:var(--color-primary);" class="lucide lucide-fingerprint"><path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"></path><path d="M14 13.12c0 2.38 0 6.38-1 8.88"></path><path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"></path><path d="M2 12a10 10 0 0 1 18-6"></path><path d="M2 16h.01"></path><path d="M21.8 16c.2-2 .131-5.354 0-6"></path><path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"></path><path d="M8.65 22c.21-.66.45-1.32.57-2"></path><path d="M9 6.8a6 6 0 0 1 9 5.2v2"></path></svg> Passkeys &amp; Biometrics</div>
+                <div class="card-sub">Log in in 1 second using your device's fingerprint, Face ID, or Windows Hello.</div>
+            </div>
+            <button type="button" id="registerPasskeyBtn" class="btn btn-primary" style="display:inline-flex; align-items:center; gap:8px; padding:9px 16px; font-size:13.5px; font-weight:600;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="plus" aria-hidden="true" style="width:15px;height:15px;" class="lucide lucide-plus"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg> Add Passkey</button>
+        </div>
+
+        <div id="passkeyAlert" style="display:none; margin-bottom:16px; padding:12px 14px; border-radius:8px; font-size:13px; font-weight:500;"></div>
+
+        <div id="passkeysList" style="display:flex; flex-direction:column; gap:10px;">
+                        <div id="noPasskeysMsg" style="text-align:center; padding:32px 16px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:12px; color:#64748b; font-size:13.5px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="shield" aria-hidden="true" style="width:32px;height:32px;margin:0 auto 10px;color:#94a3b8;display:block;" class="lucide lucide-shield"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path></svg>
+                No passkeys registered yet. Click <strong>"Add Passkey"</strong> to enable instant biometric login for this device.
+            </div>
+                    </div>
+    </div>
+
+        </div>
+
+    <div class="tab-pane" id="tab-notifications">
+    <!-- PAYMENT NOTIFICATIONS CARD -->
+    <div class="card dash-anim-up" style="animation-delay: 0.16s; margin-top: 24px;">
+        <div class="card-header" style="margin-bottom: 18px;">
+            <div class="card-title" style="display: flex; align-items: center; justify-content: flex-start; gap: 8px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="bell" aria-hidden="true" style="width:18px;height:18px;color:var(--color-primary);" class="lucide lucide-bell"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
+                Payment Push Notifications
+            </div>
+            <div class="card-sub">Get instant sound alerts on your phone or PC whenever a customer completes a UPI payment.</div>
+        </div>
+
+        <div style="background: var(--surface-page); border: 1px solid var(--color-hairline); border-radius: 12px; padding: 18px 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+                <div style="display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1;">
+                    <div id="fcmStatusIconBox" style="width: 42px; height: 42px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #64748b; flex-shrink: 0; transition: all 0.25s;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="bell" aria-hidden="true" style="width: 20px; height: 20px;" class="lucide lucide-bell"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
+                    </div>
+                    <div style="min-width: 0;">
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <span style="font-weight: 600; font-size: 14.5px; color: var(--color-ink);">Instant Payment Alerts</span>
+                            <span id="fcmStatusBadge" style="padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; background: #f1f5f9; color: #64748b;">Disabled</span>
+                        </div>
+                        <div id="fcmDeviceSubtext" style="font-size: 12.5px; color: var(--color-ink-mute); margin-top: 2px; line-height: 1.4;">Turn on to receive instant sound alerts for incoming UPI transactions.</div>
+                    </div>
+                </div>
+
+                <div style="flex-shrink: 0; display: flex; align-items: center;">
+                    <label class="fcm-switch" id="fcmSwitchWrapper" title="Toggle Payment Notifications">
+                        <input type="checkbox" id="fcmPushToggle" onchange="toggleFcmPush(this)">
+                        <span class="fcm-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div id="fcmActionsRow" style="display: none; align-items: center; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--color-hairline); flex-wrap: wrap;">
+                <button type="button" id="btnTestFcm" class="btn btn-secondary" onclick="sendTestPush(this)" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; padding: 6px 12px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="send" aria-hidden="true" style="width: 13px; height: 13px;" class="lucide lucide-send"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"></path><path d="m21.854 2.147-10.94 10.939"></path></svg> Send Test Alert
+                </button>
+                <span id="fcmTestFeedback" style="font-size: 12px; color: #16a34a; font-weight: 500;"></span>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <div class="tab-pane" id="tab-social">
+    <!-- SOCIAL LOGINS CARD -->
+    <div class="card dash-anim-up" style="animation-delay: 0.18s; margin-top: 24px;">
+        <div class="card-header" style="margin-bottom: 18px;">
+            <div class="card-title" style="display: flex; align-items: center; justify-content: flex-start; gap: 8px;">
+                <svg viewBox="0 0 48 48" style="width:18px; height:18px; margin-right:6px;">
+                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+                </svg>
+                Google Sign-In
+            </div>
+            <div class="card-sub">Enable or disable 1-click login with your Google account.</div>
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; background: var(--surface-page); border: 1px solid var(--color-hairline); border-radius: 12px; padding: 16px 20px;">
+            <div style="display: flex; align-items: center; gap: 14px; min-width: 200px;">
+                                    <div style="width: 42px; height: 42px; border-radius: 50%; background: #dcfce7; display: flex; align-items: center; justify-content: center; color: #16a34a;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="check" aria-hidden="true" style="width: 24px; height: 24px;" class="lucide lucide-check"><path d="M20 6 9 17l-5-5"></path></svg>
+                    </div>
+                    <div>
+                        <div style="font-weight: 600; font-size: 14px; color: var(--color-ink);">Linked</div>
+                        <div style="font-size: 13px; color: var(--color-ink-mute);">You can log in via Google</div>
+                    </div>
+                            </div>
+            <div style="flex-shrink: 0;">
+                                    <form method="POST" id="unlinkGoogleForm" style="margin: 0;">
+                        <input type="hidden" name="action" value="unlink_google">
+                        <input type="hidden" name="csrf_token" value="974a467a407e70691353b8c333bc344e61ce63185bd2c9f29116156442cd0466">
+                        <button type="button" onclick="confirmUnlinkGoogle()" class="btn btn-secondary" style="color: #dc2626; border-color: #fee2e2; background: #fef2f2;">Unlink Account</button>
+                    </form>
+                            </div>
+        </div>
+    </div>
+
+    </div>
+    </div>
+</main>
+</div>
+
+<script>
+
+  function onUploadAvatarClick(e) {
+      const input = document.getElementById('merchantAvatarInput');
+      if (!input.files || input.files.length === 0) {
+          e.preventDefault();
+          input.click();
+          return false;
+      }
+      return true;
+  }
+
+  function handleMerchantAvatarSelect(input) {
+      if (input.files && input.files[0]) {
+          const file = input.files[0];
+          const preview = document.getElementById('merchantAvatarPreviewImg');
+          if (preview) {
+              preview.src = URL.createObjectURL(file);
+          }
+          const fileText = document.getElementById('selectedAvatarFileText');
+          if (fileText) {
+              const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+              fileText.textContent = `Selected: ${file.name} (${sizeMb} MB) — Click "Upload New Avatar" to save.`;
+              fileText.style.display = 'block';
+          }
+          const saveBtn = document.getElementById('saveAvatarBtn');
+          if (saveBtn) {
+              saveBtn.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.3)';
+          }
+      }
+  }
+
+  function switchTab(tabId) {
+      // Hide all panes
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+      // Remove active class from buttons
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      
+      // Show selected pane
+      const targetPane = document.getElementById('tab-' + tabId);
+      const targetBtn = document.getElementById('btn-' + tabId);
+      if (targetPane) targetPane.classList.add('active');
+      if (targetBtn) targetBtn.classList.add('active');
+      
+      // Save state to URL hash so reload keeps you on same tab
+      window.location.hash = tabId;
+  }
+
+  // Restore tab on page load
+  window.addEventListener('DOMContentLoaded', () => {
+      const hash = window.location.hash.replace('#', '');
+      if (['general', 'avatar', 'security', 'notifications', 'social'].includes(hash)) {
+          switchTab(hash);
+      }
+  });
+
+  if (window.lucide) lucide.createIcons();
+</script>
+
+<!-- Firebase Cloud Messaging SDK -->
+<script src="./My Profile — FamGateway_files/firebase-app-compat.js.download"></script>
+<script src="./My Profile — FamGateway_files/firebase-messaging-compat.js.download"></script>
+<script>
+  const fcmConfig = {
+    apiKey: "AIzaSyDiFG2Qo3KOtRQTajkPb4VD8H-2agaStew",
+    authDomain: "famgateway-20ac9.firebaseapp.com",
+    projectId: "famgateway-20ac9",
+    storageBucket: "famgateway-20ac9.firebasestorage.app",
+    messagingSenderId: "54874103984",
+    appId: "1:54874103984:web:84e582cbc9d99802c05b75",
+    measurementId: "G-FSQYXJTB5D"
+  };
+  const fcmVapidKey = "BBrq_20Wx2BgD_iQaaopCO8D7EDsdSnH9Y3OVkDJP9zaUVAwL8hxQbZjUbbzuVHT3ckN4ejIY6sjJ8Fk0zc8osg";
+  const csrfTokenVal = "974a467a407e70691353b8c333bc344e61ce63185bd2c9f29116156442cd0466";
+  let serverFcmTokens = [];
+
+  function getFriendlyDeviceLabel() {
+    const ua = navigator.userAgent || '';
+    let browser = 'Browser';
+    if (ua.includes('Edg/')) browser = 'Edge';
+    else if (ua.includes('Chrome/')) browser = 'Chrome';
+    else if (ua.includes('Firefox/')) browser = 'Firefox';
+    else if (ua.includes('Safari/')) browser = 'Safari';
+    else if (ua.includes('OPR/') || ua.includes('Opera/')) browser = 'Opera';
+
+    let os = 'Device';
+    if (ua.includes('Windows')) os = 'Windows PC';
+    else if (ua.includes('Android')) os = 'Android';
+    else if (ua.includes('iPhone')) os = 'iPhone';
+    else if (ua.includes('iPad')) os = 'iPad';
+    else if (ua.includes('Macintosh')) os = 'Mac';
+    else if (ua.includes('Linux')) os = 'Linux';
+
+    return browser + ' on ' + os;
+  }
+
+  function updateFcmCardUi(isActive, deviceLabel = '') {
+    const iconBox = document.getElementById('fcmStatusIconBox');
+    const badge = document.getElementById('fcmStatusBadge');
+    const subtext = document.getElementById('fcmDeviceSubtext');
+    const actionsRow = document.getElementById('fcmActionsRow');
+    const wrapper = document.getElementById('fcmSwitchWrapper');
+    const toggle = document.getElementById('fcmPushToggle');
+
+    if (wrapper) {
+      wrapper.classList.remove('loading');
+      if (isActive) {
+        wrapper.classList.add('checked');
+      } else {
+        wrapper.classList.remove('checked');
+      }
+    }
+    if (toggle) {
+      toggle.checked = !!isActive;
+      toggle.disabled = false;
+    }
+
+    if (isActive) {
+      if (iconBox) {
+        iconBox.style.background = '#dcfce7';
+        iconBox.style.color = '#16a34a';
+      }
+      if (badge) {
+        badge.innerText = 'Active on this Device';
+        badge.style.background = '#dcfce7';
+        badge.style.color = '#16a34a';
+      }
+      if (subtext) {
+        const label = deviceLabel || getFriendlyDeviceLabel();
+        subtext.innerHTML = 'Connected: <strong>' + label + '</strong>. Sound alerts active even when browser is closed.';
+      }
+      if (actionsRow) {
+        actionsRow.style.display = 'flex';
+      }
+    } else {
+      if (iconBox) {
+        iconBox.style.background = '#f1f5f9';
+        iconBox.style.color = '#64748b';
+      }
+      if (badge) {
+        badge.innerText = 'Disabled';
+        badge.style.background = '#f1f5f9';
+        badge.style.color = '#64748b';
+      }
+      if (subtext) {
+        subtext.innerText = 'Turn on to receive instant sound alerts for incoming UPI transactions.';
+      }
+      if (actionsRow) {
+        actionsRow.style.display = 'none';
+      }
+    }
+  }
+
+  // Check initial device notification status
+  async function checkFcmStatus() {
+    const toggle = document.getElementById('fcmPushToggle');
+    const badge = document.getElementById('fcmStatusBadge');
+    const iconBox = document.getElementById('fcmStatusIconBox');
+    const subtext = document.getElementById('fcmDeviceSubtext');
+    const actionsRow = document.getElementById('fcmActionsRow');
+    if (!toggle || !badge) return;
+
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+      badge.innerText = 'Not Supported';
+      badge.style.background = '#fef2f2';
+      badge.style.color = '#dc2626';
+      if (subtext) subtext.innerText = 'Push notifications are not supported in this browser.';
+      if (iconBox) {
+        iconBox.style.background = '#fef2f2';
+        iconBox.style.color = '#dc2626';
+      }
+      toggle.disabled = true;
+      toggle.checked = false;
+      if (actionsRow) actionsRow.style.display = 'none';
+      return;
+    }
+
+    if (Notification.permission === 'denied') {
+      badge.innerText = 'Permission Blocked';
+      badge.style.background = '#fef2f2';
+      badge.style.color = '#dc2626';
+      if (subtext) subtext.innerText = 'Notification permissions are blocked in your browser settings. Unblock them to receive alerts.';
+      if (iconBox) {
+        iconBox.style.background = '#fef2f2';
+        iconBox.style.color = '#dc2626';
+      }
+      toggle.disabled = false;
+      toggle.checked = false;
+      if (actionsRow) actionsRow.style.display = 'none';
+      return;
+    }
+
+    const userPref = localStorage.getItem('fcm_push_enabled');
+
+    // If user explicitly turned it off (userPref === '0') OR if user has 0 devices on server:
+    if (userPref === '0' || serverFcmTokens.length === 0) {
+      updateFcmCardUi(false);
+      return;
+    }
+
+    // Only if user previously enabled it and browser permission is granted:
+    if (Notification.permission === 'granted' && userPref === '1') {
+      try {
+        if (!firebase.apps.length) firebase.initializeApp(fcmConfig);
+        const messaging = firebase.messaging();
+        const swReg = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+        if (swReg) {
+          const currentToken = await messaging.getToken({ vapidKey: fcmVapidKey, serviceWorkerRegistration: swReg }).catch(() => null);
+          if (currentToken && serverFcmTokens.includes(currentToken)) {
+            updateFcmCardUi(true);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn("FCM check error:", e);
+      }
+    }
+
+    // Default: Disabled
+    updateFcmCardUi(false);
+  }
+
+  window.addEventListener('DOMContentLoaded', checkFcmStatus);
+
+  async function toggleFcmPush(checkbox) {
+    const wrapper = document.getElementById('fcmSwitchWrapper');
+    const badge = document.getElementById('fcmStatusBadge');
+
+    const willEnable = checkbox.checked;
+
+    if (willEnable) {
+      checkbox.checked = false;
+      checkbox.disabled = true;
+      if (wrapper) {
+        wrapper.classList.remove('checked');
+        wrapper.classList.add('loading');
+      }
+
+      badge.innerHTML = '<svg class="spin-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Requesting permission...';
+      badge.style.background = '#fef3c7';
+      badge.style.color = '#92400e';
+
+      if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+        alert('Push notifications are not supported in this browser.');
+        updateFcmCardUi(false);
+        badge.innerText = 'Not Supported';
+        badge.style.background = '#fef2f2';
+        badge.style.color = '#dc2626';
+        return;
+      }
+
+      let permission = Notification.permission;
+      if (permission !== 'granted') {
+        try {
+          permission = await Notification.requestPermission();
+        } catch (err) {
+          console.error("Permission request error:", err);
+        }
+      }
+
+      if (permission !== 'granted') {
+        updateFcmCardUi(false);
+        badge.innerText = (permission === 'denied') ? 'Permission Blocked' : 'Disabled';
+        badge.style.background = '#f1f5f9';
+        badge.style.color = '#64748b';
+        localStorage.setItem('fcm_push_enabled', '0');
+        if (permission === 'denied') {
+          alert('Notification permission is blocked. Please allow notifications for famgateway.in from your browser settings or URL bar icon.');
+        }
+        return;
+      }
+
+      badge.innerHTML = '<svg class="spin-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Connecting device...';
+      badge.style.background = '#eff6ff';
+      badge.style.color = '#2563eb';
+
+      try {
+        const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        if (!firebase.apps.length) firebase.initializeApp(fcmConfig);
+        const messaging = firebase.messaging();
+        const token = await messaging.getToken({ vapidKey: fcmVapidKey, serviceWorkerRegistration: swReg });
+
+        if (!token) throw new Error('Could not obtain notification device token.');
+
+        // Subscribe on backend
+        const fd = new FormData();
+        fd.append('action', 'subscribe');
+        fd.append('fcm_token', token);
+        fd.append('device_info', navigator.userAgent);
+        fd.append('csrf_token', csrfTokenVal);
+
+        const res = await fetch('/api/fcm-token.php', {
+          method: 'POST',
+          body: fd,
+          headers: { 'Accept': 'application/json' }
+        });
+
+        const text = await res.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch(parseErr) {
+          throw new Error('Server returned invalid response: ' + (text.substring(0, 100) || ('Status ' + res.status)));
+        }
+
+        if (data.status === 'success') {
+          localStorage.setItem('fcm_push_enabled', '1');
+          if (!serverFcmTokens.includes(token)) serverFcmTokens.push(token);
+          updateFcmCardUi(true);
+        } else {
+          throw new Error(data.message || 'Server error saving subscription');
+        }
+      } catch (err) {
+        localStorage.setItem('fcm_push_enabled', '0');
+        updateFcmCardUi(false);
+        alert('Failed to enable notifications: ' + err.message);
+      }
+    } else {
+      // Disabling
+      checkbox.checked = true;
+      checkbox.disabled = true;
+      if (wrapper) {
+        wrapper.classList.add('checked');
+        wrapper.classList.add('loading');
+      }
+      badge.innerHTML = '<svg class="spin-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Disconnecting...';
+
+      try {
+        if (!firebase.apps.length) firebase.initializeApp(fcmConfig);
+        const messaging = firebase.messaging();
+        const swReg = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+        let token = null;
+        if (swReg) {
+          token = await messaging.getToken({ vapidKey: fcmVapidKey, serviceWorkerRegistration: swReg }).catch(() => null);
+          if (token) await messaging.deleteToken().catch(() => {});
+        }
+
+        const fd = new FormData();
+        fd.append('action', 'unsubscribe');
+        if (token) fd.append('fcm_token', token);
+        fd.append('csrf_token', csrfTokenVal);
+
+        await fetch('/api/fcm-token.php', {
+          method: 'POST',
+          body: fd,
+          headers: { 'Accept': 'application/json' }
+        });
+
+        localStorage.setItem('fcm_push_enabled', '0');
+        if (token) {
+          serverFcmTokens = serverFcmTokens.filter(t => t !== token);
+        } else {
+          serverFcmTokens = [];
+        }
+
+        updateFcmCardUi(false);
+      } catch (e) {
+        console.error(e);
+        localStorage.setItem('fcm_push_enabled', '0');
+        updateFcmCardUi(false);
+      }
+    }
+  }
+
+  async function sendTestPush(btn) {
+    const feedback = document.getElementById('fcmTestFeedback');
+    const oldHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i data-lucide="loader" style="width:14px;height:14px;" class="spin-icon"></i> Sending...';
+    if (window.lucide) lucide.createIcons();
+    if (feedback) feedback.innerText = '';
+
+    try {
+      const fd = new FormData();
+      fd.append('action', 'test');
+      fd.append('csrf_token', csrfTokenVal);
+
+      const res = await fetch('/api/fcm-token.php', {
+        method: 'POST',
+        body: fd,
+        headers: { 'Accept': 'application/json' }
+      });
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch(parseErr) {
+        throw new Error('Server returned invalid response: ' + (text.substring(0, 100) || ('Status ' + res.status)));
+      }
+
+      if (data.status === 'success') {
+        if (feedback) {
+          feedback.style.color = '#16a34a';
+          feedback.innerText = 'Alert dispatched! Check your notification bar.';
+        }
+      } else {
+        if (feedback) {
+          feedback.style.color = '#dc2626';
+          feedback.innerText = data.message || 'Test failed.';
+        }
+      }
+    } catch(err) {
+      if (feedback) {
+        feedback.style.color = '#dc2626';
+        feedback.innerText = 'Error: ' + err.message;
+      }
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = oldHtml;
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+</script>
+
+<script>
+
+
+  function openModal(id) {
+      document.getElementById(id).classList.add('show');
+      if (id === 'changeEmailModal') {
+          const reqForm = document.getElementById('requestEmailForm');
+          const verForm = document.getElementById('verifyEmailForm');
+          if(reqForm) reqForm.style.display = 'flex';
+          if(verForm) verForm.style.display = 'none';
+          const alertEl = document.getElementById('emailChangeAlert');
+          if(alertEl) alertEl.style.display = 'none';
+          const emailInput = document.querySelector('input[name="new_email"]');
+          if(emailInput) emailInput.value = '';
+          const otpInput = document.querySelector('input[name="otp"]');
+          if(otpInput) otpInput.value = '';
+      }
+      if (id === 'editProfileModal') {
+          const alertEl = document.getElementById('profileEditAlert');
+          if(alertEl) alertEl.style.display = 'none';
+      }
+  }
+
+  function closeModal(id) {
+      document.getElementById(id).classList.remove('show');
+  }
+
+  function showEmailAlert(msg, type) {
+      const alert = document.getElementById('emailChangeAlert');
+      alert.style.display = 'block';
+      alert.innerHTML = msg;
+      alert.style.backgroundColor = type === 'error' ? '#fee2e2' : '#dcfce7';
+      alert.style.color = type === 'error' ? '#dc2626' : '#166534';
+      alert.style.border = type === 'error' ? '1px solid #fca5a5' : '1px solid #bbf7d0';
+  }
+
+
+
+  function showProfileAlert(msg, type) {
+      const alert = document.getElementById('profileEditAlert');
+      alert.style.display = 'block';
+      alert.innerHTML = msg;
+      alert.style.backgroundColor = type === 'error' ? '#fee2e2' : '#dcfce7';
+      alert.style.color = type === 'error' ? '#dc2626' : '#166534';
+      alert.style.border = type === 'error' ? '1px solid #fca5a5' : '1px solid #bbf7d0';
+  }
+
+  document.getElementById('updateProfileForm')?.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = document.getElementById('updateProfileBtn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = 'Saving...'; btn.disabled = true;
+
+      try {
+          const res = await fetch('', { 
+              method: 'POST', 
+              body: new FormData(this),
+              headers: {
+                  'Accept': 'application/json',
+                  'X-Requested-With': 'XMLHttpRequest'
+              }
+          });
+          
+          let data;
+          try {
+              data = await res.json();
+          } catch(jsonErr) {
+              showProfileAlert('Session or security token expired. Please <a href="" onclick="window.location.reload();return false;" style="text-decoration:underline;font-weight:700;color:inherit;">refresh the page</a>.', 'error');
+              return;
+          }
+
+          if (res.status === 401 || data.status === 'unauthorized') {
+              showProfileAlert('Session expired. <a href="/login.php" style="text-decoration:underline;font-weight:700;color:inherit;">Click here to log in</a>.', 'error');
+              setTimeout(() => { window.location.href = '/login.php'; }, 2000);
+              return;
+          }
+
+          if (data.status === 'success') {
+              showProfileAlert(data.message, 'success');
+              const newName = document.querySelector('input[name="name"]').value;
+              const newPhone = document.querySelector('input[name="phone"]').value;
+              const newSupport = document.querySelector('input[name="support_link"]').value;
+              document.getElementById('currentNameDisplay').innerText = newName;
+              document.getElementById('currentPhoneDisplay').innerHTML = newPhone ? newPhone : '<span style="color:#9ca3af;font-size:13px;font-style:italic;">Not provided</span>';
+              document.getElementById('currentSupportLinkDisplay').innerHTML = newSupport ? newSupport.replace(/</g, "&lt;").replace(/>/g, "&gt;") : '<span style="color:#9ca3af;font-size:13px;font-style:italic;">Not provided</span>';
+          } else {
+              showProfileAlert(data.message || 'Error occurred. Please refresh the page.', 'error');
+          }
+      } catch (err) {
+          console.error('Profile update error:', err);
+          showProfileAlert('Request failed. Please refresh the page and try again.', 'error');
+      } finally {
+          btn.innerHTML = originalText; btn.disabled = false;
+      }
+  });
+
+  document.getElementById('requestEmailForm')?.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = document.getElementById('requestEmailBtn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = 'Sending...'; btn.disabled = true;
+
+      try {
+          const res = await fetch('', { 
+              method: 'POST', 
+              body: new FormData(this),
+              headers: {
+                  'Accept': 'application/json',
+                  'X-Requested-With': 'XMLHttpRequest'
+              }
+          });
+          
+          let data;
+          try {
+              data = await res.json();
+          } catch(jsonErr) {
+              showEmailAlert('Session expired. Please refresh the page.', 'error');
+              return;
+          }
+
+          if (res.status === 401 || data.status === 'unauthorized') {
+              showEmailAlert('Session expired. Please log in again.', 'error');
+              setTimeout(() => { window.location.href = '/login.php'; }, 2000);
+              return;
+          }
+
+          if (data.status === 'otp_required') {
+              this.style.display = 'none';
+              document.getElementById('verifyEmailForm').style.display = 'flex';
+              showEmailAlert('OTP sent to your new email address. Please enter it below.', 'success');
+          } else {
+              showEmailAlert(data.message || 'Error occurred', 'error');
+          }
+      } catch (err) {
+          console.error('Email request error:', err);
+          showEmailAlert('Request failed. Please refresh the page.', 'error');
+      } finally {
+          btn.innerHTML = originalText; btn.disabled = false;
+      }
+  });
+
+  document.getElementById('verifyEmailForm')?.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = document.getElementById('verifyEmailBtn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = 'Verifying...'; btn.disabled = true;
+
+      try {
+          const res = await fetch('', { 
+              method: 'POST', 
+              body: new FormData(this),
+              headers: {
+                  'Accept': 'application/json',
+                  'X-Requested-With': 'XMLHttpRequest'
+              }
+          });
+          
+          let data;
+          try {
+              data = await res.json();
+          } catch(jsonErr) {
+              showEmailAlert('Session expired. Please refresh the page.', 'error');
+              return;
+          }
+
+          if (res.status === 401 || data.status === 'unauthorized') {
+              showEmailAlert('Session expired. Please log in again.', 'error');
+              setTimeout(() => { window.location.href = '/login.php'; }, 2000);
+              return;
+          }
+
+          if (data.status === 'success') {
+              showEmailAlert(data.message, 'success');
+              document.getElementById('currentEmailDisplay').innerText = document.querySelector('input[name="new_email"]').value;
+          } else {
+              showEmailAlert(data.message || 'Error occurred', 'error');
+          }
+      } catch (err) {
+          console.error('Email verify error:', err);
+          showEmailAlert('Request failed. Please refresh the page.', 'error');
+      } finally {
+          btn.innerHTML = originalText; btn.disabled = false;
+      }
+  });
+
+  document.getElementById('sendResetLinkBtn')?.addEventListener('click', async function(e) {
+      e.preventDefault();
+      const btn = this;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = 'Sending reset link...';
+      btn.disabled = true;
+      const alertBox = document.getElementById('resetLinkAlert');
+
+      try {
+          const formData = new FormData();
+          formData.append('action', 'send_reset_link');
+          formData.append('csrf_token', '974a467a407e70691353b8c333bc344e61ce63185bd2c9f29116156442cd0466');
+
+          const res = await fetch('', { method: 'POST', body: formData });
+          const data = await res.json();
+          
+          if (data.status === 'success') {
+              alertBox.style.display = 'block';
+              alertBox.style.background = '#dcfce7';
+              alertBox.style.color = '#166534';
+              alertBox.style.border = '1px solid #86efac';
+              alertBox.innerText = data.message;
+          } else {
+              alertBox.style.display = 'block';
+              alertBox.style.background = '#fee2e2';
+              alertBox.style.color = '#991b1b';
+              alertBox.style.border = '1px solid #fca5a5';
+              alertBox.innerText = data.message || 'Failed to send reset link.';
+          }
+      } catch (err) {
+          alertBox.style.display = 'block';
+          alertBox.style.background = '#fee2e2';
+          alertBox.style.color = '#991b1b';
+          alertBox.style.border = '1px solid #fca5a5';
+          alertBox.innerText = 'Network error. Please try again.';
+      } finally {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+      }
+  });
+
+  // Passkey WebAuthn Client Handlers
+  function bufferToBase64url(buffer) {
+    const byteView = new Uint8Array(buffer);
+    let str = '';
+    for (const b of byteView) str += String.fromCharCode(b);
+    return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  function base64urlToBuffer(base64url) {
+    let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+    while (base64.length % 4) base64 += '=';
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes.buffer;
+  }
+
+  document.getElementById('registerPasskeyBtn')?.addEventListener('click', async function(e) {
+    e.preventDefault();
+    const btn = this;
+    const originalText = btn.innerHTML;
+    const alertBox = document.getElementById('passkeyAlert');
+
+    if (!window.PublicKeyCredential) {
+      alertBox.style.display = 'block';
+      alertBox.style.background = '#fee2e2';
+      alertBox.style.color = '#991b1b';
+      alertBox.style.border = '1px solid #fca5a5';
+      alertBox.innerText = 'Passkeys / Biometrics are not supported on this browser or device.';
+      return;
+    }
+
+    btn.innerHTML = 'Registering...';
+    btn.disabled = true;
+
+    try {
+      const optRes = await fetch('auth-passkey.php?action=register_options');
+      const optData = await optRes.json();
+      if (optData.status !== 'success') throw new Error(optData.message || 'Could not fetch registration challenge.');
+
+      const options = optData.options;
+      options.challenge = base64urlToBuffer(options.challenge);
+      options.user.id = base64urlToBuffer(options.user.id);
+
+      const credential = await navigator.credentials.create({ publicKey: options });
+      if (!credential) throw new Error('Passkey registration was cancelled.');
+
+      const payload = {
+        credentialId: credential.id,
+        clientDataJSON: bufferToBase64url(credential.response.clientDataJSON),
+        attestationObject: bufferToBase64url(credential.response.attestationObject)
+      };
+
+      const verifyRes = await fetch('auth-passkey.php?action=register_verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const verifyData = await verifyRes.json();
+
+      if (verifyData.status === 'success') {
+        alertBox.style.display = 'block';
+        alertBox.style.background = '#dcfce7';
+        alertBox.style.color = '#166534';
+        alertBox.style.border = '1px solid #86efac';
+        alertBox.innerText = verifyData.message;
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        alertBox.style.display = 'block';
+        alertBox.style.background = '#fee2e2';
+        alertBox.style.color = '#991b1b';
+        alertBox.style.border = '1px solid #fca5a5';
+        alertBox.innerText = verifyData.message || 'Registration failed.';
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    } catch (err) {
+      alertBox.style.display = 'block';
+      alertBox.style.background = '#fee2e2';
+      alertBox.style.color = '#991b1b';
+      alertBox.style.border = '1px solid #fca5a5';
+      alertBox.innerText = err.message || 'Passkey creation was cancelled.';
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
+  });
+
+  async function confirmUnlinkGoogle() {
+    const ok = await famConfirm({
+      title: 'Unlink Google Account?',
+      text: 'Are you sure you want to disconnect your Google account? You will have to use your email and password to log in.',
+      confirmText: 'Yes, Unlink Account',
+      danger: true
+    });
+    if (ok) document.getElementById('unlinkGoogleForm').submit();
+  }
+
+  async function deletePasskey(id) {
+    const ok = await famConfirm({
+      title: 'Remove Passkey?',
+      text: 'Are you sure you want to remove this passkey? You will not be able to log in with this biometric device anymore.',
+      confirmText: 'Yes, Remove Passkey',
+      danger: true
+    });
+    if (!ok) return;
+    const row = document.getElementById('pk-row-' + id);
+    if (row) row.style.opacity = '0.5';
+
+    try {
+      const formData = new FormData();
+      formData.append('action', 'delete_passkey');
+      formData.append('id', id);
+
+      const res = await fetch('auth-passkey.php', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.status === 'success') {
+        if (row) row.remove();
+        const list = document.getElementById('passkeysList');
+        if (list && !list.querySelector('.passkey-item')) {
+          list.innerHTML = '<div id="noPasskeysMsg" style="text-align:center; padding:32px 16px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:12px; color:#64748b; font-size:13.5px;"><i data-lucide="shield" style="width:32px;height:32px;margin:0 auto 10px;color:#94a3b8;display:block;"></i>No passkeys registered yet. Click <strong>"Add Passkey"</strong> to enable instant biometric login for this device.</div>';
+          if (window.lucide) lucide.createIcons();
+        }
+      } else {
+        alert(data.message || 'Could not delete passkey.');
+        if (row) row.style.opacity = '1';
+      }
+    } catch (e) {
+      alert('Network error.');
+      if (row) row.style.opacity = '1';
+    }
+  }
+</script>
+
+<!-- Modal: Enable 2FA -->
+<div id="modalEnable2FA" class="fam-modal-backdrop" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.65); z-index:9999; align-items:center; justify-content:center; padding:16px; box-sizing:border-box;">
+    <div class="fam-modal-box" style="background:#fff; border-radius:18px; border:1px solid #e2e8f0; width:100%; max-width:420px; padding:24px 20px; box-shadow:0 20px 45px rgba(15,23,42,0.2); box-sizing:border-box; max-height:calc(100dvh - 32px); overflow-y:auto; overscroll-behavior:contain; text-align:left;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; gap:12px;">
+            <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                <div style="width:40px; height:40px; border-radius:10px; background:#eff6ff; color:#2563eb; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
+                </div>
+                <div style="min-width:0;">
+                    <h3 style="font-size:17px; font-weight:800; color:#0f172a; margin:0; line-height:1.2;">Enable 2FA</h3>
+                    <p style="font-size:12px; color:#64748b; margin:2px 0 0;">Verify your email address</p>
+                </div>
+            </div>
+            <button type="button" onclick="close2FAModals()" aria-label="Close" style="background:#f1f5f9; border:none; border-radius:8px; cursor:pointer; color:#64748b; font-size:18px; line-height:1; width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; padding:0; flex-shrink:0;">×</button>
+        </div>
+
+        <p style="font-size:13.5px; color:#475569; line-height:1.55; margin:0 0 16px; overflow-wrap:anywhere; word-break:break-word;">
+        </p><p style="font-size:13.5px; color:#475569; line-height:1.6; margin:0 0 16px;">
+            Enter the 6-digit confirmation code sent to:<br>
+            <strong style="color:#0f172a; font-weight:700; word-break:break-word;">shadowgamerind37@gmail.com</strong>
+        </p><div id="enable2FAError" style="display:none; background:#fee2e2; border:1px solid #fca5a5; color:#dc2626; padding:10px 12px; border-radius:8px; font-size:13px; margin-bottom:16px; overflow-wrap:anywhere; word-break:break-word;"></div>
+
+        <form id="formConfirmEnable2FA" onsubmit="submitConfirmEnable2FA(event)" style="margin:0; width:100%; box-sizing:border-box;">
+            <input type="text" id="inputEnable2FAOTP" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="••••••" required="" class="form-input" oninput="this.value=this.value.replace(/\D/g,'').slice(0,6);" onkeydown="if(!/^\d$/.test(event.key)&amp;&amp;!['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'].includes(event.key)&amp;&amp;!event.ctrlKey&amp;&amp;!event.metaKey){event.preventDefault();}" style="font-size:24px; font-weight:800; letter-spacing:6px; text-align:center; padding:12px 8px; font-family:monospace; color:#2563eb; margin-bottom:18px; width:100%; max-width:100%; box-sizing:border-box;" autocomplete="one-time-code">
+            
+            <div style="display:flex; gap:10px; width:100%; box-sizing:border-box;">
+                <button type="button" onclick="close2FAModals()" class="btn btn-secondary" style="flex:1; min-height:42px; justify-content:center; box-sizing:border-box; min-width:0;">Cancel</button>
+                <button type="submit" id="btnSubmitEnable2FA" class="btn btn-primary" style="flex:1.3; min-height:42px; justify-content:center; white-space:nowrap; box-sizing:border-box; min-width:0;">Activate 2FA</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Disable 2FA -->
+<div id="modalDisable2FA" class="fam-modal-backdrop" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.65); z-index:9999; align-items:center; justify-content:center; padding:16px; box-sizing:border-box;">
+    <div class="fam-modal-box" style="background:#fff; border-radius:18px; border:1px solid #e2e8f0; width:100%; max-width:420px; padding:24px 20px; box-shadow:0 20px 45px rgba(15,23,42,0.2); box-sizing:border-box; max-height:calc(100dvh - 32px); overflow-y:auto; overscroll-behavior:contain; text-align:left;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; gap:12px;">
+            <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                <div style="width:40px; height:40px; border-radius:10px; background:#fef2f2; color:#dc2626; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                </div>
+                <div style="min-width:0;">
+                    <h3 style="font-size:17px; font-weight:800; color:#0f172a; margin:0; line-height:1.2;">Disable 2FA</h3>
+                    <p style="font-size:12px; color:#64748b; margin:2px 0 0;">Confirm deactivation</p>
+                </div>
+            </div>
+            <button type="button" onclick="close2FAModals()" aria-label="Close" style="background:#f1f5f9; border:none; border-radius:8px; cursor:pointer; color:#64748b; font-size:18px; line-height:1; width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; padding:0; flex-shrink:0;">×</button>
+        </div>
+
+        <p style="font-size:13.5px; color:#475569; line-height:1.55; margin:0 0 16px; overflow-wrap:anywhere; word-break:break-word;">
+            Are you sure you want to turn off Two-Factor Authentication? When signing in, FamGateway will only require your standard login credentials.
+        </p>
+
+        <div id="disable2FAError" style="display:none; background:#fee2e2; border:1px solid #fca5a5; color:#dc2626; padding:10px 12px; border-radius:8px; font-size:13px; margin-bottom:16px; overflow-wrap:anywhere; word-break:break-word;"></div>
+
+        <div style="display:flex; gap:10px; width:100%; box-sizing:border-box;">
+            <button type="button" onclick="close2FAModals()" class="btn btn-secondary" style="flex:1; min-height:42px; justify-content:center; box-sizing:border-box; min-width:0;">Cancel</button>
+            <button type="button" onclick="submitConfirmDisable2FA()" id="btnSubmitDisable2FA" class="btn" style="flex:1.3; min-height:42px; background:#dc2626; color:#fff; font-weight:600; justify-content:center; white-space:nowrap; box-sizing:border-box; min-width:0;">Yes, Disable 2FA</button>
+        </div>
+    </div>
+</div>
+<script>
+function close2FAModals() {
+    const m1 = document.getElementById('modalEnable2FA');
+    const m2 = document.getElementById('modalDisable2FA');
+    if (m1) {
+        m1.classList.remove('active', 'show');
+        m1.style.setProperty('display', 'none', 'important');
+        m1.style.setProperty('opacity', '0', 'important');
+    }
+    if (m2) {
+        m2.classList.remove('active', 'show');
+        m2.style.setProperty('display', 'none', 'important');
+        m2.style.setProperty('opacity', '0', 'important');
+    }
+    document.body.style.overflow = '';
+}
+
+function update2FACardUI(enabled) {
+    const badge = document.getElementById('twoFAStatusBadge');
+    const actions = document.getElementById('twoFAActionsContainer');
+    const alertBox = document.getElementById('twoFAAlert');
+
+    if (badge) {
+        if (enabled) {
+            badge.innerHTML = '<span style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; padding:6px 12px; border-radius:20px; font-weight:700; font-size:12px; display:inline-flex; align-items:center; gap:6px;"><span style="width:7px; height:7px; border-radius:50%; background:#10b981;"></span> Enabled</span>';
+        } else {
+            badge.innerHTML = '<span style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1; padding:6px 12px; border-radius:20px; font-weight:700; font-size:12px; display:inline-flex; align-items:center; gap:6px;"><span style="width:7px; height:7px; border-radius:50%; background:#94a3b8;"></span> Disabled</span>';
+        }
+    }
+
+    if (actions) {
+        if (enabled) {
+            actions.innerHTML = '<button type="button" onclick="openDisable2FAModal()" class="btn btn-secondary" style="color:#dc2626; border-color:#fca5a5; font-size:13px; font-weight:600; padding:9px 18px; display:inline-flex; align-items:center; gap:6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="1" y1="1" x2="23" y2="23"/></svg> Disable 2FA</button>';
+        } else {
+            actions.innerHTML = '<button type="button" onclick="startEnable2FA()" id="btnStartEnable2FA" class="btn btn-primary" style="font-size:13px; font-weight:600; padding:9px 18px; display:inline-flex; align-items:center; gap:6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg> Enable 2FA</button>';
+        }
+    }
+
+    if (alertBox) {
+        alertBox.style.display = 'block';
+        alertBox.className = 'dash-anim-up';
+        if (enabled) {
+            alertBox.style.background = '#ecfdf5';
+            alertBox.style.color = '#065f46';
+            alertBox.style.border = '1px solid #a7f3d0';
+            alertBox.innerHTML = '<div style="display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> <span>Two-Factor Authentication (2FA) is now enabled for your account!</span></div>';
+        } else {
+            alertBox.style.background = '#fef2f2';
+            alertBox.style.color = '#991b1b';
+            alertBox.style.border = '1px solid #fecaca';
+            alertBox.innerHTML = '<div style="display:flex;align-items:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> <span>Two-Factor Authentication (2FA) has been disabled.</span></div>';
+        }
+    }
+}
+
+async function startEnable2FA() {
+    const btn = document.getElementById('btnStartEnable2FA');
+    const alertBox = document.getElementById('twoFAAlert');
+    if (alertBox) alertBox.style.display = 'none';
+
+    const origText = btn ? btn.innerHTML : 'Enable 2FA';
+    if (btn) {
+        btn.innerHTML = '<svg class="spin-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Sending Code...';
+        btn.disabled = true;
+    }
+
+    try {
+        const fd = new FormData();
+        fd.append('action', 'request_enable_2fa');
+        fd.append('csrf_token', '974a467a407e70691353b8c333bc344e61ce63185bd2c9f29116156442cd0466');
+
+        const res = await fetch('profile.php', { method: 'POST', body: fd, headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            const modal = document.getElementById('modalEnable2FA');
+            const errBox = document.getElementById('enable2FAError');
+            if (errBox) errBox.style.display = 'none';
+            const otpInput = document.getElementById('inputEnable2FAOTP');
+            if (otpInput) otpInput.value = '';
+            if (modal) {
+                modal.classList.add('active', 'show');
+                modal.style.setProperty('display', 'flex', 'important');
+                modal.style.setProperty('opacity', '1', 'important');
+                modal.style.setProperty('visibility', 'visible', 'important');
+                modal.style.setProperty('pointer-events', 'auto', 'important');
+                document.body.style.overflow = 'hidden';
+                if (otpInput) setTimeout(() => otpInput.focus(), 80);
+            }
+        } else {
+            if (alertBox) {
+                alertBox.style.display = 'block';
+                alertBox.style.background = '#fee2e2';
+                alertBox.style.color = '#991b1b';
+                alertBox.style.border = '1px solid #fca5a5';
+                alertBox.innerText = data.message || 'Could not send verification code.';
+            }
+        }
+    } catch(e) {
+        if (alertBox) {
+            alertBox.style.display = 'block';
+            alertBox.style.background = '#fee2e2';
+            alertBox.style.color = '#991b1b';
+            alertBox.style.border = '1px solid #fca5a5';
+            alertBox.innerText = 'Network error. Please try again.';
+        }
+    } finally {
+        if (btn) {
+            btn.innerHTML = origText;
+            btn.disabled = false;
+        }
+    }
+}
+
+async function submitConfirmEnable2FA(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const btn = document.getElementById('btnSubmitEnable2FA');
+    const errBox = document.getElementById('enable2FAError');
+    const otpInput = document.getElementById('inputEnable2FAOTP');
+    const otp = otpInput ? otpInput.value.trim() : '';
+    if (!otp || otp.length !== 6) {
+        if (errBox) {
+            errBox.innerText = 'Please enter all 6 digits of the confirmation code.';
+            errBox.style.display = 'block';
+        }
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<svg class="spin-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Activating...';
+    }
+    if (errBox) errBox.style.display = 'none';
+
+    try {
+        const fd = new FormData();
+        fd.append('action', 'confirm_enable_2fa');
+        fd.append('otp', otp);
+        fd.append('csrf_token', '974a467a407e70691353b8c333bc344e61ce63185bd2c9f29116156442cd0466');
+
+        const res = await fetch('profile.php', { method: 'POST', body: fd, headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            close2FAModals();
+            update2FACardUI(true);
+        } else {
+            if (errBox) {
+                errBox.innerText = data.message || 'Verification failed.';
+                errBox.style.display = 'block';
+            }
+            if (otpInput) {
+                otpInput.value = '';
+                otpInput.focus();
+            }
+        }
+    } catch(e) {
+        if (errBox) {
+            errBox.innerText = 'Network error. Please try again.';
+            errBox.style.display = 'block';
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = 'Activate 2FA';
+        }
+    }
+}
+
+function openDisable2FAModal() {
+    const modal = document.getElementById('modalDisable2FA');
+    const errBox = document.getElementById('disable2FAError');
+    if (errBox) errBox.style.display = 'none';
+    if (modal) {
+        modal.classList.add('active', 'show');
+        modal.style.setProperty('display', 'flex', 'important');
+        modal.style.setProperty('opacity', '1', 'important');
+        modal.style.setProperty('visibility', 'visible', 'important');
+        modal.style.setProperty('pointer-events', 'auto', 'important');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+async function submitConfirmDisable2FA() {
+    const btn = document.getElementById('btnSubmitDisable2FA');
+    const errBox = document.getElementById('disable2FAError');
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<svg class="spin-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Disabling...';
+    }
+    if (errBox) errBox.style.display = 'none';
+
+    try {
+        const fd = new FormData();
+        fd.append('action', 'disable_2fa');
+        fd.append('csrf_token', '974a467a407e70691353b8c333bc344e61ce63185bd2c9f29116156442cd0466');
+
+        const res = await fetch('profile.php', { method: 'POST', body: fd, headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            close2FAModals();
+            update2FACardUI(false);
+        } else {
+            if (errBox) {
+                errBox.innerText = data.message || 'Failed to disable 2FA.';
+                errBox.style.display = 'block';
+            }
+        }
+    } catch(e) {
+        if (errBox) {
+            errBox.innerText = 'Network error. Please try again.';
+            errBox.style.display = 'block';
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = 'Yes, Disable 2FA';
+        }
+    }
+}
+</script>
+
+<div id="fs_div_all" style="all:initial;"><template shadowrootmode="open">
+        <div class="mainExtCont" style="position:fixed; top:20px;right:20px; z-index:2147483647;box-shadow: 1px -1px 17px #888888;border-radius:10px;">
+            <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;300;400;500;600;700&amp;display=swap" rel="stylesheet">
+            <div class="mainExtSubCont"></div>
+        </div>
+        <div class="extOtherPopups"></div>
+        <style>
+         /* devanagari */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTucXtAKPY.woff2) format('woff2');
+      unicode-range: U+0900-097F, U+1CD0-1CF6, U+1CF8-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FB;
+    }
+    /* latin-ext */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTufntAKPY.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    /* latin */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 100;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiGyp8kv8JHgFVrLPTucHtA.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+    /* devanagari */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z11lFc-K.woff2) format('woff2');
+      unicode-range: U+0900-097F, U+1CD0-1CF6, U+1CF8-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FB;
+    }
+    /* latin-ext */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z1JlFc-K.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    /* latin */
+    @font-face {
+      font-family: 'Poppins';
+      font-style: normal;
+      font-weight: 500;
+      src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/v20/pxiByp8kv8JHgFVrLGT9Z1xlFQ.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins light */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 300;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Light.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+
+    /* poppins regular */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 400;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Regular.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins thin */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 100;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Thin.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins medium */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 500;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Medium.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins semi bold */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 600;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-SemiBold.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /* poppins bold */
+    @font-face {
+        font-family: 'Poppins';
+        font-style: normal;
+        font-weight: 700;
+        src: url(chrome-extension://adikhbfjdbjkhelbdnffogkobkekkkej/assets/poppins/Poppins-Bold.ttf) format('truetype');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    
+        .extOtherPopups{
+          margin: 0;
+          padding: 0;
+          position: fixed;
+          top: 240px;
+          right: 0;
+          z-index: 2147483647;
+        }
+        [event_type="click"]{
+          cursor:pointer;
+        }
+        </style>
+        </template></div></body><div id="in-page-channel-node-id-v2" data-channel-name="in_page_channel_XHX9NN" data-channel-owner-id="9ba41e755badf6e309ada7c5b41ea15c"></div></html>
