@@ -187,12 +187,45 @@ function tg_mask_email(string $email): string {
     return $local[0].str_repeat('*', max(3, strlen($local) - 2)).substr($local, -1).$domain;
 }
 
-/** Mask an email for display: shadowgamerind37@… → s**************7@gmail.com */
+/** Alias kept for callers that used the earlier name; one implementation only. */
 function tg_masked_email(string $email): string {
-    $at = strrpos($email, '@');
-    if ($at === false || $at < 1) return $email;
-    $local = substr($email, 0, $at);
-    $domain = substr($email, $at);
-    if (strlen($local) <= 2) return $local[0].'***'.$domain;
-    return $local[0].str_repeat('*', max(3, strlen($local) - 2)).substr($local, -1).$domain;
+    return tg_mask_email($email);
+}
+
+/**
+ * Issue a 6-digit code to the merchant's own address for the payout-change
+ * check. Stored hashed in the session with a 10-minute life and a small
+ * attempt counter, so a stolen session cannot brute-force it quickly.
+ */
+function tg_reauth_otp_send(int $merchantId): ?string {
+    $q = db()->prepare('SELECT email FROM merchants WHERE id=?');
+    $q->execute([$merchantId]);
+    $email = (string)$q->fetchColumn();
+    if ($email === '' || !tg_mail_transport_available()) return null;
+    $code = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    $_SESSION['reauth_otp'] = [
+        'hash' => password_hash($code, PASSWORD_DEFAULT),
+        'expires' => time() + 600,
+        'attempts' => 0,
+        'email' => $email,
+    ];
+    if (!tg_send_2fa_code($email, $code)) {
+        unset($_SESSION['reauth_otp']);
+        return null;
+    }
+    return $email;
+}
+
+/** Verify a code issued by tg_reauth_otp_send(); stamps reauth_at on success. */
+function tg_reauth_otp_verify(string $code): bool {
+    $state = $_SESSION['reauth_otp'] ?? null;
+    if (!is_array($state)) return false;
+    if ((int)$state['expires'] < time()) { unset($_SESSION['reauth_otp']); return false; }
+    if ((int)$state['attempts'] >= 5) { unset($_SESSION['reauth_otp']); return false; }
+    $_SESSION['reauth_otp']['attempts'] = (int)$state['attempts'] + 1;
+    $code = preg_replace('/\D/', '', $code) ?? '';
+    if (strlen($code) !== 6 || !password_verify($code, (string)$state['hash'])) return false;
+    unset($_SESSION['reauth_otp']);
+    $_SESSION['reauth_at'] = time();
+    return true;
 }

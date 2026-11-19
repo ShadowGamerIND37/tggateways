@@ -71,6 +71,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = 'That password did not match.';
                 $editing = (int)($_POST['edit'] ?? 0);
             }
+        } elseif ($action === 'reauth_otp_send') {
+            // Alternative to the password: mail a 6-digit code to the address on
+            // file, then replay the blocked edit once it is verified.
+            rate_limit('reauth-otp', 5, 600);
+            $editing = (int)($_POST['edit'] ?? 0);
+            $sentTo = tg_reauth_otp_send($id);
+            if ($sentTo === null) {
+                $error = 'Email delivery is not configured on this deployment. Use your account password instead.';
+            } else {
+                $notice = 'A 6-digit code is on its way to '.tg_mask_email($sentTo).'. It expires in 10 minutes.';
+            }
+        } elseif ($action === 'reauth_otp_verify') {
+            $editing = (int)($_POST['edit'] ?? 0);
+            if (tg_reauth_otp_verify((string)($_POST['otp'] ?? ''))) {
+                $replay = $_SESSION['pending_account_edit'] ?? null;
+                if (is_array($replay) && (int)($replay['id'] ?? 0) === $editing && $editing > 0) {
+                    $notice = tg_apply_account_edit($pdo, $id, $replay);
+                    unset($_SESSION['pending_account_edit']);
+                    $editing = 0;
+                } else {
+                    $notice = 'Authorised. You can change the payout details for 15 minutes.';
+                }
+            } else {
+                $error = 'That code is wrong or has expired.';
+            }
         } elseif ($action === 'add' || $action === 'update') {
             $label = trim((string)($_POST['account_label'] ?? ''));
             $upi = trim((string)($_POST['upi_id'] ?? ''));
@@ -204,6 +229,7 @@ if ($editing > 0 && $editingRow === null) {
 }
 $reauthFresh = tg_reauth_fresh();
 $maskedEmail = $activeRow ? tg_mask_email((string)$activeRow['linked_email']) : '';
+$otpPending = isset($_SESSION['reauth_otp']) && is_array($_SESSION['reauth_otp']);
 $atLimit = count($accounts) >= tg_account_limit();
 
 require __DIR__.'/includes/dashboard-header.php';
@@ -264,6 +290,9 @@ require __DIR__.'/includes/dashboard-header.php';
 <?php if ($editingRow): ?>
   <?php
   $row = $editingRow;
+  // Only the payout UPI and receipt mailbox need re-auth; renaming an account
+  // or replacing its app password saves without this check. The panel stays
+  // visible because the server cannot know what the merchant is about to type.
   $payoutLocked = !$reauthFresh;
   ?>
   <div class="card" style="margin-bottom:20px;border-color:var(--color-primary)">
@@ -299,23 +328,46 @@ require __DIR__.'/includes/dashboard-header.php';
 
     <?php if ($payoutLocked): ?>
       <div style="margin-top:18px;border-top:1px solid var(--color-hairline);padding-top:16px">
-        <div class="card-title" style="font-size:13px"><?=icon('shield', 15)?> Security check: authorise payout change</div>
+        <div class="card-title" style="font-size:13px"><?=icon('shield', 15)?> Security check: authorise UPI change</div>
         <p style="font-size:12.5px;color:var(--color-ink-mute);line-height:1.8;margin:6px 0 12px">
-          Enter your account password to unlock payout edits for 15 minutes.
-          <?php if (tg_mail_transport_available()): ?>
-            A 6-digit code can also be sent to <?=h($maskedEmail ?: 'your mailbox')?>.
-          <?php else: ?>
-            Email codes are unavailable because no SMTP transport is configured.
-          <?php endif ?>
+          Modifying the payout UPI ID requires authorisation. Enter your account password,
+          or verify with a 6-digit code sent to <strong><?=h($maskedEmail ?: 'your mailbox')?></strong>.
         </p>
-        <form method="post" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-          <input type="hidden" name="csrf" value="<?=h(csrf_token())?>">
-          <input type="hidden" name="action" value="reauth">
-          <input type="hidden" name="edit" value="<?=(int)$row['id']?>">
-          <div class="form-group" style="min-width:240px"><label class="form-label">Account password</label>
-            <input class="form-input" type="password" name="password" required autocomplete="current-password"></div>
-          <button class="btn btn-dark btn-sm">Authorise</button>
-        </form>
+        <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start">
+          <form method="post" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+            <input type="hidden" name="csrf" value="<?=h(csrf_token())?>">
+            <input type="hidden" name="action" value="reauth">
+            <input type="hidden" name="edit" value="<?=(int)$row['id']?>">
+            <div class="form-group" style="min-width:240px"><label class="form-label">Option A: account password</label>
+              <input class="form-input" type="password" name="password" required autocomplete="current-password"></div>
+            <button class="btn btn-dark btn-sm">Authorise</button>
+          </form>
+
+          <div style="border-left:1px solid var(--color-hairline);padding-left:22px;min-width:260px">
+            <?php if (($otpPending ?? false)): ?>
+              <form method="post" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+                <input type="hidden" name="csrf" value="<?=h(csrf_token())?>">
+                <input type="hidden" name="action" value="reauth_otp_verify">
+                <input type="hidden" name="edit" value="<?=(int)$row['id']?>">
+                <div class="form-group" style="min-width:150px"><label class="form-label">Enter the 6-digit code</label>
+                  <input class="form-input" name="otp" inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
+                         autocomplete="one-time-code" required placeholder="000000"></div>
+                <button class="btn btn-primary btn-sm">Verify</button>
+              </form>
+            <?php elseif (tg_mail_transport_available()): ?>
+              <form method="post">
+                <input type="hidden" name="csrf" value="<?=h(csrf_token())?>">
+                <input type="hidden" name="action" value="reauth_otp_send">
+                <input type="hidden" name="edit" value="<?=(int)$row['id']?>">
+                <div class="form-label" style="margin-bottom:8px">Option B: verify via email OTP</div>
+                <button class="btn btn-secondary btn-sm"><?=icon('mail', 14)?> Send OTP to Email</button>
+              </form>
+            <?php else: ?>
+              <div class="form-label" style="margin-bottom:8px">Option B: email OTP unavailable</div>
+              <div class="form-hint">No SMTP transport is configured, so only the password works here.</div>
+            <?php endif ?>
+          </div>
+        </div>
       </div>
     <?php else: ?>
       <div class="callout callout-success" style="margin-top:16px">

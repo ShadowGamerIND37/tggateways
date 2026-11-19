@@ -1175,6 +1175,99 @@ check('Long windows thin their axis labels instead of crowding',
 check('The chart summarises the window in words',
   /orders and ₹/.test(steps[1].body || '') && /in this window/.test(steps[1].body || ''));
 
+section('Payout re-auth via email OTP');
+
+const otpAuth = { session: exportAuth.session };
+const otpCsrf = (requests([{ method: 'GET', script: path.join(root, 'multi-accounts.php') }], otpAuth.session)[0].body || '')
+  .match(/name="csrf" value="([a-f0-9]{64})"/)?.[1] || '';
+
+const otpBoot = "require_once 'includes/db.php'; require_once 'includes/merchant.php'; require_once 'includes/notify.php';";
+
+/** Write an OTP state straight into the harness session file. */
+const seedOtp = (code = '123456', ttl = 600, attempts = 0, offset = 0) => php(`<?php
+${otpBoot}
+session_save_path(${JSON.stringify(sessionDir)});
+session_id(${JSON.stringify(otpAuth.session)});
+session_start();
+$_SESSION['reauth_otp'] = ['hash' => password_hash('${code}', PASSWORD_DEFAULT),
+                          'expires' => time()+${ttl}+${offset}, 'attempts' => ${attempts}, 'email' => 'm@example.com'];
+$_SESSION['reauth_at'] = 0;
+session_write_close();
+echo 'seeded';
+`, baseEnv());
+
+/** Read the re-auth stamp from the same session file. */
+const reauthStamped = () => JSON.parse(php(`<?php
+${otpBoot}
+session_save_path(${JSON.stringify(sessionDir)});
+session_id(${JSON.stringify(otpAuth.session)});
+session_start();
+echo json_encode(tg_reauth_fresh());
+`, baseEnv()));
+
+const otpPost = (code) => {
+  // This section posts many times to the same endpoint; reset the page-level
+  // counter so the assertions are about OTP handling, not the rate limiter.
+  php(`<?php
+require 'includes/db.php';
+db()->exec('DELETE FROM api_rate_limits');
+`, baseEnv());
+  return requests([{
+    method: 'POST', script: path.join(root, 'multi-accounts.php'),
+    post: { csrf: otpCsrf, action: 'reauth_otp_verify', edit: '1', otp: code },
+  }], otpAuth.session)[0].body || '';
+};
+
+check('A configured SMTP transport is detected',
+  JSON.parse(php(`<?php
+${otpBoot}
+echo json_encode(tg_mail_transport_available());
+`, { SMTP_HOST: 'smtp.example.com', MAIL_FROM: 'a@example.com' })) === true);
+
+seedOtp();
+const wrongBody = otpPost('000000');
+check('A wrong OTP does not authorise', /wrong or has expired/.test(wrongBody)
+  && !/Authorised|Payout details updated/.test(wrongBody));
+check('A failed OTP leaves no re-auth stamp', reauthStamped() === false);
+
+seedOtp();
+const rightBody = otpPost('123456');
+check('The correct OTP authorises', /Authorised|Payout details updated/.test(rightBody),
+  rightBody.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 110));
+check('OTP success stamps the re-auth window', reauthStamped() === true);
+
+seedOtp('123456', 600, 5);
+check('An exhausted attempt counter refuses even the right code', /wrong or has expired/.test(otpPost('123456')));
+seedOtp('123456', 0, 0, -60);
+check('An expired code is refused', /wrong or has expired/.test(otpPost('123456')));
+seedOtp();
+check('A code of the wrong length is refused', /wrong or has expired/.test(otpPost('1234')));
+
+// Clear the stamp so the edit screen shows the authorisation panel again.
+seedOtp();
+php(`<?php
+${'$'}{''}
+`, baseEnv());
+php(`<?php
+session_save_path(${JSON.stringify(sessionDir)});
+session_id(${JSON.stringify(otpAuth.session)});
+session_start();
+unset($_SESSION['reauth_at'], $_SESSION['reauth_otp']);
+session_write_close();
+echo 'cleared';
+`, baseEnv());
+const otpPage = requests([{ method: 'GET', script: path.join(root, 'multi-accounts.php'), query: { edit: '1' } }], otpAuth.session)[0];
+check('The edit screen offers password and email OTP',
+  /Option A: account password/.test(otpPage.body || '') && /Option B/.test(otpPage.body || ''));
+php(`<?php
+require 'includes/db.php';
+db()->exec('DELETE FROM api_rate_limits');
+`, baseEnv());
+steps = requests([{ method: 'POST', script: path.join(root, 'multi-accounts.php'),
+  post: { csrf: otpCsrf, action: 'reauth_otp_send', edit: '1' } }], otpAuth.session);
+check('OTP send without SMTP explains the fallback',
+  /Email delivery is not configured/.test(steps[0].body || ''));
+
 section('Documentation text endpoints');
 
 const docAuth = { session: exportAuth.session };
