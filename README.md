@@ -34,15 +34,31 @@ php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'
 #    APP_ENCRYPTION_KEY=<the 64 characters you just generated>
 #    DB_PASSWORD=<a long random password>
 #    MYSQL_ROOT_PASSWORD=<another long random password>
-#    APP_URL=http://localhost:8080      # must match what the browser uses
 #    SESSION_SECURE=false               # only while testing on http://localhost
+#    TG_HTTP_PORT=8090                  # host port; change it if this one is taken
 $EDITOR .env
 
 docker compose up --build -d
 docker compose ps            # web, database and cron should become healthy
 ```
 
-Open **http://localhost:8080/register.php** and create your merchant account.
+Open **http://localhost:8090/register.php** and create your merchant account.
+
+**Port already in use?** Pick any free port — it is a single setting, and the app's
+`APP_URL` follows it automatically under Compose:
+
+```sh
+# in .env
+TG_HTTP_PORT=9001
+docker compose up -d          # no rebuild needed; only publishing uses the port
+# then browse http://localhost:9001/register.php
+```
+
+Only one variable to change: `TG_HTTP_PORT` publishes the port **and** becomes the
+`APP_URL` the app uses for checkout links, so the two cannot drift apart. (If your `.env`
+also uncomments `APP_URL`, that value wins — change both, or leave it commented out.)
+If publishing still fails, check `sudo lsof -i :8090`; another container or a local proxy
+is holding it. `docker compose ps` shows nothing listening when this happens.
 
 What the stack starts:
 
@@ -55,7 +71,7 @@ What the stack starts:
 Check the deployment at any time:
 
 ```sh
-curl -s http://localhost:8080/api/health.php | python3 -m json.tool
+curl -s http://localhost:8090/api/health.php | python3 -m json.tool
 docker compose logs -f cron      # worker output, one JSON line per pass
 ```
 

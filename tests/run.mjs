@@ -408,7 +408,8 @@ check('Order returns payable amount as number', created.payable_amount === 12.5)
 check('Order returns UPI intent with amount', typeof created.upi_intent === 'string' && created.upi_intent.startsWith('upi://pay?') && created.upi_intent.includes('am=12.50'));
 check('Order embeds its reference in the UPI note', decodeURIComponent(created.upi_intent || '').includes(created.order_id));
 check('Order returns absolute checkout URL', (created.checkout_url || '').startsWith('http://localhost:8080/pay.php?order_id='));
-check('Order returns QR URL', (created.qr_url || '').startsWith('/api/qr-image.php'));
+check('Order returns absolute QR URL matching APP_URL', String(created.qr_url || '').startsWith('http://localhost:8080/api/qr-image.php'), String(created.qr_url));
+check('Order returns a relative QR path too', (created.qr_path || '').startsWith('/api/qr-image.php'));
 check('Second order created with customer + note', created2.order_id && created2.order_id !== created.order_id);
 
 section('API: status endpoints');

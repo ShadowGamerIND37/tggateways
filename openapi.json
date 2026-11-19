@@ -20,6 +20,25 @@
           "redirect_url": {"type": "string", "format": "uri"},
           "webhook_url": {"type": "string", "format": "uri"}
         }
+      },
+      "OrderCreated": {
+        "type": "object",
+        "description": "Created. Absolute URLs are built from APP_URL, so they match the deployment host and port.",
+        "properties": {
+          "order_id": {"type": "string"},
+          "status": {"type": "string"},
+          "currency": {"type": "string"},
+          "amount": {"type": "number"},
+          "payable_amount": {"type": "number"},
+          "checkout_url": {"type": "string", "format": "uri"},
+          "checkout_path": {"type": "string"},
+          "qr_url": {"type": "string", "format": "uri", "description": "Absolute QR image URL for this order."},
+          "qr_path": {"type": "string", "description": "Path-only form of qr_url."},
+          "upi_intent": {"type": "string"},
+          "upi_id": {"type": "string"},
+          "expires_at": {"type": "string"},
+          "expires_in_seconds": {"type": "integer"}
+        }
       }
     }
   },
@@ -29,7 +48,7 @@
         "summary": "Create a UPI checkout order",
         "security": [{"ApiKey": []}],
         "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/OrderCreate"}}}},
-        "responses": {"201": {"description": "Created"}, "401": {"description": "Invalid API key"}, "422": {"description": "Invalid order fields"}}
+        "responses": {"201": {"description": "Created", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/OrderCreated"}}}}, "401": {"description": "Invalid API key"}, "422": {"description": "Invalid order fields"}}
       }
     },
     "/api/checkout-status.php": {

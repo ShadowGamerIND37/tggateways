@@ -65,7 +65,10 @@ json_response([
     'payable_amount' => (float)$amountText,
     'checkout_url' => $base.'/pay.php?order_id='.rawurlencode($orderId),
     'checkout_path' => '/pay.php?order_id='.rawurlencode($orderId),
-    'qr_url' => '/api/qr-image.php?order_id='.rawurlencode($orderId),
+    // Absolute, like checkout_url: a server-side integration should not have to
+    // guess the deployment's host, which is exactly what a port change affects.
+    'qr_url' => $base.'/api/qr-image.php?order_id='.rawurlencode($orderId),
+    'qr_path' => '/api/qr-image.php?order_id='.rawurlencode($orderId),
     'upi_intent' => $upi,
     'upi_id' => $account['upi_id'],
     'expires_at' => db_now($timeout * 60),
