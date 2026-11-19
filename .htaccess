@@ -1,0 +1,12 @@
+Options -Indexes
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^(includes|database|cron|sdk|examples)(/|$) - [F,L]
+  RewriteRule ^api/create-order/?$ api/create-order.php [QSA,L]
+  RewriteRule ^api/manage-links/?$ api/manage-links.php [QSA,L]
+  RewriteRule ^api/verify-order/?$ api/verify-order.php [QSA,L]
+  RewriteRule ^api/get-transactions/?$ api/get-transactions.php [QSA,L]
+</IfModule>
+<FilesMatch "^(\.env|composer\.(json|lock)|README\.md)$">
+  Require all denied
+</FilesMatch>

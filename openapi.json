@@ -1,0 +1,70 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "TG Gateways API",
+    "version": "1.0.0",
+    "description": "API for a self-hosted direct-to-merchant UPI checkout starter. Provider settlement and receipt validation remain merchant responsibilities."
+  },
+  "servers": [{"url": "https://tggateways.in", "description": "Example deployment; replace with your own host"}],
+  "components": {
+    "securitySchemes": {"ApiKey": {"type": "apiKey", "in": "header", "name": "X-Api-Key"}},
+    "schemas": {
+      "OrderCreate": {
+        "type": "object",
+        "required": ["amount"],
+        "properties": {
+          "amount": {"type": "number", "minimum": 1},
+          "customer_name": {"type": "string"},
+          "customer_email": {"type": "string", "format": "email"},
+          "customer_phone": {"type": "string"},
+          "redirect_url": {"type": "string", "format": "uri"},
+          "webhook_url": {"type": "string", "format": "uri"}
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/create-order": {
+      "post": {
+        "summary": "Create a UPI checkout order",
+        "security": [{"ApiKey": []}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/OrderCreate"}}}},
+        "responses": {"201": {"description": "Created"}, "401": {"description": "Invalid API key"}, "422": {"description": "Invalid order fields"}}
+      }
+    },
+    "/api/checkout-status.php": {
+      "get": {
+        "summary": "Public checkout status for display",
+        "parameters": [{"name": "order_id", "in": "query", "required": true, "schema": {"type": "string"}}],
+        "responses": {"200": {"description": "Current display status"}}
+      }
+    },
+    "/api/verify-order.php": {
+      "get": {
+        "summary": "Authoritative merchant order lookup",
+        "security": [{"ApiKey": []}],
+        "parameters": [{"name": "order_id", "in": "query", "required": true, "schema": {"type": "string"}}],
+        "responses": {"200": {"description": "Order status"}, "404": {"description": "Order not found"}}
+      }
+    },
+    "/api/qr-image.php": {
+      "get": {
+        "summary": "UPI QR PNG",
+        "parameters": [{"name": "order_id", "in": "query", "required": true, "schema": {"type": "string"}}],
+        "responses": {"200": {"description": "PNG image"}, "503": {"description": "QR generation dependency not installed"}}
+      }
+    },
+    "/api/manage-links.php": {
+      "get": {"summary": "List merchant payment links", "security": [{"ApiKey": []}], "responses": {"200": {"description": "Payment links"}}},
+      "post": {"summary": "Create a payment link", "security": [{"ApiKey": []}], "responses": {"201": {"description": "Created"}}}
+    },
+    "/api/get-transactions.php": {
+      "get": {
+        "summary": "Get merchant transaction history",
+        "security": [{"ApiKey": []}],
+        "parameters": [{"name": "status", "in": "query", "schema": {"type": "string"}}, {"name": "page", "in": "query", "schema": {"type": "integer"}}],
+        "responses": {"200": {"description": "Transactions"}}
+      }
+    }
+  }
+}

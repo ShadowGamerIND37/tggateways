@@ -1,0 +1,14 @@
+{
+  "name": "tggateways/platform",
+  "description": "Developer-oriented direct UPI checkout and notification starter",
+  "type": "project",
+  "require": {
+    "php": ">=8.1",
+    "ext-pdo": "*",
+    "ext-pdo_mysql": "*",
+    "ext-openssl": "*",
+    "ext-curl": "*",
+    "ext-gd": "*",
+    "endroid/qr-code": "^5.0"
+  }
+}
