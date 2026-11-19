@@ -993,6 +993,81 @@ check('Formula-injection names are escaped in CSV',
   injected.includes("'=cmd|calc") && !/(^|,)"?=cmd\|calc/.test(injected),
   'expects a leading apostrophe, no bare formula');
 
+section('Standby account removal requires a typed confirmation');
+
+const rmAuth = { session: exportAuth.session };
+const rmCsrf = (requests([{ method: 'GET', script: path.join(root, 'multi-accounts.php') }], rmAuth.session)[0].body || '')
+  .match(/name="csrf" value="([a-f0-9]{64})"/)?.[1] || '';
+
+const addStandby = (label, upi) => requests([{
+  method: 'POST', script: path.join(root, 'multi-accounts.php'),
+  post: { csrf: rmCsrf, action: 'add', account_label: label, upi_id: upi, linked_email: label.replace(/\W/g, '') + '@gmail.com', app_password: 'abcdefghijklmnop' },
+}], rmAuth.session)[0];
+// The cap test above deliberately filled the account limit, so prune its
+// filler rows first: never the seed row (later sections hardcode account id 1),
+// never the two fixtures this section is about to remove.
+php(`<?php
+require 'includes/db.php';
+db()->exec("DELETE FROM merchant_accounts WHERE merchant_id=1 AND is_active=0
+             AND id <> 1 AND account_label NOT IN ('Backup One','Backup Two')");
+`, baseEnv());
+
+addStandby('Backup One', 'backup1@fam');
+addStandby('Backup Two', 'backup2@fam');
+const added2 = requests([{ method: 'GET', script: path.join(root, 'multi-accounts.php') }], rmAuth.session)[0];
+const standbyLabels = JSON.parse(php(`<?php
+require 'includes/db.php';
+$rows = db()->query("SELECT account_label FROM merchant_accounts WHERE merchant_id=1 AND is_active=0 ORDER BY id")->fetchAll(PDO::FETCH_COLUMN);
+echo json_encode($rows);
+`, baseEnv()));
+check('Standby wallets can be added up to the cap',
+  standbyLabels.includes('Backup Two') && /Standby Accounts \(\d\)/.test(added2.body || ''),
+  standbyLabels.join(', '));
+
+const ids = JSON.parse(php(`<?php
+require 'includes/db.php';
+$rows = db()->query("SELECT id,account_label FROM merchant_accounts WHERE merchant_id=1 AND is_active=0 ORDER BY id")->fetchAll(PDO::FETCH_ASSOC);
+echo json_encode($rows);
+`, baseEnv()));
+const target = ids.find((r) => r.account_label === 'Backup Two');
+
+// Wrong label is refused, and the row survives.
+steps = requests([{ method: 'POST', script: path.join(root, 'multi-accounts.php'),
+  post: { csrf: rmCsrf, action: 'delete', id: String(target?.id ?? 0), confirm_label: 'backup two' } }], rmAuth.session);
+check('A mismatched confirmation label is refused',
+  /Type the account label exactly/.test(steps[0].body || ''));
+const afterWrong = JSON.parse(php(`<?php
+require 'includes/db.php';
+echo json_encode((int)db()->query("SELECT COUNT(*) FROM merchant_accounts WHERE id=".(int)(${target?.id ?? 0})."")->fetchColumn());
+`, baseEnv()));
+check('The refused removal deleted nothing', afterWrong === 1, String(afterWrong));
+
+// The active account cannot be removed even with the right label.
+const activeRow = JSON.parse(php(`<?php
+require 'includes/db.php';
+$r = db()->query('SELECT id,account_label FROM merchant_accounts WHERE merchant_id=1 AND is_active=1')->fetch(PDO::FETCH_ASSOC);
+echo json_encode($r ?: []);
+`, baseEnv()));
+steps = requests([{ method: 'POST', script: path.join(root, 'multi-accounts.php'),
+  post: { csrf: rmCsrf, action: 'delete', id: String(activeRow.id ?? 0), confirm_label: activeRow.account_label ?? '' } }], rmAuth.session);
+check('The active account still cannot be removed', /Switch the active account/.test(steps[0].body || ''));
+
+// Correct label removes it and is audited.
+steps = requests([{ method: 'POST', script: path.join(root, 'multi-accounts.php'),
+  post: { csrf: rmCsrf, action: 'delete', id: String(target?.id ?? 0), confirm_label: 'Backup Two' } }], rmAuth.session);
+check('Typing the exact label removes the wallet', /Account removed/.test(steps[0].body || ''));
+const auditRow = JSON.parse(php(`<?php
+require 'includes/db.php';
+$r = db()->query("SELECT COUNT(*) FROM audit_log WHERE action='account.removed'")->fetchColumn();
+echo json_encode((int)$r);
+`, baseEnv()));
+check('Removal is written to the audit log', auditRow >= 1, String(auditRow));
+
+// The remaining fixture ("Backup One") is left in place deliberately: orders
+// created by later sections reference a receiving account, and deleting one
+// with orders attached violates the foreign key. The suite uses a throwaway
+// database, so there is nothing to tidy.
+
 section('Payment links');
 
 const plAuth = { session: exportAuth.session };

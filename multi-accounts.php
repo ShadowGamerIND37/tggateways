@@ -165,16 +165,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } elseif ($action === 'delete') {
             $target = (int)($_POST['id'] ?? 0);
-            $row = $pdo->prepare('SELECT is_active FROM merchant_accounts WHERE id=? AND merchant_id=?');
+            $row = $pdo->prepare('SELECT account_label,is_active FROM merchant_accounts WHERE id=? AND merchant_id=?');
             $row->execute([$target, $id]);
             $acc = $row->fetch();
+            $typed = trim((string)($_POST['confirm_label'] ?? ''));
             if (!$acc) {
                 $error = 'That account no longer exists.';
             } elseif ((int)$acc['is_active'] === 1) {
                 $error = 'Switch the active account before removing this one.';
+            } elseif ($typed !== (string)$acc['account_label']) {
+                // The dialog asks for the label to be typed. Enforce it here too,
+                // otherwise removing the attribute in devtools skips the check.
+                $error = 'Type the account label exactly to confirm removal.';
             } else {
                 $pdo->prepare('DELETE FROM merchant_accounts WHERE id=? AND merchant_id=?')->execute([$target, $id]);
                 $notice = 'Account removed.';
+                tg_audit($id, 'account.removed', (string)$acc['account_label']);
             }
         }
     } catch (Throwable $e) {
@@ -205,11 +211,11 @@ require __DIR__.'/includes/dashboard-header.php';
 
 <div class="page-title-row" style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
   <div>
-    <h1 style="font-size:22px;font-weight:700;letter-spacing:-.5px;margin:0">Multi-Account Manager</h1>
-    <p style="font-size:13px;color:var(--color-ink-mute);margin:4px 0 0">Connect several wallets and switch the active receiving account with one click.</p>
+    <h1 style="font-size:22px;font-weight:700;letter-spacing:-.5px;margin:0">Multi-FamPay Account Manager</h1>
+    <p style="font-size:13px;color:var(--color-ink-mute);margin:4px 0 0">Connect multiple FamPay wallets and switch active receiving account with 1 click.</p>
   </div>
   <span class="status-badge status-<?=$atLimit ? 'pending' : 'success'?>">
-    <?=count($accounts)?> / <?=tg_account_limit()?> accounts
+    Add FamPay Account (<?=count($accounts)?>/<?=tg_account_limit()?>)
   </span>
 </div>
 
@@ -286,7 +292,7 @@ require __DIR__.'/includes/dashboard-header.php';
         <input class="form-input" type="password" name="app_password" autocomplete="new-password" placeholder="Leave blank to keep the stored password">
         <span class="form-hint">16 characters, no spaces. Only replaced when you type a new one.</span></div>
       <div class="form-actions" style="grid-column:1/-1">
-        <button class="btn btn-primary">Save changes</button>
+        <button class="btn btn-primary">Save Changes</button>
         <a class="btn btn-secondary" href="/multi-accounts.php">Cancel</a>
       </div>
     </form>
@@ -322,8 +328,8 @@ require __DIR__.'/includes/dashboard-header.php';
 <div class="card" style="padding:0;overflow:hidden;margin-bottom:20px">
   <div style="padding:18px 24px;border-bottom:1px solid var(--color-hairline);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
     <div>
-      <div class="card-title" style="font-size:14px">Standby accounts (<?=count($standby)?>)</div>
-      <div class="card-sub">Linked wallets ready to take over in one click.</div>
+      <div class="card-title" style="font-size:14px">Standby Accounts (<?=count($standby)?>)</div>
+      <div class="card-sub">Tap &ldquo;Add FamPay Account&rdquo; to link your backup wallets.</div>
     </div>
   </div>
   <div class="table-responsive">
@@ -354,12 +360,8 @@ require __DIR__.'/includes/dashboard-header.php';
                 <button class="btn btn-primary btn-sm">Activate</button>
               </form>
               <a class="btn btn-secondary btn-sm" href="?edit=<?=(int)$a['id']?>">Edit</a>
-              <form method="post" style="display:inline" onsubmit="return confirm('Remove this standby account?')">
-                <input type="hidden" name="csrf" value="<?=h(csrf_token())?>">
-                <input type="hidden" name="action" value="delete">
-                <input type="hidden" name="id" value="<?=(int)$a['id']?>">
-                <button class="btn btn-secondary btn-sm" title="Remove"><?=icon('trash', 13)?></button>
-              </form>
+              <button class="btn btn-secondary btn-sm" type="button" title="Remove"
+                      data-open-dialog="remove-<?=(int)$a['id']?>"><?=icon('trash', 13)?></button>
             </div>
           </td>
         </tr>
@@ -378,7 +380,7 @@ require __DIR__.'/includes/dashboard-header.php';
 
 <div class="card">
   <div class="card-header">
-    <div class="card-title"><?=icon('plus', 16)?> Add a standby account</div>
+    <div class="card-title"><?=icon('plus', 16)?> Add FamPay Account</div>
     <div class="card-sub">Link a backup wallet — use a different UPI ID and mailbox from your primary.</div>
   </div>
   <?php if ($atLimit): ?>
@@ -410,5 +412,56 @@ require __DIR__.'/includes/dashboard-header.php';
   </form>
   <?php endif ?>
 </div>
+
+<?php /* Removal modals. Native <dialog>, so there is no JS library to load and
+        Escape/backdrop close work without help. The confirmation is typed, not
+        clicked, because removing a standby wallet cannot be undone. */ ?>
+<?php foreach ($standby as $a): $label = (string)$a['account_label']; ?>
+  <dialog class="tg-dialog" id="remove-<?=(int)$a['id']?>">
+    <form method="post">
+      <input type="hidden" name="csrf" value="<?=h(csrf_token())?>">
+      <input type="hidden" name="action" value="delete">
+      <input type="hidden" name="id" value="<?=(int)$a['id']?>">
+      <h2 style="margin:0 0 6px;font-size:16px">Remove Account?</h2>
+      <p class="form-hint" style="font-size:12.5px;margin:0 0 14px">
+        Are you sure you want to remove <strong><?=h($label)?></strong>?
+        This wallet will no longer be available for standby switching.
+      </p>
+      <label class="form-label" for="confirm-remove-<?=(int)$a['id']?>">
+        Type the account label to confirm
+      </label>
+      <input class="form-input" id="confirm-remove-<?=(int)$a['id']?>" name="confirm_label"
+             autocomplete="off" placeholder="<?=h($label)?>" required>
+      <div class="form-actions" style="margin-top:16px;justify-content:flex-end">
+        <button type="button" class="btn btn-secondary" data-close-dialog>Cancel</button>
+        <button class="btn btn-danger">Yes, Remove Account</button>
+      </div>
+    </form>
+  </dialog>
+<?php endforeach ?>
+
+<script>
+/* Tiny dialog controller: [data-open-dialog] opens by id, [data-close-dialog]
+   closes the nearest <dialog>, and a click on the backdrop dismisses. */
+document.addEventListener('click', (event) => {
+  const opener = event.target.closest('[data-open-dialog]');
+  if (opener) {
+    const dialog = document.getElementById(opener.dataset.openDialog);
+    if (dialog && dialog.showModal) dialog.showModal();
+    return;
+  }
+  const closer = event.target.closest('[data-close-dialog]');
+  if (closer) {
+    const dialog = closer.closest('dialog');
+    if (dialog) dialog.close();
+    return;
+  }
+  if (event.target instanceof HTMLDialogElement
+      && event.target.getBoundingClientRect
+      && event.clientX === 0 && event.clientY === 0) {
+    event.target.close();
+  }
+});
+</script>
 
 <?php require __DIR__.'/includes/dashboard-footer.php'; ?>
