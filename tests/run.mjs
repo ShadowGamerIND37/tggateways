@@ -1453,6 +1453,28 @@ check('Text endpoints are public and serve text/plain',
 check('Text endpoints expose no merchant secrets',
   steps.every((r) => !(r.body || '').includes(apiKey)));
 
+section('Layout and stylesheets');
+
+const cssPage = requests([{ method: 'GET', script: path.join(root, 'assets/css/design-system.css') }], 'css-anon')[0];
+const cssText = cssPage.body || '';
+check('The stylesheet is served', cssPage.status === 200 && cssText.length > 20000, String(cssText.length));
+check('The mobile stacking rule follows the two-column rule',
+  cssText.lastIndexOf('grid-template-columns: 1fr !important') > cssText.lastIndexOf('1.55fr 1fr'));
+check('Dialogs and steps are styled',
+  cssText.includes('.tg-dialog') && cssText.includes('.tg-steps'));
+check('Status pills for the new link states exist',
+  cssText.includes('.status-success') && cssText.includes('.status-expired'));
+
+// Every panel page must render signed in without warnings or notices.
+const pageList = ['dashboard.php', 'transactions.php', 'payment-links.php', 'api-keys.php', 'webhooks.php',
+  'settings.php', 'integrations.php', 'multi-accounts.php', 'addons.php', 'services.php', 'invoices.php',
+  'profile.php', 'tickets.php', 'status.php', 'docs.php', 'privacy.php'];
+const renderedPages = requests(pageList.map((p) => ({ method: 'GET', script: path.join(root, p) })), exportAuth.session);
+const broken = renderedPages
+  .map((r, i) => ({ page: pageList[i], status: r.status, noise: /PHP (Warning|Notice|Fatal)/.test(r.body || '') }))
+  .filter((r) => r.status !== 200 || r.noise);
+check('Every panel page renders cleanly', broken.length === 0, broken.map((r) => `${r.page}:${r.status}`).join(', '));
+
 section('Addons, services and invoices');
 
 const addonAuth = signIn('merchant@example.com', 'correct-horse-battery');

@@ -1549,3 +1549,11 @@ a.time-pill:focus-visible { outline: 2px solid #2563eb; outline-offset: 1px; }
   bottom: 2px; width: 1px; background: var(--color-hairline); }
 .tg-steps strong { display: block; font-size: 13px; color: var(--color-ink); }
 .tg-steps span { display: block; font-size: 12px; color: var(--color-ink-mute); line-height: 1.7; margin-top: 2px; }
+
+/* The two-column rules above land after the 960px breakpoint in this file, so
+   the stacking rule has to be restated here to win on source order. */
+@media (max-width: 960px) {
+  .dashboard-bottom-grid { grid-template-columns: 1fr !important; }
+  .tg-dialog { max-width: calc(100% - 24px); }
+  .tg-steps li { padding-left: 34px; }
+}
