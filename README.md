@@ -77,6 +77,24 @@ minutes, which is the real end-to-end proof that receipt polling works.
 6. **Set your webhook endpoint** on **Webhooks** if you are integrating a backend. The signature is `sha256=HMAC_SHA256(rawBody, api_key)` in `X-TGGateway-Signature`.
 7. Confirm `/api/health.php` reports `receipt_parser: operational`.
 
+### Local PHP quirks you may hit
+
+These are environment issues, not application errors — the app runs correctly with either.
+
+- **`Xdebug: [Step Debug] Could not connect to debugging client`** — Xdebug is enabled in your
+  local PHP but no debugger is listening. It is a startup notice, harmless. Silence it with
+  `XDEBUG_MODE=off php -r '…'`, or set `xdebug.start_with_request=no`. In the Docker image
+  it cannot appear at all: `/api` must never have stray output, so the image ships
+  `docker/php.ini` with `display_errors=Off` and logs to stderr. The application enforces
+  the same rule itself (`includes/errors.php`): web SAPIs stay silent, CLI keeps
+  diagnostics, and `APP_DEBUG=true` opts back in on a development machine only.
+- **`bin2hex(random_bytes(32))` printed 64 characters** — that is the whole key. Paste it
+  whole as `APP_ENCRYPTION_KEY`. Do not truncate it, add quotes inside `.env`, or reuse a
+  key across deployments: it decrypts the stored mailbox passwords, and there is no
+  recovery if it is lost.
+- **`PHP Warning: Module "imap" is already loaded`** — some distros load IMAP from
+  `conf.d`; ignore it, or remove the duplicate line from your `php.ini`.
+
 A fresh deployment **starts reading the mailbox from the newest message present**. Mail
 that was already in the inbox is deliberately ignored so a first import cannot mark
 historical orders as paid. Anything that arrives after that is processed even if the

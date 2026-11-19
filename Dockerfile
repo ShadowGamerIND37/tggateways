@@ -16,10 +16,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && a2enconf tg-gateways \
     && rm -rf /var/lib/apt/lists/*
 
+# Production php.ini: display_errors off (stray notices must never reach a JSON
+# response or a checkout page), errors to stderr for `docker compose logs`.
+COPY docker/php.ini /usr/local/etc/php/conf.d/zz-tg-gateways.ini
+
 WORKDIR /var/www/html
 COPY composer.json ./
 RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 COPY . .
-RUN chown -R www-data:www-data /var/www/html
+RUN chown -R www-data:www-data /var/www/html && mkdir -p storage && chown -R www-data:www-data storage
 
 EXPOSE 80

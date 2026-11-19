@@ -231,6 +231,29 @@ check('Secret decrypts back exactly', cryptoChecks.roundtrip);
 check('Same plaintext yields different ciphertext (random IV)', cryptoChecks.differs);
 check('Tampered ciphertext is rejected', cryptoChecks.tamper);
 
+section('Diagnostics never leak into responses');
+// A stray notice (Xdebug, a deprecation, a warning) printed before a JSON body
+// makes an API response unparseable and breaks header() calls. Web SAPIs must be
+// silent; CLI keeps diagnostics so failures are visible while developing.
+const displayRules = JSON.parse(php(`<?php
+require 'includes/errors.php';
+echo json_encode([
+  'web' => tg_error_display_allowed('apache2handler', 'false'),
+  'fpm' => tg_error_display_allowed('fpm-fcgi', 'false'),
+  'debug' => tg_error_display_allowed('apache2handler', 'true'),
+  'cli' => tg_error_display_allowed('cli', 'false'),
+]);
+`));
+check('Diagnostics are hidden on web SAPIs', displayRules.web === false && displayRules.fpm === false, JSON.stringify(displayRules));
+check('APP_DEBUG=true re-enables diagnostics', displayRules.debug === true);
+check('CLI keeps diagnostics for the test suite', displayRules.cli === true);
+const iniOut = php(`<?php
+require 'includes/db.php';
+echo json_encode(['display'=>ini_get('display_errors'),'log'=>ini_get('log_errors')]);
+`);
+const iniState = JSON.parse(iniOut);
+check('Error logging stays enabled', iniState.log === '1', iniOut.trim());
+
 section('API: authentication');
 let steps = requests([
   { method: 'POST', script: path.join(root, 'api/create-order.php'), body: JSON.stringify({ amount: 499 }) },
