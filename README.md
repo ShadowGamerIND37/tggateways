@@ -48,9 +48,9 @@ What the stack starts:
 
 | Service | Role |
 | --- | --- |
-| `web` | PHP 8.3 + Apache with `pdo_mysql`, `curl`, `gd`, `imap`, `mod_rewrite`. Serves the app. |
+| `web` | PHP 8.3 + Apache with `pdo_mysql`, `curl`, `gd`, `mod_rewrite`. Serves the app. |
 | `database` | MySQL 8.4. Loads `database/schema.sql` automatically the first time the volume is created. |
-| `cron` | Runs `cron/imap-parser.php` every 5 seconds: expires stale orders, reads new receipt mail, retries failed webhooks. |
+| `cron` | Runs `cron/imap-parser.php` every 5 seconds: expires stale orders, reads new receipt mail, retries failed webhooks. Uses only the bundled IMAP client — no `imap` extension in the image. |
 
 Check the deployment at any time:
 
@@ -128,13 +128,16 @@ docker compose exec database \
 
 ## 5. Manual installation (no Docker)
 
-**Requirements:** PHP 8.1+ with `pdo_mysql`, `curl`, `openssl`, `mbstring`, `gd` and
-`imap`; MySQL 8 (or MariaDB 10.6+); Composer 2; Apache with `mod_rewrite`/`mod_headers`,
-or Nginx.
+**Requirements:** PHP 8.1+ with `pdo_mysql`, `curl`, `openssl`, `mbstring` and `gd`;
+MySQL 8 (or MariaDB 10.6+); Composer 2; Apache with `mod_rewrite`/`mod_headers`, or Nginx.
+
+PHP's `imap` extension is **not** required: receipt polling uses a bundled pure-PHP IMAP
+client over a TLS socket (`includes/imap-client.php`), so there is nothing extra to
+install and no build dependency to break.
 
 ```sh
 sudo apt install php8.3-cli php8.3-mysql php8.3-curl php8.3-mbstring \
-     php8.3-gd php8.3-imap composer apache2 libapache2-mod-php8.3 mysql-server
+     php8.3-gd composer apache2 libapache2-mod-php8.3 mysql-server
 sudo a2enmod rewrite headers
 
 git clone https://github.com/ShadowGamerIND37/tggateways.git /var/www/tggateways
@@ -211,11 +214,12 @@ node tests/run.mjs                 # auto-detects php, then a php-wasm CLI
 PHP_BIN=/usr/bin/php node tests/run.mjs
 ```
 
-116 checks run against a throwaway SQLite database: receipt parsing/matching, AES-GCM
-round-trips, auth and CSRF, input validation, rate limits, order creation, status and
-verification endpoints, the hosted checkout page, settlement idempotency (matched →
-duplicate → unmatched → unparsed), worker housekeeping, webhook signing/queueing/retry
-and the SSRF URL policy. MySQL remains the production database; SQLite exists so the
+139 checks run against a throwaway SQLite database: receipt parsing/matching, MIME
+decoding against plain/quoted-printable/base64/forwarded samples, the IMAP protocol client
+driven by a scripted peer, AES-GCM round-trips, auth and CSRF, input validation, rate
+limits, order creation, status and verification endpoints, the hosted checkout page,
+settlement idempotency (matched → duplicate → unmatched → unparsed), worker housekeeping,
+webhook signing/queueing/retry and the SSRF URL policy. MySQL remains the production database; SQLite exists so the
 same code is testable without a database server.
 
 Webhook delivery is tested through `tests/webhook-transport.php`, which records the exact

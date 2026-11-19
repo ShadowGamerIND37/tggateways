@@ -12,7 +12,12 @@ function receipt_normalise(string $raw): string {
     $text = preg_replace('#<br\s*/?>|</p>|</div>|</tr>#i', "\n", $text) ?? $text;
     $text = strip_tags($text);
     $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-    $text = str_replace(["\u{20b9}"], '₹', $text);
+    // Some gateways write the rupee sign as its HTML entity and some as a bare
+    // code point; both must reach the amount regex identically.
+    $text = str_replace(['&#8377;', "\u{20b9}"], '₹', $text);
+    // Non-breaking / narrow spaces appear in copied receipt tables and would
+    // otherwise stop "₹ 499" from matching.
+    $text = str_replace(["\u{00a0}", "\u{202f}", "\u{2009}"], ' ', $text);
     return trim(preg_replace('/[ \t]+/', ' ', $text) ?? $text);
 }
 
