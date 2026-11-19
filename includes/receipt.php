@@ -85,10 +85,12 @@ function receipt_parse(string $rawBody): array {
  * @return array{order_id:string,ambiguous:bool,candidates:int}|null
  */
 function receipt_match(array $pending, string $amount, ?string $orderRef): ?array {
-    $want = number_format((float)$amount, 2, '.', '');
+    // Compare in minor units (paise) so "499", "499.0" and "499.00" agree and no
+    // floating-point formatting can make equal amounts look different.
+    $want = (int)round((float)$amount * 100);
     $same = [];
     foreach ($pending as $order) {
-        if (number_format((float)$order['payable_amount'], 2, '.', '') === $want) $same[] = $order;
+        if ((int)round((float)$order['payable_amount'] * 100) === $want) $same[] = $order;
     }
     if (!$same) return null;
     if ($orderRef !== null && $orderRef !== '') {

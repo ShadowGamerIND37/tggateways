@@ -3,6 +3,28 @@ declare(strict_types=1);
 require_once __DIR__.'/db.php';
 require_once __DIR__.'/notify.php';
 
+/**
+ * Transport seam for tests and restricted networks. Point
+ * TG_WEBHOOK_TRANSPORT_FILE at a PHP file that returns a callable with the
+ * signature fn(string $url, string $body, array $headers): array. Production
+ * leaves it unset and uses the SSRF-pinned cURL path in tg_http_post().
+ */
+function webhook_transport(string $url, string $body, array $headers): array {
+    $override = (string)envv('TG_WEBHOOK_TRANSPORT_FILE', '');
+    if ($override !== '' && is_file($override)) {
+        $transport = require $override;
+        if (is_callable($transport)) {
+            $result = $transport($url, $body, $headers);
+            return [
+                'code' => (int)($result['code'] ?? 0),
+                'body' => (string)($result['body'] ?? ''),
+                'error' => $result['error'] ?? null,
+            ];
+        }
+    }
+    return tg_http_post($url, $body, $headers);
+}
+
 function webhook_payload(array $order): array {
     return [
         'id' => 'evt_'.bin2hex(random_bytes(8)),
@@ -33,10 +55,18 @@ function dispatch_webhook(PDO $pdo, string $orderId, bool $force = false): bool 
     $row = $q->fetch();
     if (!$row || $row['status'] !== 'success' || !$row['webhook_url']) return false;
 
-    if (!$force) {
-        $seen = $pdo->prepare('SELECT 1 FROM webhook_logs WHERE order_id=? LIMIT 1');
-        $seen->execute([$orderId]);
-        if ($seen->fetchColumn()) return false;
+    // Idempotent per order: a redelivery of the receipt or a retried worker pass
+    // must not queue the same payment event twice.
+    $seen = $pdo->prepare('SELECT 1 FROM webhook_logs WHERE order_id=? LIMIT 1');
+    $seen->execute([$orderId]);
+    if ($seen->fetchColumn()) {
+        if (!$force) return false;
+        // Re-send the existing queue row instead of creating a duplicate.
+        $replay = $pdo->prepare('SELECT id,payload,signature FROM webhook_logs WHERE order_id=? ORDER BY id LIMIT 1');
+        $replay->execute([$orderId]);
+        $row2 = $replay->fetch();
+        if (!$row2) return false;
+        return deliver_webhook($pdo, (int)$row2['id'], (string)$row['webhook_url'], (string)$row2['payload'], (string)$row2['signature']);
     }
 
     $body = json_encode(webhook_payload($row), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
@@ -49,7 +79,7 @@ function dispatch_webhook(PDO $pdo, string $orderId, bool $force = false): bool 
 }
 
 function deliver_webhook(PDO $pdo, int $logId, string $url, string $body, string $signature): bool {
-    $result = tg_http_post($url, $body, [
+    $result = webhook_transport($url, $body, [
         'Content-Type: application/json',
         'X-TGGateway-Signature: '.$signature,
         'X-TGGateway-Event: payment.succeeded',
@@ -78,7 +108,7 @@ function retry_webhooks(PDO $pdo, int $limit = 25): int {
             continue;
         }
         $attempt = (int)$log['attempt_count'];
-        $result = tg_http_post((string)$merchant['webhook_url'], (string)$log['payload'], [
+        $result = webhook_transport((string)$merchant['webhook_url'], (string)$log['payload'], [
             'Content-Type: application/json',
             'X-TGGateway-Signature: '.(string)$log['signature'],
             'X-TGGateway-Event: '.(string)'payment.succeeded',

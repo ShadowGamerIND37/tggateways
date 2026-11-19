@@ -14,6 +14,11 @@ function start_session(): void {
         'httponly'=>true,
         'samesite'=>'Lax',
     ]);
+    // Reject attacker-supplied session ids. Disabled for the CLI harness, which
+    // injects a known id to simulate one browser across separate processes.
+    if (PHP_SAPI !== 'cli') ini_set('session.use_strict_mode', '1');
+    ini_set('session.use_only_cookies', '1');
+    ini_set('session.gc_maxlifetime', (string)max(1440, (int)envv('SESSION_LIFETIME', '86400')));
     session_start();
 }
 start_session();
@@ -30,6 +35,9 @@ function require_login(): array {
 }
 
 function login_merchant(array $merchant): void {
+    // Regenerating the id must also retire the pre-login CSRF token: the old
+    // token was handed to an unauthenticated page and must not survive login.
+    unset($_SESSION['csrf']);
     session_regenerate_id(true);
     $_SESSION['merchant_id']=(int)$merchant['id'];
     $_SESSION['merchant_name']=(string)$merchant['name'];

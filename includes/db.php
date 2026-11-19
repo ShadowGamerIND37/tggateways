@@ -13,6 +13,9 @@ function load_env(string $path): void {
 }
 load_env(dirname(__DIR__).'/.env');
 
+require_once __DIR__.'/errors.php';
+tg_install_error_handlers();
+
 function envv(string $key, ?string $default = null): ?string { $v = getenv($key); return $v === false ? $default : $v; }
 
 function db_driver(): string {
@@ -69,6 +72,8 @@ function request_body(): string {
     if ($body !== null) return $body;
     $hook = envv('TG_TEST_BODY_PATH');
     if ($hook !== null && $hook !== '' && is_file($hook)) return $body = (string)file_get_contents($hook);
+    // php://input cannot be read reliably during CLI test runs.
+    if (PHP_SAPI === 'cli') return $body = '';
     return $body = (string)file_get_contents('php://input');
 }
 
@@ -115,7 +120,11 @@ function require_method(string ...$methods): void {
 
 function rate_limit(string $identity, int $limit=90, int $window=60): void {
     $pdo = db();
-    $key = hash('sha256', $identity.'|'.($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+    // Production uses the client address; the CLI harness has none, so the
+    // identity alone scopes the counter instead of collapsing every caller into
+    // one bucket.
+    $address = PHP_SAPI === 'cli' ? 'cli' : (string)($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+    $key = hash('sha256', $identity.'|'.$address);
     $now = time();
     $cutoff = $now - $window;
     if (db_driver() === 'sqlite') {
@@ -166,4 +175,43 @@ function safe_webhook_resolve(string $url): array|false {
 function client_ip(): string {
     $ip = (string)($_SERVER['REMOTE_ADDR'] ?? '');
     return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : 'unknown';
+}
+
+/**
+ * Configuration problems that would break payments or security. Surfaced on the
+ * dashboard and by the worker instead of failing silently later.
+ *
+ * @return list<string>
+ */
+function tg_config_problems(): array {
+    $problems = [];
+
+    $key = (string)envv('APP_ENCRYPTION_KEY', '');
+    if (!preg_match('/^[a-f0-9]{64}$/i', $key)) {
+        $problems[] = 'APP_ENCRYPTION_KEY must be 64 hex characters (32 random bytes). Connection secrets cannot be stored until it is set.';
+    }
+
+    $appUrl = (string)envv('APP_URL', '');
+    if ($appUrl === '' || !filter_var($appUrl, FILTER_VALIDATE_URL)) {
+        $problems[] = 'APP_URL must be the full public base URL, e.g. https://pay.example.com.';
+    } else {
+        $scheme = strtolower((string)parse_url($appUrl, PHP_URL_SCHEME));
+        $host = strtolower((string)parse_url($appUrl, PHP_URL_HOST));
+        $localHost = in_array($host, ['localhost', '127.0.0.1', '::1'], true) || str_ends_with($host, '.local');
+        if ($scheme !== 'https' && !$localHost) {
+            $problems[] = 'APP_URL should use https:// outside local development; checkout links are shared with customers.';
+        }
+    }
+
+    $secure = filter_var(envv('SESSION_SECURE', 'true'), FILTER_VALIDATE_BOOLEAN);
+    $localOnly = str_starts_with(strtolower($appUrl), 'http://localhost') || str_starts_with(strtolower($appUrl), 'http://127.0.0.1');
+    if (!$secure && !$localOnly) {
+        $problems[] = 'SESSION_SECURE is false while APP_URL is not localhost. Session cookies could travel over plain HTTP.';
+    }
+
+    if (db_driver() === 'mysql' && in_array((string)envv('DB_PASSWORD', ''), ['', 'change-me'], true)) {
+        $problems[] = 'DB_PASSWORD is empty or the sample value; set a real database password.';
+    }
+
+    return $problems;
 }
