@@ -783,6 +783,157 @@ steps = requests([
 ], shortAuth.session);
 check('Invalid ticket is rejected with a message', /4–200 characters|at least 10 characters/.test(steps[0].body || ''));
 
+section('Multi-accounts: caps, validation and payout re-auth');
+
+// Unit-level: the UPI validator must reject malformed VPAs and honour the
+// optional domain allowlist without breaking the default permissive mode.
+const upiChecks = JSON.parse(php(`<?php
+require 'includes/db.php';
+require 'includes/merchant.php';
+$cases = ['ok_axis' => tg_validate_upi('shadow@okaxis'), 'ok_dot' => tg_validate_upi('first.last@okhdfcbank'),
+  'no_at' => tg_validate_upi('shadowokaxis'), 'empty' => tg_validate_upi(''),
+  'spaces' => tg_validate_upi('shadow @okaxis'), 'only_at' => tg_validate_upi('@'),
+  'long' => tg_validate_upi(str_repeat('a', 200) . '@okaxis')];
+putenv('UPI_ID_DOMAINS=fam,yesfam');
+$cases['dom_fam'] = tg_validate_upi('shadow@fam');
+$cases['dom_yesfam'] = tg_validate_upi('shadow@yesfam');
+$cases['dom_bank'] = tg_validate_upi('shadow@okaxis');
+putenv('UPI_ID_DOMAINS=');
+$cases['dom_cleared'] = tg_validate_upi('shadow@okaxis');
+echo json_encode($cases);
+`, baseEnv()));
+check('Valid UPI IDs pass validation', upiChecks.ok_axis === null && upiChecks.ok_dot === null, JSON.stringify(upiChecks).slice(0, 200));
+check('Malformed UPI IDs are rejected',
+  upiChecks.no_at !== null && upiChecks.empty !== null && upiChecks.spaces !== null
+  && upiChecks.only_at !== null && upiChecks.long !== null);
+check('Domain allowlist accepts the listed handles', upiChecks.dom_fam === null && upiChecks.dom_yesfam === null);
+check('Domain allowlist rejects other handles', typeof upiChecks.dom_bank === 'string' && upiChecks.dom_bank.includes('@fam'));
+check('Clearing the allowlist restores permissive mode', upiChecks.dom_cleared === null);
+
+const capChecks = JSON.parse(php(`<?php
+require 'includes/db.php';
+require 'includes/merchant.php';
+putenv('MAX_RECEIVING_ACCOUNTS=3');
+$a = tg_account_limit();
+putenv('MAX_RECEIVING_ACCOUNTS=0');
+$b = tg_account_limit();
+putenv('MAX_RECEIVING_ACCOUNTS=');
+$c = tg_account_limit();
+echo json_encode([$a, $b, $c, tg_masked_email('shadowgamerind37@gmail.com'), tg_masked_email('ab@x.com')]);
+`, baseEnv()));
+check('Account cap is configurable', capChecks[0] === 3, String(capChecks[0]));
+check('Account cap never drops below one', capChecks[1] === 1, String(capChecks[1]));
+check('Account cap falls back to one for an explicit zero', capChecks[2] === 1, String(capChecks[2]));
+const defaultCap = JSON.parse(php(`<?php
+require 'includes/db.php';
+require 'includes/merchant.php';
+echo json_encode(tg_account_limit());
+`, { MAX_RECEIVING_ACCOUNTS: '5' }));
+check('Account cap defaults to five', defaultCap === 5, String(defaultCap));
+check('Email masking hides the local part', capChecks[3] === 's**************7@gmail.com', String(capChecks[3]));
+
+// Behavioural: adding a 6th account is refused at the cap.
+const capAuth = signIn('merchant@example.com', 'correct-horse-battery');
+const fillAccounts = (csrf) => [1, 2, 3, 4, 5].map((n) => ({
+  method: 'POST', script: path.join(root, 'multi-accounts.php'),
+  post: { csrf, action: 'add', account_label: `Backup ${n}`, upi_id: `backup${n}@okaxis`,
+    linked_email: `backup${n}@example.com`, app_password: 'abcdefghijklmnop',
+    imap_host: 'imap.gmail.com', imap_port: '993' },
+}));
+steps = requests(fillAccounts(capAuth.csrf), capAuth.session);
+check('Five accounts can be linked', steps.every((r) => r.status === 200), steps.map((r) => r.status).join(','));
+const afterFive = php(`<?php
+require 'includes/db.php';
+echo (int) db()->query('SELECT COUNT(*) FROM merchant_accounts WHERE merchant_id=1')->fetchColumn();
+`, baseEnv());
+steps = requests([{
+  method: 'POST', script: path.join(root, 'multi-accounts.php'),
+  post: { csrf: capAuth.csrf, action: 'add', account_label: 'Sixth', upi_id: 'sixth@okaxis',
+    linked_email: 'sixth@example.com', app_password: 'abcdefghijklmnop', imap_host: 'imap.gmail.com', imap_port: '993' },
+}], capAuth.session);
+check('A sixth account is refused by the cap', /allows 5 receiving accounts/.test(steps[0].body || ''), String(afterFive));
+const countAfter = php(`<?php
+require 'includes/db.php';
+echo (int) db()->query('SELECT COUNT(*) FROM merchant_accounts WHERE merchant_id=1')->fetchColumn();
+`, baseEnv());
+check('Refused account was not inserted', countAfter === '5', countAfter);
+
+// A malformed UPI is refused before anything is written.
+steps = requests([{
+  method: 'POST', script: path.join(root, 'multi-accounts.php'),
+  post: { csrf: capAuth.csrf, action: 'add', account_label: 'Typo', upi_id: 'not-a-vpa',
+    linked_email: 'typo@example.com', app_password: 'abcdefghijklmnop', imap_host: 'imap.gmail.com', imap_port: '993' },
+}], capAuth.session);
+check('Malformed UPI is refused on save', /does not look like a UPI ID/.test(steps[0].body || ''));
+
+// Payout change on the active account must demand the password first.
+const payoutAuth = signIn('merchant@example.com', 'correct-horse-battery');
+const activeAccount = JSON.parse(php(`<?php
+require 'includes/db.php';
+$row = db()->query('SELECT id, upi_id FROM merchant_accounts WHERE merchant_id=1 AND is_active=1')->fetch();
+echo json_encode(['id' => (int)$row['id'], 'upi' => $row['upi_id']]);
+`, baseEnv()));
+steps = requests([{
+  method: 'POST', script: path.join(root, 'multi-accounts.php'),
+  post: { csrf: payoutAuth.csrf, action: 'update', id: String(activeAccount.id),
+    account_label: 'Main UPI', upi_id: 'attacker@okaxis', linked_email: 'receipts@example.com',
+    app_password: '', imap_host: 'imap.gmail.com', imap_port: '993' },
+}], payoutAuth.session);
+check('Payout change without reauth is blocked', /needs your account password/.test(steps[0].body || ''));
+const upiUnchanged = php(`<?php
+require 'includes/db.php';
+$row = db()->query('SELECT upi_id FROM merchant_accounts WHERE merchant_id=1 AND is_active=1')->fetch();
+echo $row['upi_id'];
+`, baseEnv());
+check('Blocked payout change did not touch the database', !upiUnchanged.includes('attacker'), upiUnchanged);
+
+// Wrong password must not authorise.
+steps = requests([{
+  method: 'POST', script: path.join(root, 'multi-accounts.php'),
+  post: { csrf: payoutAuth.csrf, action: 'reauth', password: 'wrong-password', edit: String(activeAccount.id) },
+}], payoutAuth.session);
+check('Wrong password does not authorise payout edits', /password did not match/.test(steps[0].body || ''));
+
+// Correct password authorises, replays the stored edit, and the UPI changes.
+steps = requests([{
+  method: 'POST', script: path.join(root, 'multi-accounts.php'),
+  post: { csrf: payoutAuth.csrf, action: 'reauth', password: 'correct-horse-battery', edit: String(activeAccount.id) },
+}], payoutAuth.session);
+check('Correct password authorises and replays the edit',
+  /Payout details updated/.test(steps[0].body || ''), (steps[0].body || '').slice(0, 200));
+const upiAfter = php(`<?php
+require 'includes/db.php';
+$row = db()->query('SELECT upi_id FROM merchant_accounts WHERE merchant_id=1 AND is_active=1')->fetch();
+echo $row['upi_id'];
+`, baseEnv());
+check('Authorised payout change is applied', upiAfter === 'attacker@okaxis', upiAfter);
+
+// Activation swaps which account receives orders.
+const standbyId = php(`<?php
+require 'includes/db.php';
+$row = db()->query('SELECT id FROM merchant_accounts WHERE merchant_id=1 AND is_active=0 ORDER BY id LIMIT 1')->fetch();
+echo (int)$row['id'];
+`, baseEnv());
+steps = requests([{
+  method: 'POST', script: path.join(root, 'multi-accounts.php'),
+  post: { csrf: payoutAuth.csrf, action: 'activate', id: standbyId },
+}], payoutAuth.session);
+const activeAfterSwitch = php(`<?php
+require 'includes/db.php';
+$rows = db()->query('SELECT COUNT(*) AS n FROM merchant_accounts WHERE merchant_id=1 AND is_active=1')->fetch();
+$id = db()->query('SELECT id FROM merchant_accounts WHERE merchant_id=1 AND is_active=1')->fetch();
+echo json_encode(['active' => (int)$rows['n'], 'id' => (int)$id['id']]);
+`, baseEnv());
+check('Exactly one account stays active after a switch', JSON.parse(activeAfterSwitch).active === 1, activeAfterSwitch);
+check('The requested standby account became active', String(JSON.parse(activeAfterSwitch).id) === standbyId, activeAfterSwitch);
+
+// Removing the active account is refused.
+steps = requests([{
+  method: 'POST', script: path.join(root, 'multi-accounts.php'),
+  post: { csrf: payoutAuth.csrf, action: 'delete', id: String(JSON.parse(activeAfterSwitch).id) },
+}], payoutAuth.session);
+check('Active account cannot be deleted', /Switch the active account/.test(steps[0].body || ''));
+
 section('Addons, services and invoices');
 
 const addonAuth = signIn('merchant@example.com', 'correct-horse-battery');

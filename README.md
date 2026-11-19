@@ -296,6 +296,21 @@ Two behaviours worth knowing:
 - New registrations must accept the Terms and Privacy links, and the account is created
   after email verification when 2FA is on.
 
+### Receiving accounts
+
+A merchant can link several UPI wallets and switch the active receiver in one click.
+Only one account receives new orders at a time; activating a standby retires the previous
+primary rather than splitting traffic silently. Three rules protect the payout path:
+
+- **Cap.** `MAX_RECEIVING_ACCOUNTS` (default 5) limits how many wallets can be linked.
+- **Validation.** UPI IDs are checked against VPA grammar. Set `UPI_ID_DOMAINS=fam,yesfam`
+  to lock a deployment to specific handles; leave it empty to stay provider-agnostic.
+- **Re-authorisation.** Changing the payout UPI or receipt mailbox requires the account
+  password. The authorisation lasts 15 minutes, and the blocked edit is replayed
+  automatically once it is granted, so nothing has to be retyped.
+
+Every payout change, activation and removal is written to `audit_log`.
+
 ---
 
 ## 8. Tests
@@ -305,7 +320,7 @@ node tests/run.mjs                 # auto-detects php, then a php-wasm CLI
 PHP_BIN=/usr/bin/php node tests/run.mjs
 ```
 
-200 checks run against a throwaway SQLite database: receipt parsing/matching, MIME
+222 checks run against a throwaway SQLite database: receipt parsing/matching, MIME
 decoding against plain/quoted-printable/base64/forwarded samples, the IMAP protocol client
 driven by a scripted peer, AES-GCM round-trips, auth and CSRF, input validation, rate
 limits, order creation, status and verification endpoints, the hosted checkout page,

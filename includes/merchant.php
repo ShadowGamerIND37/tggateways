@@ -90,3 +90,106 @@ function tg_audit(?int $merchantId, string $action, string $detail = ''): void {
         error_log('audit: '.$e->getMessage());
     }
 }
+
+/* ============================================================
+   Receiving accounts: validation, caps and payout re-auth
+   ============================================================ */
+
+/** Maximum number of receiving accounts a merchant may hold. */
+function tg_account_limit(): int {
+    return max(1, (int)envv('MAX_RECEIVING_ACCOUNTS', '5'));
+}
+
+/**
+ * UPI domains the operator allows, or [] for any well-formed VPA.
+ *
+ * The upstream product is FamPay-specific and only accepts @fam/@yesfam. This
+ * gateway is provider-agnostic, so the default stays permissive and an operator
+ * can lock it down (e.g. `UPI_ID_DOMAINS=fam,yesfam`) without a code change.
+ *
+ * @return list<string>
+ */
+function tg_upi_domains(): array {
+    $raw = trim((string)envv('UPI_ID_DOMAINS', ''));
+    if ($raw === '') return [];
+    return array_values(array_filter(array_map(
+        static fn (string $d): string => strtolower(trim($d, " \t@")),
+        explode(',', $raw)
+    )));
+}
+
+/**
+ * Validate a UPI VPA. Returns null when valid, otherwise an operator-facing
+ * message explaining exactly what is wrong.
+ */
+function tg_validate_upi(string $upi): ?string {
+    if ($upi === '') return 'Enter the UPI ID that receives the payments.';
+    if (strlen($upi) > 190) return 'That UPI ID is too long.';
+    // VPA grammar: local@handle, both sides limited to the characters the NPCI
+    // apps themselves accept. Rejecting anything else early beats a failed
+    // payment against a typo'd handle.
+    if (!preg_match('/^[A-Za-z0-9._-]{2,128}@[A-Za-z0-9.-]{2,190}$/', $upi)) {
+        return 'That does not look like a UPI ID. Use the form name@bank, for example name@okhdfcbank.';
+    }
+    $allowed = tg_upi_domains();
+    if ($allowed !== []) {
+        $domain = strtolower(substr($upi, strrpos($upi, '@') + 1));
+        $root = explode('.', $domain)[0];
+        if (!in_array($domain, $allowed, true) && !in_array($root, $allowed, true)) {
+            return 'This deployment only accepts UPI IDs ending in @'.implode(', @', $allowed).'.';
+        }
+    }
+    return null;
+}
+
+/** How many receiving accounts the merchant currently holds. */
+function tg_account_count(int $merchantId): int {
+    $q = db()->prepare('SELECT COUNT(*) FROM merchant_accounts WHERE merchant_id=?');
+    $q->execute([$merchantId]);
+    return (int)$q->fetchColumn();
+}
+
+/**
+ * Has this session proven the merchant's password recently?
+ *
+ * Uses a short-lived session stamp rather than a per-request check so the user
+ * authorises once and can then make several payout edits without re-typing.
+ */
+function tg_reauth_fresh(int $window = 900): bool {
+    return (int)($_SESSION['reauth_at'] ?? 0) >= time() - $window;
+}
+
+/** Verify a password and, on success, stamp the session. */
+function tg_reauth_password(int $merchantId, string $password): bool {
+    $q = db()->prepare('SELECT password FROM merchants WHERE id=?');
+    $q->execute([$merchantId]);
+    $hash = (string)$q->fetchColumn();
+    if ($hash === '' || !password_verify($password, $hash)) return false;
+    $_SESSION['reauth_at'] = time();
+    return true;
+}
+
+/** Drop the re-auth stamp (called after a payout change lands). */
+function tg_reauth_clear(): void {
+    unset($_SESSION['reauth_at']);
+}
+
+/** Mask an email for display: s****7@gmail.com */
+function tg_mask_email(string $email): string {
+    $at = strrpos($email, '@');
+    if ($at === false || $at < 1) return $email;
+    $local = substr($email, 0, $at);
+    $domain = substr($email, $at);
+    if (strlen($local) <= 2) return $local[0].'***'.$domain;
+    return $local[0].str_repeat('*', max(3, strlen($local) - 2)).substr($local, -1).$domain;
+}
+
+/** Mask an email for display: shadowgamerind37@… → s**************7@gmail.com */
+function tg_masked_email(string $email): string {
+    $at = strrpos($email, '@');
+    if ($at === false || $at < 1) return $email;
+    $local = substr($email, 0, $at);
+    $domain = substr($email, $at);
+    if (strlen($local) <= 2) return $local[0].'***'.$domain;
+    return $local[0].str_repeat('*', max(3, strlen($local) - 2)).substr($local, -1).$domain;
+}
