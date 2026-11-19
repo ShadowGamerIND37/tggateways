@@ -3,7 +3,8 @@ declare(strict_types=1);
 require_once __DIR__.'/../includes/db.php';
 require_method('POST');
 $merchant = merchant_by_api_key();
-rate_limit('create:'.$merchant['id'], 60, 60);
+// Defaults match the published contract; operators can tune them per deployment.
+rate_limit('create:'.$merchant['id'], (int)envv('RATE_LIMIT_CREATE_MAX', '60'), (int)envv('RATE_LIMIT_CREATE_WINDOW', '60'));
 $in = request_json();
 
 $rawAmount = $in['amount'] ?? null;

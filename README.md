@@ -93,6 +93,51 @@ minutes, which is the real end-to-end proof that receipt polling works.
 6. **Set your webhook endpoint** on **Webhooks** if you are integrating a backend. The signature is `sha256=HMAC_SHA256(rawBody, api_key)` in `X-TGGateway-Signature`.
 7. Confirm `/api/health.php` reports `receipt_parser: operational`.
 
+### Behind a Cloudflare Tunnel (or any reverse proxy)
+
+Expose the container with a tunnel when the machine has no public IP (Codespaces, a
+laptop, a home server). The app needs three settings, and one of them is easy to miss.
+
+```sh
+# 1. Point a tunnel at the published port
+cloudflared tunnel --url http://localhost:8009
+#    or, with a named tunnel and a hostname you control:
+#    cloudflared tunnel route dns tggateways gate.example.com
+#    cloudflared tunnel run --url http://localhost:8009 tggateways
+```
+
+```sh
+# 2. .env — use the https:// URL visitors actually open
+APP_URL=https://gate.example.com
+SESSION_SECURE=true
+# 3. .env — the address cloudflared connects from, so rate limits stay per-visitor
+TRUSTED_PROXIES=172.16.0.0/12
+
+docker compose up -d
+```
+
+Then confirm the public URL answers:
+
+```sh
+curl -s https://gate.example.com/api/health.php | python3 -m json.tool
+```
+
+`APP_URL` **must** be the public `https://` URL, not `http://localhost:8009`. It is what
+checkout links are built from, and behind an HTTPS tunnel a plain-http `APP_URL` makes the
+browser drop the session cookie — login appears to do nothing while the dashboard keeps
+redirecting you back. `/api/health.php` reports this as a configuration problem.
+
+`TRUSTED_PROXIES` is optional but recommended: without it every visitor reaches the container
+from the tunnel's address, so all rate-limit buckets collapse into one and per-IP limits stop
+meaning anything. The forwarded header is ignored unless the request really came from a
+trusted proxy, so a direct visitor cannot forge their address.
+
+On Linux, find the bridge address the tunnel appears as:
+
+```sh
+docker network inspect tggateways_default --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}'
+```
+
 ### Local PHP quirks you may hit
 
 These are environment issues, not application errors — the app runs correctly with either.
