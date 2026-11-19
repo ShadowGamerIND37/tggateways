@@ -1462,17 +1462,24 @@ steps = requests([
   { method: 'GET', script: path.join(root, 'invoices.php') },
   { method: 'GET', script: path.join(root, 'services.php') },
   { method: 'POST', script: path.join(root, 'addons.php'), post: { csrf: addonCsrf, addon: 'bharatpe', months: '1' } },
+  { method: 'POST', script: path.join(root, 'addons.php'), post: { csrf: addonCsrf, addon: 'slice', months: '1' } },
+  { method: 'POST', script: path.join(root, 'addons.php'), post: { csrf: addonCsrf, addon: 'mobikwik', months: '1' } },
+  { method: 'POST', script: path.join(root, 'addons.php'), post: { csrf: addonCsrf, addon: 'phonepe', months: '1' } },
   { method: 'POST', script: path.join(root, 'addons.php'), post: { csrf: addonCsrf, addon: 'paytm', months: '3' } },
   { method: 'GET', script: path.join(root, 'invoices.php') },
   { method: 'GET', script: path.join(root, 'services.php') },
 ], addonAuth.session);
-const [addonsPage, invoicesEmpty, servicesPage, addonRefused, addonBought, invoicesAfter, servicesAfter] = steps;
-check('Addons page lists all three gateways',
-  addonsPage.body.includes('Paytm for Business') && addonsPage.body.includes('BharatPe for Business')
-  && addonsPage.body.includes('FamPay UPI Gateway'));
+const [addonsPage, invoicesEmpty, servicesPage, addonRefused, sliceRefused, mobikwikRefused, phonepeRefused, addonBought, invoicesAfter, servicesAfter] = steps;
+check('Addons page lists the core, addon and coming-soon gateways',
+  ['FamPay UPI Gateway', 'Paytm for Business', 'BharatPe for Business', 'Slice UPI Gateway', 'MobiKwik UPI Gateway', 'PhonePe for Business']
+    .every((name) => (addonsPage.body || '').includes(name)),
+  'one or more gateway cards missing');
 check('Empty invoices page shows the reference empty state', invoicesEmpty.body.includes('No Invoices Yet'));
 check('Services page shows the free core gateway', servicesPage.body.includes('Free Forever'));
-check('Non-purchasable addon is refused', /not available for purchase/.test(addonRefused.body || ''));
+check('Non-purchasable addons are refused',
+  [addonRefused, sliceRefused, mobikwikRefused, phonepeRefused]
+    .every((r) => /not available for purchase/.test(r.body || '')),
+  [addonRefused, sliceRefused, mobikwikRefused, phonepeRefused].map((r) => /not available/.test(r.body || '')).join(','));
 check('Buying an addon succeeds and names the invoice', /Invoice INV-/.test(addonBought.body || ''));
 check('Invoice appears in the billing history', /INV-\d{6}-[A-F0-9]{6}/.test(invoicesAfter.body || ''));
 check('Purchased addon appears in My Services', /Paytm for Business/.test(servicesAfter.body || ''));
