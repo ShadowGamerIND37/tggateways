@@ -6,8 +6,30 @@ declare(strict_types=1);
  * never leaks a stack trace or serves a half-rendered page: JSON clients get a
  * JSON error, browsers get a short HTML page, and `log_errors` decides whether
  * details go to the server log.
+ *
+ * Whether PHP may print diagnostics into the response body.
+ *
+ * On the web SAPI that must be false: a stray notice corrupts JSON, breaks
+ * header() calls and leaks paths to customers. CLI keeps it on so the test suite
+ * and manual runs surface problems immediately. APP_DEBUG=true re-enables it for
+ * a development deployment.
  */
+function tg_error_display_allowed(?string $sapi = null, ?string $debug = null): bool {
+    $sapi ??= PHP_SAPI;
+    if ($sapi === 'cli' || $sapi === 'phpdbg') return true;
+    $debug ??= (string)envv('APP_DEBUG', 'false');
+    return filter_var($debug, FILTER_VALIDATE_BOOLEAN);
+}
+
 function tg_install_error_handlers(): void {
+    if (!tg_error_display_allowed()) {
+        // Errors still go to the server log (error_log / stderr), never to output.
+        ini_set('display_errors', '0');
+        ini_set('display_startup_errors', '0');
+    }
+    ini_set('log_errors', '1');
+    error_reporting(E_ALL & ~E_DEPRECATED);
+
     if (!headers_sent()) {
         header_remove('X-Powered-By');
         header('X-Content-Type-Options: nosniff');

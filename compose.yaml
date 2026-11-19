@@ -51,7 +51,9 @@ services:
       database:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "php -m | grep -qi '^imap$'"]
+      # The worker records every completed pass in system_state, so this checks
+      # that polling is actually running — not merely that an extension loaded.
+      test: ["CMD", "php", "/var/www/html/cron/healthcheck.php"]
       interval: 60s
       timeout: 5s
       retries: 3

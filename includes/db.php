@@ -13,10 +13,11 @@ function load_env(string $path): void {
 }
 load_env(dirname(__DIR__).'/.env');
 
+/** Read a configuration value from the environment (loaded from .env above). */
+function envv(string $key, ?string $default = null): ?string { $v = getenv($key); return $v === false ? $default : $v; }
+
 require_once __DIR__.'/errors.php';
 tg_install_error_handlers();
-
-function envv(string $key, ?string $default = null): ?string { $v = getenv($key); return $v === false ? $default : $v; }
 
 function db_driver(): string {
     $driver = strtolower((string)envv('DB_DRIVER', 'mysql'));

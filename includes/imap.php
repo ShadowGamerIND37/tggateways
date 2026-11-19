@@ -1,9 +1,13 @@
 <?php
 declare(strict_types=1);
 /**
- * IMAP receipt ingestion: connect, read unseen receipt mail, extract the text
- * body, hand it to the settlement engine. Credentials and message bodies are
- * never written to logs.
+ * IMAP receipt ingestion: connect, read new receipt mail, decode it, hand it to
+ * the settlement engine. Credentials and message bodies are never written to
+ * logs.
+ *
+ * Uses the bundled pure-PHP client (includes/imap-client.php) instead of PHP's
+ * `imap` extension, which is no longer shipped by the official Docker images and
+ * whose Debian build dependency no longer exists.
  */
 require_once __DIR__.'/db.php';
 require_once __DIR__.'/receipt.php';
@@ -11,8 +15,25 @@ require_once __DIR__.'/settlement.php';
 require_once __DIR__.'/crypto.php';
 require_once __DIR__.'/notify.php';
 require_once __DIR__.'/webhook.php';
+require_once __DIR__.'/mime.php';
+require_once __DIR__.'/imap-client.php';
 
-function imap_supported(): bool { return function_exists('imap_open'); }
+/** The client only needs PHP's OpenSSL streams, which every supported build has. */
+function imap_supported(): bool {
+    return function_exists('stream_socket_client') && extension_loaded('openssl');
+}
+
+/** Human-readable reason polling cannot run, or null when it can. */
+function imap_unsupported_reason(): ?string {
+    if (!function_exists('stream_socket_client')) return 'PHP stream sockets are unavailable';
+    if (!extension_loaded('openssl')) return 'PHP OpenSSL extension is unavailable (TLS is required)';
+    return null;
+}
+
+function imap_connection_string(array $account): string {
+    $host = preg_replace('/[^A-Za-z0-9.\-]/', '', (string)($account['imap_host'] ?? 'imap.gmail.com')) ?: 'imap.gmail.com';
+    return $host.':'.((int)($account['imap_port'] ?? 993) ?: 993);
+}
 
 /**
  * Gmail-style receipt mail arrives already read when the mailbox is opened on a
@@ -36,64 +57,56 @@ function imap_set_last_uid(PDO $pdo, int $accountId, int $uid): void {
     $pdo->prepare('UPDATE system_state SET state_value=?, updated_at=? WHERE state_key=?')->execute([$value, db_now(), $key]);
 }
 
-/** Decode a MIME body according to its transfer encoding. */
-function imap_decode_body(string $body, int $encoding): string {
-    return match ($encoding) {
-        3 => (string)base64_decode($body, true),
-        4 => quoted_printable_decode($body),
-        default => $body,
-    };
-}
-
-/** Walk a message structure and return the best text body (plain preferred). */
-function imap_extract_text($imap, int $msgNo, object $structure): string {
-    $plain = '';
-    $html = '';
-    $walk = static function (object $part, string $partNo) use ($imap, $msgNo, &$plain, &$html, &$walk): void {
-        if (strtolower((string)($part->type ?? '')) === 'multipart') {
-            foreach (($part->parts ?? []) as $index => $child) {
-                $walk($child, ($partNo === '' ? '' : $partNo.'.').($index + 1));
-            }
-            return;
-        }
-        $subtype = strtolower((string)($part->subtype ?? ''));
-        if ($subtype !== 'plain' && $subtype !== 'html') return;
-        $body = @imap_fetchbody($imap, $msgNo, $partNo === '' ? '1' : $partNo);
-        if (!is_string($body) || $body === '') return;
-        $body = imap_decode_body($body, (int)($part->encoding ?? 0));
-        if ($subtype === 'plain' && $plain === '') $plain = $body;
-        elseif ($subtype === 'html' && $html === '') $html = $body;
-    };
-    $walk($structure, '');
-    return $plain !== '' ? $plain : $html;
+/** Open a mailbox using the account's stored, encrypted credentials. */
+function imap_open_account(array $account): TgImapClient {
+    $password = decrypt_secret((string)$account['google_app_password']);
+    [$host, $port] = explode(':', imap_connection_string($account).':', 2);
+    $host = $host !== '' ? $host : 'imap.gmail.com';
+    $port = (int)($port !== '' ? $port : 993) ?: 993;
+    return TgImapClient::connect(
+        $host,
+        $port,
+        (string)$account['linked_email'],
+        $password,
+        filter_var(envv('IMAP_VALIDATE_CERT', 'true'), FILTER_VALIDATE_BOOLEAN),
+        (int)envv('IMAP_TIMEOUT', '10') ?: 10
+    );
 }
 
 /** Test the configured mailbox without ingesting anything (dashboard diagnostic). */
 function imap_test_connection(array $account): array {
-    if (!imap_supported()) return ['ok' => false, 'message' => 'PHP IMAP extension is not installed'];
-    try { $password = decrypt_secret((string)$account['google_app_password']); }
-    catch (Throwable $e) { return ['ok' => false, 'message' => 'Stored credential could not be decrypted: '.$e->getMessage()]; }
-    $imap = @imap_open(imap_connection_string($account), (string)$account['linked_email'], $password, OP_READONLY, 1);
-    if (!$imap) return ['ok' => false, 'message' => imap_last_error() ?: 'Could not connect to the IMAP server'];
-    $count = @imap_num_msg($imap);
-    imap_close($imap);
-    return ['ok' => true, 'message' => 'Mailbox reachable. '.($count !== false ? (int)$count : 0).' message(s) present.'];
+    $reason = imap_unsupported_reason();
+    if ($reason !== null) return ['ok' => false, 'message' => 'Cannot test the mailbox: '.$reason];
+    try {
+        $client = imap_open_account($account);
+    } catch (Throwable $e) {
+        return ['ok' => false, 'message' => $e->getMessage()];
+    }
+    try {
+        $count = $client->numMessages();
+        return ['ok' => true, 'message' => 'Mailbox reachable. '.$count.' message(s) present. New receipts will be picked up by the worker.'];
+    } catch (Throwable $e) {
+        return ['ok' => false, 'message' => $e->getMessage()];
+    } finally {
+        $client->logout();
+    }
 }
 
 /** Read one account's mailbox once. Throws only when the connection fails. */
 function imap_ingest_account(PDO $pdo, array $account): array {
     $summary = ['account' => (int)$account['id'], 'checked' => 0, 'matched' => 0, 'unmatched' => 0, 'duplicate' => 0, 'errors' => 0];
-    $password = decrypt_secret((string)$account['google_app_password']);
-    $imap = @imap_open(imap_connection_string($account), (string)$account['linked_email'], $password, 0, 1);
-    if (!$imap) {
-        $error = imap_last_error() ?: 'IMAP connection failed';
+
+    try {
+        $client = imap_open_account($account);
+    } catch (Throwable $e) {
+        $error = $e->getMessage();
         $pdo->prepare('UPDATE merchant_accounts SET last_error=?, last_checked_at=? WHERE id=?')->execute([substr($error, 0, 480), db_now(), (int)$account['id']]);
         throw new RuntimeException($error);
     }
+
     try {
-        $uids = array_map('intval', imap_search($imap, 'ALL', SE_UID) ?: []);
-        rsort($uids);
-        $newest = $uids[0] ?? 0;
+        $uids = $client->uids();
+        $newest = $uids ? max($uids) : 0;
         $watermark = imap_last_uid($pdo, (int)$account['id']);
         if ($watermark < 1) {
             // Seed at the newest message present so a fresh deployment never
@@ -103,24 +116,28 @@ function imap_ingest_account(PDO $pdo, array $account): array {
             $summary['seeded_at_uid'] = $newest;
         } else {
             $uids = array_values(array_filter($uids, static fn(int $uid): bool => $uid > $watermark));
-            sort($uids);
         }
-        $maxSeen = $watermark;
+
         foreach ($uids as $uid) {
-            $msgNo = imap_msgno($imap, $uid);
-            if (!$msgNo) { $maxSeen = max($maxSeen, $uid); continue; }
             $summary['checked']++;
-            $structure = @imap_fetchstructure($imap, $msgNo);
-            if (!$structure) { $summary['errors']++; continue; }
-            $raw = imap_extract_text($imap, $msgNo, $structure);
-            $header = (string)@imap_fetchheader($imap, $msgNo);
-            $messageId = preg_match('/^Message-ID:\s*<([^>]+)>/mi', $header, $m) ? substr($m[1], 0, 250) : null;
-            $receipt = receipt_parse($raw !== '' ? $raw : $header);
+            $raw = $client->fetchRaw($uid);
+            if ($raw === null || $raw === '') {
+                $summary['errors']++;
+                imap_set_last_uid($pdo, (int)$account['id'], $uid);
+                continue;
+            }
+
+            $messageId = mime_message_id($raw);
+            $text = mime_extract_text($raw);
+            $receipt = receipt_parse($text['text']);
+
             if (!claim_receipt_message($pdo, (int)$account['id'], $messageId)) {
                 // Another worker already ingested this message.
                 $summary['duplicate']++;
+                imap_set_last_uid($pdo, (int)$account['id'], $uid);
                 continue;
             }
+
             try {
                 $outcome = settle_receipt($pdo, $account, $receipt, $messageId);
                 if ($outcome['state'] === 'matched' || $outcome['state'] === 'ambiguous') {
@@ -129,32 +146,38 @@ function imap_ingest_account(PDO $pdo, array $account): array {
                         notify_all($pdo, $outcome['order_id']);
                         dispatch_webhook($pdo, $outcome['order_id']);
                     }
-                } elseif ($outcome['state'] === 'duplicate') $summary['duplicate']++;
-                else $summary['unmatched']++;
+                } elseif ($outcome['state'] === 'duplicate') {
+                    $summary['duplicate']++;
+                } else {
+                    $summary['unmatched']++;
+                }
             } catch (Throwable $e) {
                 $summary['errors']++;
                 error_log('Receipt settlement failed for account '.$account['id'].': '.$e->getMessage());
             }
-            @imap_setflag_full($imap, (string)$uid, '\\Seen', ST_UID);
-            $maxSeen = $uid;
-            imap_set_last_uid($pdo, (int)$account['id'], $maxSeen);
-            unset($raw);
+
+            $client->markSeen($uid);
+            imap_set_last_uid($pdo, (int)$account['id'], $uid);
+            unset($raw, $text);
         }
+
         $pdo->prepare('UPDATE merchant_accounts SET last_checked_at=?, last_error=NULL WHERE id=?')->execute([db_now(), (int)$account['id']]);
     } finally {
-        imap_close($imap);
+        $client->logout();
     }
     return $summary;
 }
 
 /** Worker entry point: every active account, failures isolated per account. */
 function imap_ingest_all(PDO $pdo): array {
-    if (!imap_supported()) return ['error' => 'PHP IMAP extension is required for receipt polling'];
+    $reason = imap_unsupported_reason();
+    if ($reason !== null) return ['error' => 'Receipt polling unavailable: '.$reason];
     $accounts = $pdo->query('SELECT id,merchant_id,linked_email,imap_host,imap_port,google_app_password FROM merchant_accounts WHERE is_active=1')->fetchAll();
     $results = [];
     foreach ($accounts as $account) {
-        try { $results[] = imap_ingest_account($pdo, $account); }
-        catch (Throwable $e) {
+        try {
+            $results[] = imap_ingest_account($pdo, $account);
+        } catch (Throwable $e) {
             error_log('IMAP account '.$account['id'].' failed: '.$e->getMessage());
             $results[] = ['account' => (int)$account['id'], 'error' => $e->getMessage()];
         }

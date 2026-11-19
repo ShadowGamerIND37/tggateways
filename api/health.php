@@ -5,6 +5,7 @@ declare(strict_types=1);
  * container healthcheck. Exposes component states only — no merchant data.
  */
 require_once __DIR__.'/../includes/db.php';
+require_once __DIR__.'/../includes/imap.php';
 require_method('GET');
 rate_limit('health', 120, 60);
 
@@ -40,8 +41,9 @@ try {
     }
 
     $accounts = (int)$pdo->query('SELECT COUNT(*) FROM merchant_accounts WHERE is_active=1')->fetchColumn();
-    if (!function_exists('imap_open')) {
-        $result['receipt_parser'] = 'imap_extension_missing';
+    $parserUnavailable = function_exists('imap_unsupported_reason') ? imap_unsupported_reason() : null;
+    if ($parserUnavailable !== null) {
+        $result['receipt_parser'] = 'transport_unavailable';
     } elseif ($accounts === 0) {
         $result['receipt_parser'] = 'no_active_account';
     } elseif ($result['worker_healthy']) {

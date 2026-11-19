@@ -15,7 +15,7 @@
  *
  * Exit code 0 means every test passed.
  */
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -213,6 +213,127 @@ check('Unknown reference does not fall back to amount match', match.wrong_ref ==
 check('No pending order for amount returns null', match.no_amount === null);
 check('Reference match with unique amount', match.ref_only?.order_id === 'tg_CCC333');
 
+section('Unit: MIME decoding');
+// Real-world shapes: plain, quoted-printable HTML, base64 + Latin-1, and a
+// Gmail-style forward where the amount lives in the HTML alternative.
+const mimeOut = php(`<?php
+require 'includes/mime.php';
+require 'includes/receipt.php';
+$samples = require 'tests/mime-samples.php';
+$out = [];
+foreach ($samples as $name => $raw) {
+    $text = mime_extract_text($raw);
+    $receipt = receipt_parse($text['text']);
+    $out[$name] = [
+        'html' => $text['html'],
+        'utr' => $receipt['utr'],
+        'amount' => $receipt['amount'],
+        'sender' => $receipt['sender'],
+        'message_id' => mime_message_id($raw),
+    ];
+}
+echo json_encode($out);
+`);
+const mime = JSON.parse(mimeOut);
+check('Plain-text receipt decodes', mime.plain.utr === '123456789012' && mime.plain.amount === '499.00');
+check('Quoted-printable HTML receipt decodes', mime.quoted_printable_html.amount === '1249.50' && mime.quoted_printable_html.utr === '987654321098');
+check('HTML entity rupee sign is understood', mime.quoted_printable_html.html === true);
+check('Base64 body with Latin-1 charset decodes', mime.base64_latin1.amount === '250.00' && mime.base64_latin1.utr === '111122223333');
+check('Nested multipart forward finds the HTML alternative', mime.gmail_forward.amount === '75.00' && mime.gmail_forward.utr === '444455556666');
+check('Attachments are not parsed as receipts', !String(mime.gmail_forward.amount).includes('1.00'));
+check('Unrelated email yields no payment facts', mime.unrelated.amount === null && mime.unrelated.utr === null);
+check('Message-ID is extracted for deduplication', mime.plain.message_id === 'abc123@bank.example' && mime.gmail_forward.message_id === 'fwd99@example.com');
+check('Folded headers are unfolded', JSON.parse(php(`<?php
+require 'includes/mime.php';
+$message = mime_parse_message("Content-Type: text/plain;\\r\\n charset=ISO-8859-1\\r\\n\\r\\nbody");
+echo json_encode([(string)($message['headers']['content-type'] ?? '')]);
+`))[0].includes('charset=ISO-8859-1'));
+check('Malformed base64 recovers what it can', JSON.parse(php(`<?php
+require 'includes/mime.php';
+echo json_encode([mime_decode_transfer("aGVsbG8=--bogus", 'base64')]);
+`))[0] === 'hello');
+
+section('Unit: IMAP protocol client');
+// The worker talks IMAP over a TLS socket. The protocol layer is driven here by a
+// scripted in-memory peer, so command framing, literal reads and UID handling are
+// verified without a mailbox, a network or the absent `imap` extension.
+const imapOut = php(`<?php
+require 'includes/imap-client.php';
+
+/** Scripted server: responds to each command the client sends. */
+final class ScriptedIo implements TgImapIo {
+    public string $sent = '';
+    private array $lines;
+    private string $pending = '';
+    public function __construct(array $lines) { $this->lines = $lines; }
+    public function write(string $data): int|false { $this->sent .= $data; return strlen($data); }
+    public function readLine(): ?string {
+        if ($this->pending !== '') { $line = $this->pending; $this->pending = ''; return $line; }
+        return $this->lines ? (string)array_shift($this->lines) : null;
+    }
+    public function readBytes(int $length): string {
+        $data = '';
+        while (strlen($data) < $length && $this->lines) $data .= array_shift($this->lines);
+        return substr($data, 0, $length);
+    }
+    public function close(): void {}
+}
+
+$raw = "Subject: Payment received\\r\\nMessage-ID: <mid-1@example.com>\\r\\n\\r\\nRs.499.00 credited UTR 123456789012";
+$bodyLines = str_split($raw, 40);
+
+$io = new ScriptedIo(array_merge([
+    '* 3 EXISTS',
+    '* OK [UIDVALIDITY 42] ok',
+    'A0001 OK SELECT completed',
+    '* SEARCH 7 11 14',
+    'A0002 OK SEARCH completed',
+    '* 2 FETCH (UID 14 BODY[] {'.strlen($raw).'}',
+    ...str_split($raw, 40),
+    ')',
+    'A0003 OK FETCH completed',
+    'A0004 OK STORE completed',
+    'A0005 OK LOGOUT completed',
+], []));
+$client = new TgImapClient($io, 'test.local');
+$outcome = [
+    'count' => $client->numMessages(),
+    'uids' => $client->uids(),
+    'raw' => $client->fetchRaw(14),
+];
+$client->markSeen(14);
+$client->logout();
+echo json_encode(['outcome' => $outcome, 'sent' => $io->sent]);
+`);
+const imap = JSON.parse(imapOut);
+check('SELECT reports the message count', imap.outcome.count === 3, JSON.stringify(imap.outcome));
+check('UID SEARCH returns sorted integer UIDs', JSON.stringify(imap.outcome.uids) === '[7,11,14]');
+check('Raw message is read from the literal', String(imap.outcome.raw).includes('UTR 123456789012'));
+check('Fetch uses BODY.PEEK so mail is not marked read', imap.sent.includes('(BODY.PEEK[])'), imap.sent);
+check('Commands are tagged and sequenced', /^A0001 SELECT INBOX/.test(imap.sent) && /A0002 UID SEARCH ALL/.test(imap.sent) && /A0003 UID FETCH 14/.test(imap.sent));
+check('Seen flag is set only after processing', imap.sent.includes('A0004 UID STORE 14 +FLAGS (\\Seen)'), imap.sent);
+check('Logout is sent', /A0005 LOGOUT/.test(imap.sent));
+check('Credentials are sent as literals, never on the command line', JSON.parse(php(`<?php
+require 'includes/imap-client.php';
+final class RecordingIo implements TgImapIo {
+    public string $sent = '';
+    private array $script = ['A0001 OK LOGIN completed'];
+    public function write(string $data): int|false { $this->sent .= $data; return strlen($data); }
+    public function readLine(): ?string { return $this->script ? (string)array_shift($this->script) : null; }
+    public function readBytes(int $length): string { return ''; }
+    public function close(): void {}
+}
+$io = new RecordingIo();
+$client = new TgImapClient($io, 'test.local');
+$reflection = new ReflectionMethod(TgImapClient::class, 'login');
+$reflection->invoke($client, 'receipts@example.com', 'abcd efgh ijkl mnop');
+echo json_encode([preg_match('/LOGIN \\{[0-9]+\\}\\r\\n/', $io->sent) === 1]);
+`))[0] === true);
+check('Polling reports why it cannot run without TLS', JSON.parse(php(`<?php
+require 'includes/imap.php';
+echo json_encode(['supported' => imap_supported(), 'reason' => imap_unsupported_reason()]);
+`)).supported === true);
+
 section('Unit: crypto round-trip');
 const cryptoOut = php(`<?php
 require 'includes/crypto.php';
@@ -230,6 +351,29 @@ check('AES-GCM ciphertext is versioned', cryptoChecks.prefix_ok);
 check('Secret decrypts back exactly', cryptoChecks.roundtrip);
 check('Same plaintext yields different ciphertext (random IV)', cryptoChecks.differs);
 check('Tampered ciphertext is rejected', cryptoChecks.tamper);
+
+section('Diagnostics never leak into responses');
+// A stray notice (Xdebug, a deprecation, a warning) printed before a JSON body
+// makes an API response unparseable and breaks header() calls. Web SAPIs must be
+// silent; CLI keeps diagnostics so failures are visible while developing.
+const displayRules = JSON.parse(php(`<?php
+require 'includes/errors.php';
+echo json_encode([
+  'web' => tg_error_display_allowed('apache2handler', 'false'),
+  'fpm' => tg_error_display_allowed('fpm-fcgi', 'false'),
+  'debug' => tg_error_display_allowed('apache2handler', 'true'),
+  'cli' => tg_error_display_allowed('cli', 'false'),
+]);
+`));
+check('Diagnostics are hidden on web SAPIs', displayRules.web === false && displayRules.fpm === false, JSON.stringify(displayRules));
+check('APP_DEBUG=true re-enables diagnostics', displayRules.debug === true);
+check('CLI keeps diagnostics for the test suite', displayRules.cli === true);
+const iniOut = php(`<?php
+require 'includes/db.php';
+echo json_encode(['display'=>ini_get('display_errors'),'log'=>ini_get('log_errors')]);
+`);
+const iniState = JSON.parse(iniOut);
+check('Error logging stays enabled', iniState.log === '1', iniOut.trim());
 
 section('API: authentication');
 let steps = requests([
@@ -528,7 +672,34 @@ check('Health reports database operational', health.database === 'operational', 
 check('Health does not claim the parser works without a worker run', health.receipt_parser !== 'operational', String(health.receipt_parser));
 check('Health exposes no merchant identifiers', !JSON.stringify(health).includes('merchant@'));
 
-section('Legacy /api/status contract');
+section('Worker healthcheck');
+// cron/healthcheck.php backs the Compose `cron` healthcheck. Its decision logic is
+// exercised in-process because a CLI wrapper's exit code is not observable from
+// every runtime; the CLI entry point itself is a one-line exit() around this.
+const freshnessOut = php(`<?php
+require 'cron/healthcheck.php';
+$pdo = new PDO('sqlite:'.getenv('DB_SQLITE_PATH'), null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$pdo->prepare('DELETE FROM system_state WHERE state_key=?')->execute(['worker_last_run']);
+$never = worker_freshness($pdo);
+$pdo->prepare('INSERT INTO system_state(state_key,state_value,updated_at) VALUES(?,?,?)')->execute(['worker_last_run', json_encode(['time'=>gmdate('c')]), gmdate('Y-m-d H:i:s')]);
+$fresh = worker_freshness($pdo);
+$pdo->prepare('UPDATE system_state SET state_value=? WHERE state_key=?')->execute([json_encode(['time'=>gmdate('c', time()-600)]), 'worker_last_run']);
+$stale = worker_freshness($pdo);
+$pdo->prepare('UPDATE system_state SET state_value=? WHERE state_key=?')->execute([json_encode(['time'=>gmdate('c')]), 'worker_last_run']);
+echo json_encode(['never'=>$never, 'fresh'=>$fresh, 'stale'=>$stale]);
+`);
+const freshness = JSON.parse(freshnessOut);
+check('Healthcheck fails before the worker has ever run', freshness.never.ok === false, freshnessOut.trim());
+check('Healthcheck passes after a recent worker pass', freshness.fresh.ok === true && /worker pass/.test(freshness.fresh.message));
+check('Healthcheck fails when the worker is stale', freshness.stale.ok === false && /stale/.test(freshness.stale.message));
+check('Healthcheck script runs standalone without side effects', (() => {
+  const result = spawnSync(PHP[0], [...PHP.slice(1), path.join(root, 'cron/healthcheck.php')], {
+    cwd: root, encoding: 'utf8', env: { ...process.env, ...baseEnv() },
+  });
+  return /worker pass/.test(String(result.stdout || '') + String(result.stderr || ''));
+})(), String(spawnSync(PHP[0], [...PHP.slice(1), path.join(root, 'cron/healthcheck.php')], { cwd: root, encoding: 'utf8', env: { ...process.env, ...baseEnv() } }).stderr));
+
+section('Legacy /api/status contract');section('Legacy /api/status contract');
 steps = requests([
   { method: 'GET', script: path.join(root, 'api/status.php') },
   { method: 'GET', script: path.join(root, 'api/status.php'), headers: { 'X-Api-Key': apiKey }, query: { order_ref: 'Invoice 42' } },

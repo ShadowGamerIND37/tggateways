@@ -48,9 +48,9 @@ What the stack starts:
 
 | Service | Role |
 | --- | --- |
-| `web` | PHP 8.3 + Apache with `pdo_mysql`, `curl`, `gd`, `imap`, `mod_rewrite`. Serves the app. |
+| `web` | PHP 8.3 + Apache with `pdo_mysql`, `curl`, `gd`, `mod_rewrite`. Serves the app. |
 | `database` | MySQL 8.4. Loads `database/schema.sql` automatically the first time the volume is created. |
-| `cron` | Runs `cron/imap-parser.php` every 5 seconds: expires stale orders, reads new receipt mail, retries failed webhooks. |
+| `cron` | Runs `cron/imap-parser.php` every 5 seconds: expires stale orders, reads new receipt mail, retries failed webhooks. Uses only the bundled IMAP client — no `imap` extension in the image. |
 
 Check the deployment at any time:
 
@@ -76,6 +76,24 @@ minutes, which is the real end-to-end proof that receipt polling works.
 5. Watch the payment appear: the checkout page polls `/api/checkout-status.php`, and within one worker cycle (≈5 s plus the provider's email delay) the order flips to paid. Verify in **Transactions**.
 6. **Set your webhook endpoint** on **Webhooks** if you are integrating a backend. The signature is `sha256=HMAC_SHA256(rawBody, api_key)` in `X-TGGateway-Signature`.
 7. Confirm `/api/health.php` reports `receipt_parser: operational`.
+
+### Local PHP quirks you may hit
+
+These are environment issues, not application errors — the app runs correctly with either.
+
+- **`Xdebug: [Step Debug] Could not connect to debugging client`** — Xdebug is enabled in your
+  local PHP but no debugger is listening. It is a startup notice, harmless. Silence it with
+  `XDEBUG_MODE=off php -r '…'`, or set `xdebug.start_with_request=no`. In the Docker image
+  it cannot appear at all: `/api` must never have stray output, so the image ships
+  `docker/php.ini` with `display_errors=Off` and logs to stderr. The application enforces
+  the same rule itself (`includes/errors.php`): web SAPIs stay silent, CLI keeps
+  diagnostics, and `APP_DEBUG=true` opts back in on a development machine only.
+- **`bin2hex(random_bytes(32))` printed 64 characters** — that is the whole key. Paste it
+  whole as `APP_ENCRYPTION_KEY`. Do not truncate it, add quotes inside `.env`, or reuse a
+  key across deployments: it decrypts the stored mailbox passwords, and there is no
+  recovery if it is lost.
+- **`PHP Warning: Module "imap" is already loaded`** — some distros load IMAP from
+  `conf.d`; ignore it, or remove the duplicate line from your `php.ini`.
 
 A fresh deployment **starts reading the mailbox from the newest message present**. Mail
 that was already in the inbox is deliberately ignored so a first import cannot mark
@@ -110,13 +128,16 @@ docker compose exec database \
 
 ## 5. Manual installation (no Docker)
 
-**Requirements:** PHP 8.1+ with `pdo_mysql`, `curl`, `openssl`, `mbstring`, `gd` and
-`imap`; MySQL 8 (or MariaDB 10.6+); Composer 2; Apache with `mod_rewrite`/`mod_headers`,
-or Nginx.
+**Requirements:** PHP 8.1+ with `pdo_mysql`, `curl`, `openssl`, `mbstring` and `gd`;
+MySQL 8 (or MariaDB 10.6+); Composer 2; Apache with `mod_rewrite`/`mod_headers`, or Nginx.
+
+PHP's `imap` extension is **not** required: receipt polling uses a bundled pure-PHP IMAP
+client over a TLS socket (`includes/imap-client.php`), so there is nothing extra to
+install and no build dependency to break.
 
 ```sh
 sudo apt install php8.3-cli php8.3-mysql php8.3-curl php8.3-mbstring \
-     php8.3-gd php8.3-imap composer apache2 libapache2-mod-php8.3 mysql-server
+     php8.3-gd composer apache2 libapache2-mod-php8.3 mysql-server
 sudo a2enmod rewrite headers
 
 git clone https://github.com/ShadowGamerIND37/tggateways.git /var/www/tggateways
@@ -193,11 +214,12 @@ node tests/run.mjs                 # auto-detects php, then a php-wasm CLI
 PHP_BIN=/usr/bin/php node tests/run.mjs
 ```
 
-116 checks run against a throwaway SQLite database: receipt parsing/matching, AES-GCM
-round-trips, auth and CSRF, input validation, rate limits, order creation, status and
-verification endpoints, the hosted checkout page, settlement idempotency (matched →
-duplicate → unmatched → unparsed), worker housekeeping, webhook signing/queueing/retry
-and the SSRF URL policy. MySQL remains the production database; SQLite exists so the
+139 checks run against a throwaway SQLite database: receipt parsing/matching, MIME
+decoding against plain/quoted-printable/base64/forwarded samples, the IMAP protocol client
+driven by a scripted peer, AES-GCM round-trips, auth and CSRF, input validation, rate
+limits, order creation, status and verification endpoints, the hosted checkout page,
+settlement idempotency (matched → duplicate → unmatched → unparsed), worker housekeeping,
+webhook signing/queueing/retry and the SSRF URL policy. MySQL remains the production database; SQLite exists so the
 same code is testable without a database server.
 
 Webhook delivery is tested through `tests/webhook-transport.php`, which records the exact
