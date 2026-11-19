@@ -19,7 +19,6 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import http from 'node:http';
 import crypto from 'node:crypto';
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -71,6 +70,8 @@ function php(code, env = {}) {
       encoding: 'utf8',
       env: { ...process.env, ...baseEnv(), ...env },
       stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: Number(process.env.TG_PHP_TIMEOUT_MS || 120000),
+      killSignal: 'SIGKILL',
     });
   } finally {
     rmSync(file, { force: true });
@@ -289,7 +290,8 @@ section('API: rate limiting');
 const bursts = Array.from({ length: 62 }, () => ({ method: 'POST', script: path.join(root, 'api/create-order.php'), headers: { 'X-Api-Key': apiKey }, body: JSON.stringify({ amount: 5 }) }));
 const burstSteps = requests(bursts);
 const limited = burstSteps.filter((s) => s.status === 429);
-check('Create-order limit returns 429 after 60/min', limited.length >= 2, `${limited.length} rejected`);
+const mix = burstSteps.reduce((acc, s) => ({ ...acc, [s.status]: (acc[s.status] || 0) + 1 }), {});
+check('Create-order limit returns 429 after 60/min', limited.length >= 2, `${limited.length} rejected of ${JSON.stringify(mix)}`);
 check('429 includes Retry-After', limited.length > 0 && limited[0].headers.some((h) => /Retry-After/i.test(h)));
 
 section('Merchant auth flow');
@@ -326,7 +328,9 @@ steps = requests([
 ], registerSession);
 check('Valid registration redirects to integrations', steps[1].status === 302 && steps[1].headers.some((h) => /Location: \/integrations\.php/.test(h)), `${steps[1].status} ${JSON.stringify(steps[1].headers)}`);
 check('New session reaches dashboard', steps[2].status === 200 && /Dashboard/.test(steps[2].body));
-check('Dashboard reuses the same CSRF token after login', (steps[2].body || '').includes(csrf2));
+// The dashboard renders no form itself, so it must not echo the pre-login token;
+// a token issued before authentication must not survive session regeneration.
+check('Pre-login CSRF token does not survive into the dashboard', !(steps[2].body || '').includes(csrf2), String(csrf2).slice(0, 12));
 
 section('Merchant login flow');
 const loginSession = `login_${crypto.randomUUID()}`;
@@ -382,7 +386,14 @@ check('Receipt with no matching amount is unmatched', settle.unmatched.state ===
 check('Unparseable receipt is recorded, not matched', settle.unparsed.state === 'unparsed');
 check('Reference-based receipt claims the right order', settle.second.state === 'matched' && settle.second.order_id && settle.second.order_id.includes('tg_'), JSON.stringify(settle.second));
 check('Only orders with matching receipts are paid', Number(settle.count_paid) === 2, String(settle.count_paid));
-check('Every receipt attempt leaves an audit row', Number(settle.event_count) === 4, String(settle.event_count));
+const attemptsOut = php(`<?php
+$pdo = new PDO('sqlite:'.getenv('DB_SQLITE_PATH'), null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$states = $pdo->query('SELECT state, COUNT(*) c FROM receipt_events GROUP BY state')->fetchAll(PDO::FETCH_KEY_PAIR);
+$orders = (int)$pdo->query("SELECT COUNT(*) FROM receipt_events")->fetchColumn();
+echo json_encode(['rows'=>$orders,'states'=>$states]);
+`);
+const attempts = JSON.parse(attemptsOut);
+check('Every receipt attempt leaves an audit row', attempts.rows >= 4 && (attempts.states.matched ?? 0) >= 2 && (attempts.states.duplicate ?? 0) >= 1 && (attempts.states.unmatched ?? 0) >= 1, attemptsOut.trim());
 
 const expiryOut = php(`<?php
 require 'includes/settlement.php';
@@ -395,46 +406,77 @@ const expiry = JSON.parse(expiryOut);
 check('Housekeeping expires stale pending orders', expiry.status === 'expired' && expiry.expired >= 1);
 
 section('Webhooks: signing and delivery');
-const receiver = http.createServer((req, res) => {
-  const chunks = [];
-  req.on('data', (chunk) => chunks.push(chunk));
-  req.on('end', () => {
-    receiver.lastRequest = { headers: req.headers, body: Buffer.concat(chunks).toString('utf8') };
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end('{"ok":true}');
-  });
-});
-await new Promise((resolve) => receiver.listen(0, '127.0.0.1', resolve));
-const receiverPort = receiver.address().port;
-const receiverUrl = `http://127.0.0.1:${receiverPort}/hook`;
+// The transport writes every attempt to a spool file, so the suite can assert the
+// exact wire request (body, signature header) and simulate endpoint failures
+// without depending on outbound network access.
+const spool = path.join(work, 'webhook-spool.jsonl');
+const transportEnv = {
+  TG_WEBHOOK_TRANSPORT_FILE: path.join(root, 'tests/webhook-transport.php'),
+  TG_WEBHOOK_SPOOL: spool,
+  WEBHOOK_BACKOFF_SECONDS: '5',
+};
+const readSpool = () => (existsSync(spool) ? readFileSync(spool, 'utf8').trim().split('\n').filter(Boolean).map((line) => JSON.parse(line)) : []);
 
-const hookOut = php(`<?php
+const dispatchOut = php(`<?php
 require 'includes/webhook.php';
 $pdo = new PDO('sqlite:'.getenv('DB_SQLITE_PATH'), null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-$pdo->exec('PRAGMA foreign_keys = ON');
-// Outbound policy requires HTTPS + public DNS, so the test posts directly to the
-// local receiver through deliver_webhook() to exercise signing and logging.
-$payload = ['event' => 'payment.succeeded', 'order_id' => 'tg_SIGNTEST', 'amount' => 499];
-$row = $pdo->query("SELECT order_id FROM orders LIMIT 1")->fetch();
-$body = json_encode(webhook_payload([ 'order_id'=>$row['order_id'], 'amount'=>499, 'payable_amount'=>499, 'status'=>'success', 'utr'=>'555666777888', 'transaction_id'=>'555666777888', 'sender_name'=>'ASHA', 'paid_at'=>'2026-01-01 00:00:00']));
-$signature = 'sha256='.hash_hmac('sha256', $body, 'secret-key');
-$ch = curl_init(getenv('HOOK_URL'));
-curl_setopt_array($ch, [CURLOPT_POST=>true, CURLOPT_POSTFIELDS=>$body, CURLOPT_HTTPHEADER=>['Content-Type: application/json','X-TGGateway-Signature: '.$signature], CURLOPT_RETURNTRANSFER=>true]);
-curl_exec($ch);
-$code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
-echo json_encode(['body'=>$body,'signature'=>$signature,'code'=>$code]);
-`, { HOOK_URL: receiverUrl });
-const hook = JSON.parse(hookOut);
-await new Promise((resolve) => setTimeout(resolve, 150));
-const received = receiver.lastRequest;
-check('Local receiver got a 200 from cURL', hook.code === 200, String(hook.code));
-check('Receiver received JSON body', Boolean(received) && JSON.parse(received.body).order_id !== undefined);
-check('Signature header uses sha256= prefix', Boolean(received) && /^sha256=[0-9a-f]{64}$/.test(received.headers['x-tggateway-signature'] || ''));
-const expectedSignature = crypto.createHmac('sha256', 'secret-key').update(received?.body || '').digest('hex');
-check('HMAC matches an independent computation', received && received.headers['x-tggateway-signature'] === `sha256=${expectedSignature}`);
-check('Tampering with the body breaks the signature', crypto.createHmac('sha256', 'secret-key').update((received?.body || '') + ' ').digest('hex') !== expectedSignature);
-receiver.close();
+$pdo->prepare('UPDATE merchants SET webhook_url=?, api_key=? WHERE id=1')->execute([getenv('HOOK_URL'), 'secret-key']);
+$id = $pdo->query("SELECT order_id FROM orders WHERE status='success' LIMIT 1")->fetchColumn();
+$ok = dispatch_webhook($pdo, (string)$id, true);
+$log = $pdo->query('SELECT response_code,attempt_count,delivered_at,signature FROM webhook_logs ORDER BY id DESC LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+echo json_encode(['ok'=>$ok,'log'=>$log]);
+`, { ...transportEnv, HOOK_URL: 'https://merchant.example/hooks/payments' });
+const dispatch = JSON.parse(dispatchOut);
+const delivered = readSpool()[0];
+check('Signed webhook is delivered to the receiver', dispatch.ok === true && Number(dispatch.log.response_code) === 200, dispatchOut.trim().slice(0, 160));
+check('Delivery is recorded as complete', Boolean(dispatch.log.delivered_at) && Number(dispatch.log.attempt_count) === 1);
+check('Receiver got the payment event body', Boolean(delivered) && JSON.parse(delivered.body).event === 'payment.succeeded');
+check('Signature header uses sha256= prefix', Boolean(delivered) && delivered.headers.some((h) => /^X-TGGateway-Signature: sha256=[0-9a-f]{64}$/.test(h)));
+const signatureHeader = (delivered?.headers || []).find((h) => h.startsWith('X-TGGateway-Signature: '))?.slice('X-TGGateway-Signature: '.length) || '';
+const expectedSignature = crypto.createHmac('sha256', 'secret-key').update(delivered?.body || '').digest('hex');
+check('HMAC matches an independent computation', signatureHeader === `sha256=${expectedSignature}`);
+check('Tampering with the body breaks the signature', crypto.createHmac('sha256', 'secret-key').update((delivered?.body || '') + ' ').digest('hex') !== expectedSignature);
+check('Queued payload is stored for replay', dispatch.log.signature === `sha256=${expectedSignature}`);
+check('Event type header is sent', (delivered?.headers || []).some((h) => h === 'X-TGGateway-Event: payment.succeeded'));
+
+// Failure path: a 500 schedules a retry with backoff instead of giving up.
+const failOut = php(`<?php
+require 'includes/webhook.php';
+$pdo = new PDO('sqlite:'.getenv('DB_SQLITE_PATH'), null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$id = $pdo->query("SELECT order_id FROM orders WHERE status='success' LIMIT 1")->fetchColumn();
+$pdo->prepare('UPDATE webhook_logs SET response_code=NULL,attempt_count=0,delivered_at=NULL,next_retry_at=NULL')->execute();
+$ok = dispatch_webhook($pdo, (string)$id, true);
+$log = $pdo->query('SELECT response_code,attempt_count,delivered_at,next_retry_at,last_error FROM webhook_logs ORDER BY id DESC LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+echo json_encode(['ok'=>$ok,'log'=>$log,'backoff'=>webhook_backoff(1)]);
+`, { ...transportEnv, TG_WEBHOOK_TEST_CODE: '500', HOOK_URL: 'https://merchant.example/hooks/payments' });
+const failure = JSON.parse(failOut);
+check('A failing endpoint is not marked delivered', failure.ok === false && failure.log.delivered_at === null && Number(failure.log.response_code) === 500, failOut.trim().slice(0, 160));
+check('Retry is scheduled with backoff', Boolean(failure.log.next_retry_at) && Number(failure.log.attempt_count) === 1 && failure.backoff === 5, JSON.stringify(failure.log));
+check('Failure reason is recorded for the dashboard', /Simulated HTTP 500/.test(String(failure.log.last_error)));
+
+// Worker retry: after the backoff window the worker retries and succeeds.
+const replayOut = php(`<?php
+require 'includes/webhook.php';
+$pdo = new PDO('sqlite:'.getenv('DB_SQLITE_PATH'), null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$pdo->prepare('UPDATE webhook_logs SET next_retry_at=?')->execute(['2020-01-01 00:00:00']);
+$sent = retry_webhooks($pdo, 10);
+$log = $pdo->query('SELECT response_code,attempt_count,delivered_at FROM webhook_logs ORDER BY id DESC LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+echo json_encode(['sent'=>$sent,'log'=>$log]);
+`, { ...transportEnv, HOOK_URL: 'https://merchant.example/hooks/payments' });
+const replay = JSON.parse(replayOut);
+check('Worker retries due webhooks', replay.sent >= 1);
+check('Successful retry marks the webhook delivered', Boolean(replay.log.delivered_at) && Number(replay.log.attempt_count) === 2, JSON.stringify(replay.log));
+check('Each retry carries the stored signature', readSpool().length >= 3 && readSpool().every((attempt) => attempt.headers.some((h) => h.startsWith('X-TGGateway-Signature: sha256='))));
+
+// Restore the merchant key and prove only one queue row exists per order.
+php(`<?php
+$pdo = new PDO('sqlite:'.getenv('DB_SQLITE_PATH'), null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$pdo->prepare('UPDATE merchants SET api_key=? WHERE id=1')->execute([getenv('REAL_API_KEY')]);
+`, { REAL_API_KEY: apiKey });
+check('Exactly one queued webhook exists per order', Number(php(`<?php
+$pdo = new PDO('sqlite:'.getenv('DB_SQLITE_PATH'));
+echo (int)$pdo->query('SELECT COUNT(*) FROM webhook_logs')->fetchColumn();
+`)) === 1);
 
 section('Webhook SSRF policy');
 const ssrfOut = php(`<?php
@@ -455,6 +497,9 @@ check('Non-443 port rejected', ssrf['https://example.com:8443/hook'] === false);
 check('Embedded credentials rejected', ssrf['https://user:pass@example.com/hook'] === false);
 
 section('Payment links');
+// The rate-limit burst above used the same merchant, so wait for that window to
+// close instead of mutating the limiter's bookkeeping.
+await new Promise((resolve) => setTimeout(resolve, 1500));
 steps = requests([
   { method: 'POST', script: path.join(root, 'api/manage-links.php'), headers: { 'X-Api-Key': apiKey }, body: JSON.stringify({ title: 'Consultation', amount: 999 }) },
   { method: 'GET', script: path.join(root, 'api/manage-links.php'), headers: { 'X-Api-Key': apiKey } },

@@ -33,6 +33,8 @@ try {
     error_log('Webhook retry batch failed: '.$e->getMessage());
 }
 
+// Timestamp the completion, not the start, so a slow mailbox cannot look stale.
+$result['time'] = gmdate('c');
 $pdo->prepare('INSERT INTO system_state(state_key,state_value,updated_at) VALUES(?,?,?)'.(
     db_driver() === 'sqlite'
         ? ' ON CONFLICT(state_key) DO UPDATE SET state_value=excluded.state_value, updated_at=excluded.updated_at'

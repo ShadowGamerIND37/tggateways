@@ -9,7 +9,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && docker-php-ext-install -j"$(nproc)" curl pdo_mysql gd \
     && yes '' | pecl install imap \
     && docker-php-ext-enable imap \
-    && a2enmod rewrite headers \
+    && a2enmod rewrite headers remoteip \
+    && { echo 'RemoteIPHeader X-Forwarded-For'; echo 'RemoteIPTrustedProxy 172.16.0.0/12'; echo 'RemoteIPTrustedProxy 10.0.0.0/8'; echo 'RemoteIPTrustedProxy 192.168.0.0/16'; } > /etc/apache2/conf-available/tg-remoteip.conf \
+    && a2enconf tg-remoteip \
     && printf '<Directory /var/www/html>\nOptions FollowSymLinks\nAllowOverride All\nRequire all granted\n</Directory>\n' > /etc/apache2/conf-available/tg-gateways.conf \
     && a2enconf tg-gateways \
     && rm -rf /var/lib/apt/lists/*

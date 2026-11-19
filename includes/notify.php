@@ -32,7 +32,7 @@ function tg_http_post(string $url, string $body, array $headers, int $timeout = 
     $response = curl_exec($ch);
     $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $error = $response === false ? curl_error($ch) : null;
-    curl_close($ch);
+    unset($ch);
     return ['code' => $code, 'body' => is_string($response) ? $response : '', 'error' => $error];
 }
 

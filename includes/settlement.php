@@ -59,13 +59,21 @@ function settle_receipt(PDO $pdo, array $account, array $receipt, ?string $messa
             return ['state' => 'duplicate', 'order_id' => (string)$existing, 'detail' => 'UTR already recorded'];
         }
 
-        $pendingStmt = $pdo->prepare("SELECT order_id,payable_amount,created_at FROM orders WHERE merchant_account_id=? AND status='pending' AND payable_amount=? AND expires_at>? ORDER BY created_at ASC".for_update());
-        $pendingStmt->execute([$accountId, $amount, db_now()]);
-        $pending = $pendingStmt->fetchAll();
+        // Candidate window: never hand a receipt to an order that was created
+        // after the money arrived (a later, unrelated checkout of the same
+        // amount). Expiry is filtered in PHP so both drivers agree on time zones.
+        $pendingStmt = $pdo->prepare("SELECT order_id,payable_amount,created_at,expires_at FROM orders WHERE merchant_account_id=? AND status='pending' AND created_at<=? ORDER BY created_at ASC".for_update());
+        $pendingStmt->execute([$accountId, db_now()]);
+        $now = db_now();
+        $pending = array_values(array_filter(
+            $pendingStmt->fetchAll(),
+            static fn(array $order): bool => (string)($order['expires_at'] ?? '') > $now
+        ));
 
         $match = receipt_match($pending, $amount, $orderRef);
         if ($match === null) {
             if ($started) $pdo->rollBack();
+            $started = false;
             $record('unmatched', null, 'No pending order for this amount/reference');
             return ['state' => 'unmatched', 'order_id' => null, 'detail' => 'No pending order for this amount/reference'];
         }

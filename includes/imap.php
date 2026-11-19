@@ -14,11 +14,26 @@ require_once __DIR__.'/webhook.php';
 
 function imap_supported(): bool { return function_exists('imap_open'); }
 
-function imap_connection_string(array $account): string {
-    $host = preg_replace('/[^A-Za-z0-9.\-]/', '', (string)($account['imap_host'] ?? 'imap.gmail.com')) ?: 'imap.gmail.com';
-    $port = (int)($account['imap_port'] ?? 993) ?: 993;
-    $flags = filter_var(envv('IMAP_VALIDATE_CERT', 'true'), FILTER_VALIDATE_BOOLEAN) ? '/imap/ssl' : '/imap/ssl/novalidate-cert';
-    return '{'.$host.':'.$port.$flags.'}INBOX';
+/**
+ * Gmail-style receipt mail arrives already read when the mailbox is opened on a
+ * phone or in the web UI, so only polling UNSEEN would silently miss payments.
+ * Walk by UID with a persistent watermark instead: cheap on every run, and a
+ * deleted or archived message can never rewind the watermark.
+ */
+function imap_last_uid(PDO $pdo, int $accountId): int {
+    $key = 'imap_uid:'.$accountId;
+    $stmt = $pdo->prepare('SELECT state_value FROM system_state WHERE state_key=?');
+    $stmt->execute([$key]);
+    $value = $stmt->fetchColumn();
+    if ($value === false) return -1; // unknown: seed on the next open connection
+    $decoded = json_decode((string)$value, true);
+    return is_array($decoded) ? (int)($decoded['uid'] ?? 0) : 0;
+}
+
+function imap_set_last_uid(PDO $pdo, int $accountId, int $uid): void {
+    $key = 'imap_uid:'.$accountId;
+    $value = json_encode(['uid' => $uid]);
+    $pdo->prepare('UPDATE system_state SET state_value=?, updated_at=? WHERE state_key=?')->execute([$value, db_now(), $key]);
 }
 
 /** Decode a MIME body according to its transfer encoding. */
@@ -76,11 +91,24 @@ function imap_ingest_account(PDO $pdo, array $account): array {
         throw new RuntimeException($error);
     }
     try {
-        $uids = imap_search($imap, 'UNSEEN', SE_UID) ?: [];
+        $uids = array_map('intval', imap_search($imap, 'ALL', SE_UID) ?: []);
+        rsort($uids);
+        $newest = $uids[0] ?? 0;
+        $watermark = imap_last_uid($pdo, (int)$account['id']);
+        if ($watermark < 1) {
+            // Seed at the newest message present so a fresh deployment never
+            // replays historical receipts; only mail arriving afterwards counts.
+            imap_set_last_uid($pdo, (int)$account['id'], $newest);
+            $uids = [];
+            $summary['seeded_at_uid'] = $newest;
+        } else {
+            $uids = array_values(array_filter($uids, static fn(int $uid): bool => $uid > $watermark));
+            sort($uids);
+        }
+        $maxSeen = $watermark;
         foreach ($uids as $uid) {
-            $uid = (int)$uid;
             $msgNo = imap_msgno($imap, $uid);
-            if (!$msgNo) continue;
+            if (!$msgNo) { $maxSeen = max($maxSeen, $uid); continue; }
             $summary['checked']++;
             $structure = @imap_fetchstructure($imap, $msgNo);
             if (!$structure) { $summary['errors']++; continue; }
@@ -107,8 +135,9 @@ function imap_ingest_account(PDO $pdo, array $account): array {
                 $summary['errors']++;
                 error_log('Receipt settlement failed for account '.$account['id'].': '.$e->getMessage());
             }
-            // Mark processed so a single receipt is never read twice on this account.
             @imap_setflag_full($imap, (string)$uid, '\\Seen', ST_UID);
+            $maxSeen = $uid;
+            imap_set_last_uid($pdo, (int)$account['id'], $maxSeen);
             unset($raw);
         }
         $pdo->prepare('UPDATE merchant_accounts SET last_checked_at=?, last_error=NULL WHERE id=?')->execute([db_now(), (int)$account['id']]);

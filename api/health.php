@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 /**
- * Public deployment health for the landing page and container healthcheck.
- * Exposes no merchant data: only component states and the worker heartbeat.
+ * Public deployment health for the landing page, monitoring probes and the
+ * container healthcheck. Exposes component states only — no merchant data.
  */
 require_once __DIR__.'/../includes/db.php';
 require_method('GET');
@@ -12,10 +12,18 @@ $result = [
     'api_gateway' => 'operational',
     'database' => 'operational',
     'receipt_parser' => 'configuration_required',
+    'configuration' => 'ok',
     'worker_last_run' => null,
     'worker_healthy' => false,
     'checked_at' => gmdate('c'),
 ];
+
+$configProblems = tg_config_problems();
+if ($configProblems) {
+    $result['configuration'] = 'needs_attention';
+    // Messages are static operator guidance, not secrets.
+    $result['configuration_problems'] = $configProblems;
+}
 
 try {
     $pdo = db();
@@ -26,7 +34,7 @@ try {
     $lastRun = $state->fetchColumn();
     if (is_string($lastRun) && $lastRun !== '') {
         $decoded = json_decode($lastRun, true);
-        $result['worker_last_run'] = is_array($decoded) ? ($decoded['time'] ?? $lastRun) : $lastRun;
+        $result['worker_last_run'] = is_array($decoded) ? ($decoded['time'] ?? null) : $lastRun;
         $timestamp = is_array($decoded) && isset($decoded['time']) ? strtotime((string)$decoded['time']) : false;
         $result['worker_healthy'] = $timestamp !== false && $timestamp >= time() - 120;
     }
@@ -42,7 +50,7 @@ try {
         $result['receipt_parser'] = 'worker_stale';
     }
 } catch (Throwable $e) {
-    // Log the detail, never leak connection strings or credentials.
+    // Log details; never leak connection strings or credentials.
     error_log('Health check failed: '.$e->getMessage());
     $result['api_gateway'] = 'degraded';
     $result['database'] = 'unavailable';
