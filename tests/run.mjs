@@ -1175,6 +1175,76 @@ check('Long windows thin their axis labels instead of crowding',
 check('The chart summarises the window in words',
   /orders and ₹/.test(steps[1].body || '') && /in this window/.test(steps[1].body || ''));
 
+section('Integrations: Gmail & FamPay setup');
+
+const intAuth = { session: exportAuth.session };
+php(`<?php
+require 'includes/db.php';
+db()->exec('DELETE FROM api_rate_limits');
+`, baseEnv());
+let intPage = requests([{ method: 'GET', script: path.join(root, 'integrations.php') }], intAuth.session)[0];
+check('Integrations page presents the Gmail & FamPay card',
+  /Gmail &amp; FamPay/.test(intPage.body || '') && /Verify &amp; Connect/.test(intPage.body || ''));
+check('The four-step app password guide is visible',
+  /Setup Instructions/.test(intPage.body || '')
+  && /2-Step Verification/.test(intPage.body || '')
+  && /Enable IMAP/.test(intPage.body || '')
+  && /app password/i.test(intPage.body || ''));
+check('A connection test is offered', /Test mailbox connection/.test(intPage.body || ''));
+const intCsrf = (intPage.body || '').match(/name="csrf" value="([a-f0-9]{64})"/)?.[1] || '';
+
+// Validation: a malformed UPI and a short app password must be refused.
+steps = requests([
+  { method: 'POST', script: path.join(root, 'integrations.php'), post: { csrf: intCsrf, action: 'save', account_label: 'Primary UPI', upi_id: 'not-a-vpa', linked_email: 'inbox@example.com', app_password: '', imap_host: 'imap.gmail.com', imap_port: '993' } },
+  { method: 'POST', script: path.join(root, 'integrations.php'), post: { csrf: intCsrf, action: 'save', account_label: 'Primary UPI', upi_id: 'shop@fam', linked_email: 'inbox@example.com', app_password: 'short', imap_host: 'imap.gmail.com', imap_port: '993' } },
+  { method: 'POST', script: path.join(root, 'integrations.php'), post: { csrf: intCsrf, action: 'save', account_label: 'Primary UPI', upi_id: 'shop@fam', linked_email: 'not-an-email', app_password: '', imap_host: 'imap.gmail.com', imap_port: '993' } },
+], intAuth.session);
+check('A malformed UPI is refused', /does not look like a UPI ID/.test(steps[0].body || ''));
+check('A short app password is refused', /exactly 16 characters/.test(steps[1].body || ''));
+check('A malformed mailbox address is refused', /Gmail address that receives/.test(steps[2].body || ''));
+
+// Disconnect requires the mailbox address typed exactly.
+const intEmail = JSON.parse(php(`<?php
+require 'includes/db.php';
+$r = db()->query('SELECT linked_email FROM merchant_accounts WHERE merchant_id=1 ORDER BY is_active DESC, id LIMIT 1')->fetch();
+echo json_encode($r['linked_email'] ?? '');
+`, baseEnv()));
+steps = requests([{ method: 'POST', script: path.join(root, 'integrations.php'),
+  post: { csrf: intCsrf, action: 'disconnect', confirm_label: 'wrong@example.com' } }], intAuth.session);
+check('A mismatched disconnect confirmation is refused',
+  /Type the mailbox address exactly/.test(steps[0].body || ''));
+const stillStored = JSON.parse(php(`<?php
+require 'includes/db.php';
+$r = db()->query("SELECT google_app_password FROM merchant_accounts WHERE merchant_id=1 ORDER BY is_active DESC, id LIMIT 1")->fetchColumn();
+echo json_encode(trim((string)$r) !== '');
+`, baseEnv()));
+check('A refused disconnect leaves the credential in place', stillStored === true);
+
+// The correct address disconnects: only the password is cleared.
+steps = requests([{ method: 'POST', script: path.join(root, 'integrations.php'),
+  post: { csrf: intCsrf, action: 'disconnect', confirm_label: intEmail } }], intAuth.session);
+check('Typing the mailbox address disconnects', /Mailbox disconnected/.test(steps[0].body || ''));
+const afterDisconnect = JSON.parse(php(`<?php
+require 'includes/db.php';
+$row = db()->query("SELECT google_app_password,upi_id,linked_email FROM merchant_accounts WHERE merchant_id=1 ORDER BY is_active DESC, id LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+echo json_encode(['password' => trim((string)$row['google_app_password']), 'upi' => $row['upi_id'], 'email' => $row['linked_email']]);
+`, baseEnv()));
+check('Disconnecting clears only the stored password', afterDisconnect.password === '');
+check('Disconnecting keeps the UPI and mailbox on file',
+  afterDisconnect.upi !== '' && afterDisconnect.email !== '', JSON.stringify(afterDisconnect));
+const disconnectAudit = JSON.parse(php(`<?php
+require 'includes/db.php';
+echo json_encode((int)db()->query("SELECT COUNT(*) FROM audit_log WHERE action='integration.disconnected'")->fetchColumn());
+`, baseEnv()));
+check('Disconnecting is audited', disconnectAudit >= 1, String(disconnectAudit));
+
+// Restore a credential so later sections (and the page state) are unchanged.
+php(`<?php
+require 'includes/db.php';
+require 'includes/crypto.php';
+db()->prepare('UPDATE merchant_accounts SET google_app_password=? WHERE merchant_id=1')->execute([encrypt_secret('abcdefghijklmnop')]);
+`, baseEnv());
+
 section('Payout re-auth via email OTP');
 
 const otpAuth = { session: exportAuth.session };
