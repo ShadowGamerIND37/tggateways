@@ -291,7 +291,7 @@ dark sidebar, stat cards, filter tabs and a seven-column transaction table. Navi
 Dashboard, Transactions, Payment Links, API Keys, Webhooks, Settings, Integrations,
 Multi-Accounts, Addons, My Services, Invoices, Profile, Support Tickets, Documentation and
 System Status. Profile (five tabs, avatar embedded in QR codes), Settings (payment defaults), Support
-Tickets (create/reply/resolve with counters), Addons (Paytm ₹49/month in 1/3/6/12-month
+Tickets (create/reply/resolve with counters and real screenshot uploads), Addons (Paytm ₹49/month in 1/3/6/12-month
 terms), My Services, Invoices and a public System Status page with measured 30-day uptime
 are all live.
 
@@ -313,6 +313,22 @@ Two behaviours worth knowing:
   auto-detect that used to enable it is gone.
 - New registrations must accept the Terms and Privacy links, and the account is created
   after email verification when 2FA is on.
+
+### Support ticket attachments
+
+Screenshots and PDFs attached to a support ticket are validated by their leading
+bytes, not by the filename or the browser-supplied type — a `.png` containing
+SVG markup is refused, because that file would otherwise be handed back to a
+browser. Accepted types are JPG, PNG, WEBP and PDF, up to 5 MB each and five per
+ticket.
+
+Files are renamed to 32 random hex characters, written to `storage/attachments`
+with mode 0600 (outside the document root), and streamed through
+`attachment.php` only after the signed-in merchant is confirmed as the owner.
+Every download is sent as `Content-Disposition: attachment` with
+`X-Content-Type-Options: nosniff`, and `storage/` is blocked in `.htaccess`.
+In Docker the directory is a named volume (`tg-attachments`), so uploads survive
+`docker compose up --build`.
 
 ### Receiving accounts
 
@@ -338,7 +354,7 @@ node tests/run.mjs                 # auto-detects php, then a php-wasm CLI
 PHP_BIN=/usr/bin/php node tests/run.mjs
 ```
 
-244 checks run against a throwaway SQLite database: receipt parsing/matching, MIME
+311 checks run against a throwaway SQLite database: receipt parsing/matching, MIME
 decoding against plain/quoted-printable/base64/forwarded samples, the IMAP protocol client
 driven by a scripted peer, AES-GCM round-trips, auth and CSRF, input validation, rate
 limits, order creation, status and verification endpoints, the hosted checkout page,
