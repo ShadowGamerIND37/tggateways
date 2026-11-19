@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS orders (
   transaction_id TEXT,
   sender_name TEXT,
   receipt_message_id TEXT,
+  paid_via TEXT,
   expires_at TEXT NOT NULL,
   paid_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -125,4 +126,88 @@ CREATE TABLE IF NOT EXISTS system_state (
   state_key TEXT PRIMARY KEY,
   state_value TEXT NOT NULL,
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS merchant_profiles (
+  merchant_id INTEGER PRIMARY KEY REFERENCES merchants(id) ON DELETE CASCADE,
+  phone TEXT,
+  support_url TEXT,
+  avatar TEXT,
+  timezone TEXT NOT NULL DEFAULT 'Asia/Kolkata',
+  notify_payments INTEGER NOT NULL DEFAULT 1,
+  notify_webhooks INTEGER NOT NULL DEFAULT 1,
+  notify_security INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS merchant_settings (
+  merchant_id INTEGER PRIMARY KEY REFERENCES merchants(id) ON DELETE CASCADE,
+  default_redirect_url TEXT,
+  default_webhook_url TEXT,
+  payment_timeout_minutes INTEGER NOT NULL DEFAULT 10,
+  checkout_note TEXT,
+  updated_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS merchant_addons (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  merchant_id INTEGER NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
+  addon_key TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active',
+  months INTEGER NOT NULL DEFAULT 1,
+  price NUMERIC NOT NULL DEFAULT 0,
+  started_at TEXT NOT NULL DEFAULT (datetime('now')),
+  expires_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS invoices (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  merchant_id INTEGER NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
+  invoice_no TEXT NOT NULL UNIQUE,
+  description TEXT NOT NULL,
+  amount NUMERIC NOT NULL,
+  tax_amount NUMERIC NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'paid',
+  issued_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS tickets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  merchant_id INTEGER NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
+  reference TEXT NOT NULL UNIQUE,
+  topic TEXT NOT NULL DEFAULT 'general',
+  subject TEXT NOT NULL,
+  order_ref TEXT,
+  status TEXT NOT NULL DEFAULT 'open',
+  last_author TEXT NOT NULL DEFAULT 'merchant',
+  attachments INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS ticket_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ticket_id INTEGER NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
+  author TEXT NOT NULL DEFAULT 'merchant',
+  body TEXT NOT NULL,
+  attachment_count INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS audit_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  merchant_id INTEGER,
+  action TEXT NOT NULL,
+  detail TEXT,
+  ip TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS status_days (
+  day TEXT NOT NULL,
+  component TEXT NOT NULL,
+  checks INTEGER NOT NULL DEFAULT 0,
+  ok INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, component)
 );

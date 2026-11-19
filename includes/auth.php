@@ -1,6 +1,19 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__.'/db.php';
+require_once __DIR__.'/migrate.php';
+
+// Self-upgrading schema: existing containers get new tables on the next
+// dashboard request instead of requiring a manual SQL run. Cheap when there is
+// nothing to do (one indexed SELECT). Failures are logged, never fatal — the
+// panel must still open so an operator can reach the diagnostics.
+if (PHP_SAPI !== 'cli' || getenv('TG_SKIP_MIGRATIONS') === false) {
+    try {
+        if (tg_migrations_pending()) tg_run_migrations();
+    } catch (Throwable $e) {
+        error_log('migration: '.$e->getMessage());
+    }
+}
 
 function start_session(): void {
     if (session_status() === PHP_SESSION_ACTIVE) return;

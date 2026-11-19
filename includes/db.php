@@ -228,3 +228,26 @@ function tg_config_problems(): array {
 
     return $problems;
 }
+
+/**
+ * Does a table exist in the current schema?
+ *
+ * Lives here rather than in merchant.php because the migration runner needs it
+ * during boot, before any page-level include has loaded. Cached per process.
+ */
+function tg_table_exists(string $table): bool {
+    static $cache = [];
+    if (isset($cache[$table])) return $cache[$table];
+    try {
+        if (db_driver() === 'sqlite') {
+            $s = db()->prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?");
+            $s->execute([$table]);
+            return $cache[$table] = (bool)$s->fetchColumn();
+        }
+        $s = db()->prepare('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name=?');
+        $s->execute([$table]);
+        return $cache[$table] = (int)$s->fetchColumn() > 0;
+    } catch (Throwable) {
+        return $cache[$table] = false;
+    }
+}

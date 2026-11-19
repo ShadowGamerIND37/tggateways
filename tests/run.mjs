@@ -674,6 +674,170 @@ check('2FA is off by default', twoFactor.default_off === false, JSON.stringify(t
 check('2FA can be enabled explicitly', twoFactor.enabled === true, JSON.stringify(twoFactor));
 check('SMTP_HOST counts as a usable transport', twoFactor.smtp_transport === true, JSON.stringify(twoFactor));
 
+section('Migrations');
+const migrationResult = JSON.parse(php(`<?php
+require 'includes/db.php';
+require 'includes/merchant.php';
+require 'includes/migrate.php';
+$pdo = db();
+$first = tg_run_migrations($pdo);
+$second = tg_run_migrations($pdo);
+$tables = ['merchant_profiles','merchant_settings','merchant_addons','invoices','tickets','ticket_messages','audit_log','status_days'];
+$present = [];
+foreach ($tables as $t) $present[$t] = tg_table_exists($t);
+echo json_encode(['first' => $first, 'second' => $second, 'present' => $present, 'pending' => tg_migrations_pending()]);
+`, baseEnv()));
+check('Seed boot applied every migration (idempotent re-run adds none)', migrationResult.first.applied.length === 0,
+  JSON.stringify(migrationResult.first).slice(0, 160));
+check('Re-running migrations applies nothing', migrationResult.second.applied.length === 0,
+  JSON.stringify(migrationResult.second.applied));
+check('Re-running migrations reports no errors', migrationResult.second.errors.length === 0,
+  JSON.stringify(migrationResult.second.errors));
+check('Every migrated table exists', Object.values(migrationResult.present).every(Boolean),
+  JSON.stringify(migrationResult.present));
+check('No migrations left pending', migrationResult.pending === false);
+
+
+/**
+ * Sign in and return the CSRF token the *authenticated* session now issues.
+ *
+ * login_merchant() deliberately retires the pre-login token, so a form posted
+ * with the token scraped from the login page is rejected with 419. A browser
+ * always picks up a fresh token from the first authenticated page, so the tests
+ * must do the same.
+ */
+function signIn(email, password) {
+  let session = `signin_${crypto.randomUUID()}`;
+  const csrfSteps = requests([{ method: 'GET', script: path.join(root, 'login.php') }], session);
+  const csrf = /name="csrf" value="([a-f0-9]{64})"/.exec(csrfSteps[0].body || '')?.[1];
+  // The POST must be its own batch so we can read the regenerated session id
+  // that login_merchant() issues; requests() only carries ids *within* a batch.
+  const loginBatch = requests([
+    { method: 'POST', script: path.join(root, 'login.php'), post: { csrf, email, password } },
+  ], session);
+  if (loginBatch[0].status !== 302) throw new Error(`login failed: ${loginBatch[0].status}`);
+  session = loginBatch[0].session_id || session;
+  // Fresh token: the pre-login one was retired by login_merchant().
+  const page = requests([{ method: 'GET', script: path.join(root, 'profile.php'), query: { tab: 'security' } }], session);
+  const token = /name="csrf" value="([a-f0-9]{64})"/.exec(page[0].body || '')?.[1];
+  if (!token) throw new Error('no CSRF token on the signed-in profile page');
+  return { session, csrf: token, page: page[0] };
+}
+
+section('Profile, settings and tickets');
+
+const profileAuth = signIn('merchant@example.com', 'correct-horse-battery');
+const profileSession = profileAuth.session;
+const profileCsrf = profileAuth.csrf;
+steps = requests([
+  { method: 'GET', script: path.join(root, 'profile.php') },
+  { method: 'GET', script: path.join(root, 'profile.php'), query: { tab: 'security' } },
+  { method: 'GET', script: path.join(root, 'profile.php'), query: { tab: 'notifications' } },
+  { method: 'POST', script: path.join(root, 'profile.php'), post: { csrf: 'stale', action: 'details', name: 'Hijack' } },
+  { method: 'GET', script: path.join(root, 'settings.php') },
+  { method: 'GET', script: path.join(root, 'tickets.php') },
+], profileSession);
+// This batch is all page responses, in the order requested above.
+const [profileGeneral, profileSecurity, profileNotify, profileBadCsrf, settingsPage, ticketsPage] = steps;
+if (process.env.TG_DEBUG_SIGNIN) console.log('PROFILE statuses:', steps.map((r) => r.status).join(','), 'generalHasTabs:', /General/.test(profileGeneral.body || ''), 'len:', (profileGeneral.body || '').length, 'title:', (/<title>([^<]*)/.exec(profileGeneral.body || '') || [])[1]);
+check('Profile general tab renders all five tabs',
+  /General/.test(profileGeneral.body) && /Branding/.test(profileGeneral.body)
+  && /Security/.test(profileGeneral.body) && /Notifications/.test(profileGeneral.body)
+  && /Social Logins/.test(profileGeneral.body));
+check('Profile security tab has the password form', profileSecurity.body.includes('name="new_password"'));
+check('Profile notifications tab lists the event toggles',
+  profileNotify.body.includes('notify_payments') && profileNotify.body.includes('notify_security'));
+check('Profile rejects a stale CSRF token (419)', profileBadCsrf.status === 419, String(profileBadCsrf.status));
+check('Settings page exposes payment defaults',
+  settingsPage.body.includes('payment_timeout_minutes') && settingsPage.body.includes('default_webhook_url'));
+check('Tickets page shows the empty state and counters',
+  ticketsPage.body.includes('No Support Tickets Found') && ticketsPage.body.includes('Total Tickets'));
+
+// A real ticket lifecycle: create (with CSRF), reply, resolve.
+const ticketAuth = signIn('merchant@example.com', 'correct-horse-battery');
+const ticketCsrf = ticketAuth.csrf;
+const createdTicket = requests([
+  { method: 'POST', script: path.join(root, 'tickets.php'), post: {
+      csrf: ticketCsrf, action: 'create', topic: 'payment',
+      subject: 'Payment captured but order still Created',
+      order_ref: 'tg_AAAA1111', message: 'Customer paid 499 but the order never flipped to success.', attachment_count: '2' } },
+], ticketAuth.session);
+const ticketBody = createdTicket[0].body || '';
+check('Creating a ticket returns the page with a reference', /TCK-[A-F0-9]{8}/.test(ticketBody), String(createdTicket[0].status));
+check('Created ticket is shown in the thread view', /Payment captured but order still Created/.test(ticketBody));
+const ticketRef = /(TCK-[A-F0-9]{8})/.exec(ticketBody)?.[1];
+check('Ticket row is persisted with its topic and attachment count', (() => {
+  const out = php(`<?php
+require 'includes/db.php';
+$q = db()->prepare('SELECT topic, attachments, status, order_ref FROM tickets WHERE reference=?');
+$q->execute([${JSON.stringify(ticketRef || '')}]);
+echo json_encode($q->fetch());
+`, baseEnv());
+  return JSON.parse(out).topic === 'payment' && JSON.parse(out).attachments === 2;
+})());
+
+// Short messages must be refused rather than stored.
+const shortAuth = signIn('merchant@example.com', 'correct-horse-battery');
+steps = requests([
+  { method: 'POST', script: path.join(root, 'tickets.php'), post: { csrf: shortAuth.csrf, action: 'create', topic: 'api', subject: 'x', message: 'short' } },
+], shortAuth.session);
+check('Invalid ticket is rejected with a message', /4–200 characters|at least 10 characters/.test(steps[0].body || ''));
+
+section('Addons, services and invoices');
+
+const addonAuth = signIn('merchant@example.com', 'correct-horse-battery');
+const addonCsrf = addonAuth.csrf;
+steps = requests([
+  { method: 'GET', script: path.join(root, 'addons.php') },
+  { method: 'GET', script: path.join(root, 'invoices.php') },
+  { method: 'GET', script: path.join(root, 'services.php') },
+  { method: 'POST', script: path.join(root, 'addons.php'), post: { csrf: addonCsrf, addon: 'bharatpe', months: '1' } },
+  { method: 'POST', script: path.join(root, 'addons.php'), post: { csrf: addonCsrf, addon: 'paytm', months: '3' } },
+  { method: 'GET', script: path.join(root, 'invoices.php') },
+  { method: 'GET', script: path.join(root, 'services.php') },
+], addonAuth.session);
+const [addonsPage, invoicesEmpty, servicesPage, addonRefused, addonBought, invoicesAfter, servicesAfter] = steps;
+check('Addons page lists all three gateways',
+  addonsPage.body.includes('Paytm for Business') && addonsPage.body.includes('BharatPe for Business')
+  && addonsPage.body.includes('FamPay UPI Gateway'));
+check('Empty invoices page shows the reference empty state', invoicesEmpty.body.includes('No Invoices Yet'));
+check('Services page shows the free core gateway', servicesPage.body.includes('Free Forever'));
+check('Non-purchasable addon is refused', /not available for purchase/.test(addonRefused.body || ''));
+check('Buying an addon succeeds and names the invoice', /Invoice INV-/.test(addonBought.body || ''));
+check('Invoice appears in the billing history', /INV-\d{6}-[A-F0-9]{6}/.test(invoicesAfter.body || ''));
+check('Purchased addon appears in My Services', /Paytm for Business/.test(servicesAfter.body || ''));
+
+section('Public status page');
+const statusOut = JSON.parse(php(`<?php
+require 'includes/db.php';
+require 'includes/merchant.php';
+require 'includes/status.php';
+$probe = tg_status_probe();
+$history = tg_status_history(30);
+$uptime = tg_status_uptime($history['api']);
+echo json_encode([
+  'components' => array_keys($probe),
+  'api' => $probe['api']['state'],
+  'db' => $probe['database']['state'],
+  'days' => count($history['api']),
+  'uptime' => $uptime,
+  'recorded' => (int)db()->query('SELECT COUNT(*) FROM status_days')->fetchColumn(),
+]);
+`, baseEnv()));
+check('Status probe covers every advertised component',
+  ['api', 'database', 'checkout', 'webhook', 'parser'].every((c) => statusOut.components.includes(c)),
+  JSON.stringify(statusOut.components));
+check('Status probe reports the API as operational', statusOut.api === 'operational');
+check('Status probe reports the database as operational', statusOut.db === 'operational');
+check('Status history covers 30 days', statusOut.days === 30, String(statusOut.days));
+check('Status probe records a row per component', statusOut.recorded >= statusOut.components.length, String(statusOut.recorded));
+check('Recorded uptime is a real percentage', typeof statusOut.uptime === 'number' && statusOut.uptime >= 0 && statusOut.uptime <= 100, String(statusOut.uptime));
+
+// The public page must render for a signed-out visitor.
+const publicStatus = requests([{ method: 'GET', script: path.join(root, 'status.php') }], `pub_${crypto.randomUUID()}`);
+check('Public status page renders signed out', publicStatus[0].status === 200 && /System Status/.test(publicStatus[0].body));
+check('Public status page exposes no merchant data', !publicStatus[0].body.includes('merchant@example.com'));
+
 section('Hosted checkout page');
 steps = requests([
   { method: 'GET', script: path.join(root, 'pay.php'), query: { order_id: created.order_id } },

@@ -29,26 +29,7 @@ function tg_merchant_avatar(int $merchantId): string {
     return $avatar === '' ? '' : $avatar;
 }
 
-/**
- * True when a table exists. Lets pages render a "run the migration" callout
- * instead of fataling on an older database.
- */
-function tg_table_exists(string $table): bool {
-    static $cache = [];
-    if (isset($cache[$table])) return $cache[$table];
-    try {
-        if (db_driver() === 'sqlite') {
-            $s = db()->prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?");
-            $s->execute([$table]);
-            return $cache[$table] = (bool)$s->fetchColumn();
-        }
-        $s = db()->prepare('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name=?');
-        $s->execute([$table]);
-        return $cache[$table] = (int)$s->fetchColumn() > 0;
-    } catch (Throwable) {
-        return $cache[$table] = false;
-    }
-}
+/* tg_table_exists() lives in db.php so the migration runner can use it during boot. */
 
 /** True when the merchant has at least one active receiving account. */
 function tg_has_active_account(int $merchantId): bool {
@@ -94,4 +75,18 @@ function tg_greeting(?int $timestamp = null): string {
     if ($hour < 12) return 'Good morning';
     if ($hour < 17) return 'Good afternoon';
     return 'Good evening';
+}
+
+/**
+ * Record a merchant-visible action. Best-effort: auditing must never break the
+ * request it is describing, so a failure is logged and swallowed.
+ */
+function tg_audit(?int $merchantId, string $action, string $detail = ''): void {
+    try {
+        if (!tg_table_exists('audit_log')) return;
+        $q = db()->prepare('INSERT INTO audit_log(merchant_id,action,detail,ip,created_at) VALUES(?,?,?,?,?)');
+        $q->execute([$merchantId, $action, mb_substr($detail, 0, 255), function_exists('client_ip') ? client_ip() : null, db_now()]);
+    } catch (Throwable $e) {
+        error_log('audit: '.$e->getMessage());
+    }
 }
