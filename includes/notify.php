@@ -66,11 +66,179 @@ function notify_discord(PDO $pdo, string $orderId): bool {
     return $ok;
 }
 
+/**
+ * Email notification for a successful payment.
+ *
+ * Idempotent per order+channel like the Discord channel, and gated on the
+ * merchant's `notify_payments` preference — the toggle on the profile page has
+ * to actually mean something. Silently no-ops when no mail transport exists,
+ * because a missing transport is an operator concern, not a payment failure.
+ */
+function notify_email(PDO $pdo, string $orderId): bool {
+    if (!tg_mail_transport_available()) return false;
+
+    $q = $pdo->prepare('SELECT o.order_id,o.amount,o.utr,o.sender_name,o.paid_at,
+                               m.id merchant_id,m.name merchant_name,m.email merchant_email
+                          FROM orders o JOIN merchants m ON m.id=o.merchant_id
+                         WHERE o.order_id=?');
+    $q->execute([$orderId]);
+    $row = $q->fetch();
+    if (!$row) return false;
+
+    // Respect the merchant's preference when the profile table exists.
+    if (tg_table_exists('merchant_profiles')) {
+        $pref = $pdo->prepare('SELECT notify_payments FROM merchant_profiles WHERE merchant_id=?');
+        $pref->execute([(int)$row['merchant_id']]);
+        $wants = $pref->fetchColumn();
+        if ($wants !== false && (int)$wants === 0) return false;
+    }
+
+    $seen = $pdo->prepare("SELECT 1 FROM notification_logs WHERE order_id=? AND channel='email' AND delivered_at IS NOT NULL LIMIT 1");
+    $seen->execute([$orderId]);
+    if ($seen->fetchColumn()) return true;
+
+    $subject = 'Payment received — ₹'.number_format((float)$row['amount'], 2).' ('.$row['order_id'].')';
+    $body = "A payment was matched and recorded.\n\n"
+        . "Merchant:  {$row['merchant_name']}\n"
+        . "Order:     {$row['order_id']}\n"
+        . "Amount:    INR ".number_format((float)$row['amount'], 2)."\n"
+        . "UTR:       ".($row['utr'] ?: '—')."\n"
+        . "Payer:     ".($row['sender_name'] ?: '—')."\n"
+        . "Paid at:   ".($row['paid_at'] ?: '—')."\n\n"
+        . "The customer's order is marked successful and any configured webhook has been dispatched.\n";
+
+    $ok = tg_smtp_send((string)$row['merchant_email'], $subject, $body);
+    $pdo->prepare('INSERT INTO notification_logs(merchant_id,order_id,channel,response_code,last_error,delivered_at,created_at) VALUES(?,?,?,?,?,?,?)')
+        ->execute([(int)$row['merchant_id'], $orderId, 'email', $ok ? 250 : null,
+            $ok ? null : 'SMTP delivery failed', $ok ? db_now() : null, db_now()]);
+    return $ok;
+}
+
+/**
+ * Warn the merchant that a webhook exhausted its retries.
+ *
+ * This is the gap that made failures invisible: the queue retried and then went
+ * quiet. Sent at most once per delivery so a retry storm cannot spam the inbox.
+ */
+function notify_webhook_failure(PDO $pdo, int $merchantId, string $orderId, string $url): bool {
+    if (!tg_mail_transport_available()) return false;
+    if (tg_table_exists('merchant_profiles')) {
+        $pref = $pdo->prepare('SELECT notify_webhooks FROM merchant_profiles WHERE merchant_id=?');
+        $pref->execute([$merchantId]);
+        $wants = $pref->fetchColumn();
+        if ($wants !== false && (int)$wants === 0) return false;
+    }
+    $q = $pdo->prepare('SELECT name,email FROM merchants WHERE id=?');
+    $q->execute([$merchantId]);
+    $merchant = $q->fetch();
+    if (!$merchant) return false;
+
+    $seen = $pdo->prepare("SELECT 1 FROM notification_logs WHERE order_id=? AND channel='webhook_failure' AND delivered_at IS NOT NULL LIMIT 1");
+    $seen->execute([$orderId]);
+    if ($seen->fetchColumn()) return true;
+
+    $subject = 'Webhook delivery failed for '.$orderId;
+    $body = "Every retry for one of your webhook endpoints has failed.\n\n"
+        . "Order:     $orderId\n"
+        . "Endpoint:  $url\n\n"
+        . "The payment itself is recorded and safe — only the callback did not land.\n"
+        . "Reconcile the order with GET /api/verify-order.php?order_id=$orderId once your\n"
+        . "endpoint is healthy again, so you never fulfil twice.\n";
+
+    $ok = tg_smtp_send((string)$merchant['email'], $subject, $body);
+    $pdo->prepare('INSERT INTO notification_logs(merchant_id,order_id,channel,response_code,last_error,delivered_at,created_at) VALUES(?,?,?,?,?,?,?)')
+        ->execute([$merchantId, $orderId, 'webhook_failure', $ok ? 250 : null,
+            $ok ? null : 'SMTP delivery failed', $ok ? db_now() : null, db_now()]);
+    return $ok;
+}
+
 /** Run every configured notification for an order. Failures are logged only. */
 function notify_all(PDO $pdo, string $orderId): void {
-    foreach (['discord' => 'notify_discord'] as $channel => $fn) {
+    foreach (['discord' => 'notify_discord', 'email' => 'notify_email'] as $channel => $fn) {
         if (!function_exists($fn)) continue;
         try { $fn($pdo, $orderId); }
         catch (Throwable $e) { error_log('Notification ('.$channel.') failed for order '.$orderId.': '.$e->getMessage()); }
     }
+}
+
+/**
+ * Two-factor sign-in policy.
+ *
+ * Enabled only when the deployment can actually deliver the code: SMTP is
+ * configured, or PHP's mail() transport is available. Otherwise login stays
+ * single-factor rather than trapping the merchant on a code screen that can
+ * never receive a message.
+ */
+function tg_two_factor_required(): bool {
+    // Opt-in only. Presence of mail() is not evidence that mail is deliverable
+    // (it is compiled in on most builds but often unrouted), and silently
+    // requiring a code that never arrives would lock the merchant out.
+    if (filter_var(envv('LOGIN_2FA', 'false'), FILTER_VALIDATE_BOOLEAN)) {
+        return tg_mail_transport_available();
+    }
+    return false;
+}
+
+/** True when a code could actually be delivered by some transport. */
+function tg_mail_transport_available(): bool {
+    return trim((string)envv('SMTP_HOST', '')) !== '' || function_exists('mail');
+}
+
+/** Deliver a 6-digit sign-in code. Returns false when no transport exists. */
+function tg_send_2fa_code(string $email, string $code): bool {
+    $subject = 'Your TG Gateways sign-in code';
+    $body = "Your verification code is $code\n\nIt expires in 10 minutes. "
+        . "If you did not try to sign in, change your password immediately.\n";
+    $host = trim((string)envv('SMTP_HOST', ''));
+    if ($host !== '') return tg_smtp_send($email, $subject, $body);
+    if (!function_exists('mail')) return false;
+    $from = (string)envv('MAIL_FROM', 'no-reply@localhost');
+    return @mail($email, $subject, $body, 'From: '.$from);
+}
+
+/** Send an arbitrary transactional email through SMTP when configured. */
+function tg_smtp_send(string $to, string $subject, string $body): bool {
+    $host = (string)envv('SMTP_HOST', '');
+    if ($host === '') return false;
+    $port = (int)envv('SMTP_PORT', '587');
+    $user = (string)envv('SMTP_USER', '');
+    $pass = (string)envv('SMTP_PASSWORD', '');
+    $from = (string)envv('MAIL_FROM', $user !== '' ? $user : 'no-reply@localhost');
+    $secure = strtolower((string)envv('SMTP_SECURE', $port === 465 ? 'ssl' : 'tls'));
+    $remote = ($secure === 'ssl' ? 'ssl://' : '').$host.':'.$port;
+    $ctx = stream_context_create(['ssl' => ['verify_peer' => true, 'verify_peer_name' => true]]);
+    $fp = @stream_socket_client($remote, $errno, $errstr, 10, STREAM_CLIENT_CONNECT, $ctx);
+    if (!$fp) { error_log("tg_smtp_send: connect failed ($errno $errstr)"); return false; }
+    stream_set_timeout($fp, 10);
+    $read = static function () use ($fp): string {
+        $out = '';
+        while (($line = fgets($fp, 1024)) !== false) {
+            $out .= $line;
+            if (strlen($line) < 4 || $line[3] === ' ') break;
+        }
+        return $out;
+    };
+    $cmd = static function (string $c) use ($fp, $read): string { fwrite($fp, $c."\r\n"); return $read(); };
+    $read();
+    $cmd('EHLO '.php_uname('n'));
+    if ($secure === 'tls') {
+        if (!str_starts_with($cmd('STARTTLS'), '220')) { fclose($fp); return false; }
+        if (!stream_socket_enable_crypto($fp, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) { fclose($fp); return false; }
+        $cmd('EHLO '.php_uname('n'));
+    }
+    if ($user !== '') {
+        if (!str_starts_with($cmd('AUTH LOGIN'), '334')) { fclose($fp); return false; }
+        $cmd(base64_encode($user));
+        if (!str_starts_with($cmd(base64_encode($pass)), '235')) { fclose($fp); return false; }
+    }
+    $headers = 'From: '.$from."\r\n".'To: '.$to."\r\n".'Subject: '.$subject."\r\n"
+        .'MIME-Version: 1.0'."\r\n".'Content-Type: text/plain; charset=UTF-8'."\r\n";
+    $data = $headers."\r\n".str_replace("\n.", "\n..", $body);
+    $ok = str_starts_with($cmd('MAIL FROM:<'.$from.'>'), '250')
+        && str_starts_with($cmd('RCPT TO:<'.$to.'>'), '250')
+        && str_starts_with($cmd('DATA'), '354')
+        && str_starts_with($cmd($data."\r\n."), '250');
+    $cmd('QUIT');
+    fclose($fp);
+    return $ok;
 }

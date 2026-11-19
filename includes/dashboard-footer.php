@@ -1,1 +1,5 @@
-</div></main></div></body></html>
+    </div><!-- /.wrap -->
+  </main>
+</div><!-- /.dashboard-layout -->
+</body>
+</html>

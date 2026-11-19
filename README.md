@@ -263,8 +263,87 @@ oldest is claimed and the event is flagged `ambiguous` for review.
 - `GET /api/health.php`: public deployment health (no merchant data).
 
 Merchant dashboard pages cover orders, payment links, API key rotation, webhook logs and
-endpoint health, mailbox/UPI configuration and additional accounts. `/docs.php` has
-request samples, HMAC verification, the Python and PHP SDKs, and links `openapi.json`.
+endpoint health, mailbox/UPI configuration and additional accounts.
+
+The API is described once in `includes/apidoc.php` and rendered four ways, so the routes
+cannot drift between formats:
+
+| URL | Format | Audience |
+| --- | --- | --- |
+| `/docs.php` | HTML | merchants |
+| `/docs.txt` | plain text | terminals, `curl`, offline reading |
+| `/llms.txt` | llms.txt convention | LLMs answering questions about the product |
+| `/ai-prompt.txt` | master prompt | assistants writing integration code |
+| `/openapi.json` | OpenAPI 3.1 | code generators |
+
+The `.txt` files are PHP scripts (`docs.txt.php`, …) reached through `mod_rewrite`, so they
+render from the same source while still looking like static documents.
+
+Transactions can be exported to CSV (`/transactions-export.php`) with the same filters as
+the table on screen. Cells beginning with `=`, `+`, `-` or `@` are prefixed with an
+apostrophe so a hostile customer name cannot execute as a spreadsheet formula, and the file
+carries a UTF-8 BOM so Excel renders ₹ and non-ASCII names correctly.
+
+### Merchant panel
+
+The panel uses the FamGateway layout and design tokens (`assets/css/design-system.css`):
+dark sidebar, stat cards, filter tabs and a seven-column transaction table. Navigation:
+Dashboard, Transactions, Payment Links, API Keys, Webhooks, Settings, Integrations,
+Multi-Accounts, Addons, My Services, Invoices, Profile, Support Tickets, Documentation and
+System Status. Profile (five tabs, avatar embedded in QR codes), Settings (payment defaults), Support
+Tickets (create/reply/resolve with counters and real screenshot uploads), Addons (Paytm ₹49/month in 1/3/6/12-month
+terms), My Services, Invoices and a public System Status page with measured 30-day uptime
+are all live.
+
+**Schema upgrades are automatic.** `includes/migrate.php` runs on boot and records applied
+migrations in `schema_migrations`, so an existing volume gains new tables on the next
+dashboard request. `database/schema.sql` is only for fresh installs. To apply by hand:
+
+```sh
+docker compose exec app php -r 'require "includes/db.php"; require "includes/migrate.php"; print_r(tg_run_migrations());'
+```
+
+To avoid the boot check entirely (large fleets, read-only filesystems), set
+`TG_SKIP_MIGRATIONS=true`.
+
+Two behaviours worth knowing:
+
+- Sign-in runs a second email-code step **only** when `LOGIN_2FA=true` and a mail transport
+  is configured. A code screen that cannot deliver mail would lock merchants out, so the
+  auto-detect that used to enable it is gone.
+- New registrations must accept the Terms and Privacy links, and the account is created
+  after email verification when 2FA is on.
+
+### Support ticket attachments
+
+Screenshots and PDFs attached to a support ticket are validated by their leading
+bytes, not by the filename or the browser-supplied type — a `.png` containing
+SVG markup is refused, because that file would otherwise be handed back to a
+browser. Accepted types are JPG, PNG, WEBP and PDF, up to 5 MB each and five per
+ticket.
+
+Files are renamed to 32 random hex characters, written to `storage/attachments`
+with mode 0600 (outside the document root), and streamed through
+`attachment.php` only after the signed-in merchant is confirmed as the owner.
+Every download is sent as `Content-Disposition: attachment` with
+`X-Content-Type-Options: nosniff`, and `storage/` is blocked in `.htaccess`.
+In Docker the directory is a named volume (`tg-attachments`), so uploads survive
+`docker compose up --build`.
+
+### Receiving accounts
+
+A merchant can link several UPI wallets and switch the active receiver in one click.
+Only one account receives new orders at a time; activating a standby retires the previous
+primary rather than splitting traffic silently. Three rules protect the payout path:
+
+- **Cap.** `MAX_RECEIVING_ACCOUNTS` (default 5) limits how many wallets can be linked.
+- **Validation.** UPI IDs are checked against VPA grammar. Set `UPI_ID_DOMAINS=fam,yesfam`
+  to lock a deployment to specific handles; leave it empty to stay provider-agnostic.
+- **Re-authorisation.** Changing the payout UPI or receipt mailbox requires the account
+  password. The authorisation lasts 15 minutes, and the blocked edit is replayed
+  automatically once it is granted, so nothing has to be retyped.
+
+Every payout change, activation and removal is written to `audit_log`.
 
 ---
 
@@ -275,7 +354,7 @@ node tests/run.mjs                 # auto-detects php, then a php-wasm CLI
 PHP_BIN=/usr/bin/php node tests/run.mjs
 ```
 
-139 checks run against a throwaway SQLite database: receipt parsing/matching, MIME
+311 checks run against a throwaway SQLite database: receipt parsing/matching, MIME
 decoding against plain/quoted-printable/base64/forwarded samples, the IMAP protocol client
 driven by a scripted peer, AES-GCM round-trips, auth and CSRF, input validation, rate
 limits, order creation, status and verification endpoints, the hosted checkout page,

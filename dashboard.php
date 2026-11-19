@@ -1,5 +1,250 @@
-<?php declare(strict_types=1);require_once __DIR__.'/includes/auth.php';$merchant=require_login();$pageTitle='Dashboard';$pdo=db();$id=$merchant['id'];$s=$pdo->prepare("SELECT COUNT(*) total,COALESCE(SUM(status='success'),0) success,COALESCE(SUM(status='pending'),0) pending,COALESCE(SUM(CASE WHEN status='success' THEN amount ELSE 0 END),0) revenue FROM orders WHERE merchant_id=?");$s->execute([$id]);$stats=$s->fetch();$q=$pdo->prepare('SELECT order_id,customer_name,amount,status,created_at FROM orders WHERE merchant_id=? ORDER BY created_at DESC LIMIT 7');$q->execute([$id]);$recent=$q->fetchAll();$acc=$pdo->prepare('SELECT COUNT(*) FROM merchant_accounts WHERE merchant_id=? AND is_active=1');$acc->execute([$id]);$connected=(int)$acc->fetchColumn()>0;$chart=$pdo->prepare("SELECT substr(created_at,1,10) d,COUNT(*) n FROM orders WHERE merchant_id=? AND created_at>=? GROUP BY substr(created_at,1,10)");$chart->execute([$id, date('Y-m-d', strtotime('-6 days'))]);$byDay=[];foreach($chart->fetchAll() as $r)$byDay[$r['d']]=(int)$r['n'];$max=max(1, ...(array_values($byDay) ?: [1]));require __DIR__.'/includes/dashboard-header.php';?>
-<div class="page-title"><div><h1>Good day, <?=h($merchant['name'])?> 👋</h1><p>Here’s what’s happening with your payment activity.</p></div><a class="btn" href="/payment-links.php">＋ Create payment link</a></div><?php $configProblems=tg_config_problems();$accountCount=(int)$pdo->query('SELECT COUNT(*) FROM merchant_accounts WHERE is_active=1')->fetchColumn();if($configProblems||$accountCount===0):?><div class="note panel" style="border-color:#ffe1b8;background:#fffaf0"><strong style="display:block;margin-bottom:6px">Finish setup before taking live payments</strong><ul style="margin:0;padding-left:18px;font-size:11px;line-height:1.9"><?php foreach($configProblems as $problem):?><li><?=h($problem)?></li><?php endforeach?><?php if($accountCount===0):?><li>No active receiving account yet. Add your UPI ID and receipt mailbox on <a href="/integrations.php" style="color:var(--blue)">Integrations</a>.</li><?php endif?></ul></div><?php endif?><div class="stat-grid"><div class="stat-card"><label>Total revenue</label><strong>₹<?=number_format((float)$stats['revenue'],2)?></strong><small>Successful orders only</small></div><div class="stat-card"><label>Total requests</label><strong><?=number_format((int)$stats['total'])?></strong><small style="color:#6b7890">All-time orders</small></div><div class="stat-card"><label>Successful</label><strong><?=number_format((int)$stats['success'])?></strong><small>Confirmed receipts</small></div><div class="stat-card"><label>Pending</label><strong><?=number_format((int)$stats['pending'])?></strong><small style="color:#a78035">Awaiting confirmation</small></div></div>
-<div class="card panel"><div class="card-title"><h3>Quick setup guide</h3><a href="/docs.php">View integration docs →</a></div><div class="guide-steps"><div class="guide-step"><span class="step-num">01 · RECEIPTS</span><strong><?= $connected?'UPI account connected':'Connect a UPI account'?></strong><p>Configure a dedicated inbox and account under Integrations.</p><a href="/integrations.php" style="font-size:9px;color:var(--blue)">Configure →</a></div><div class="guide-step"><span class="step-num">02 · API</span><strong>Copy your API key</strong><p>Use the key in a server-side request; keep it out of browsers.</p><a href="/api-keys.php" style="font-size:9px;color:var(--blue)">View keys →</a></div><div class="guide-step"><span class="step-num">03 · AUTOMATE</span><strong>Set up a webhook</strong><p>Verify the HMAC signature before fulfilling orders.</p><a href="/webhooks.php" style="font-size:9px;color:var(--blue)">Set endpoint →</a></div></div></div>
-<div class="dash-grid"><div class="card"><div class="card-title"><h3>Recent transactions</h3><a href="/transactions.php">View all →</a></div><div class="table-wrap"><table><thead><tr><th>ORDER ID</th><th>CUSTOMER</th><th>AMOUNT</th><th>STATUS</th><th>DATE</th></tr></thead><tbody><?php if(!$recent):?><tr><td colspan="5" style="color:#8591a4;text-align:center;padding:24px">No transactions yet</td></tr><?php endif?><?php foreach($recent as $o):?><tr><td><strong><?=h($o['order_id'])?></strong></td><td><?=h($o['customer_name']?:'Customer')?></td><td>₹<?=number_format((float)$o['amount'],2)?></td><td><span class="badge badge-<?=h($o['status'])?>"><?=h(ucfirst($o['status']))?></span></td><td><?=h(date('M j',strtotime($o['created_at'])))?></td></tr><?php endforeach?></tbody></table></div></div><div class="card"><div class="card-title"><h3>Activity · Last 7 days</h3><span style="font-size:9px;color:#8794a8">Orders</span></div><div class="bar-chart"><?php for($i=6;$i>=0;$i--):$d=date('Y-m-d',strtotime("-$i days"));$height=($byDay[$d]??0)?max(12,(int)(($byDay[$d]/$max)*100)):5;?><div class="bar" style="height:<?=$height?>%" title="<?=($byDay[$d]??0)?> orders"></div><?php endfor?></div><div class="bar-labels"><?php for($i=6;$i>=0;$i--):?><span><?=date('D',strtotime("-$i days"))?></span><?php endfor?></div></div></div>
-<?php require __DIR__.'/includes/dashboard-footer.php';?>
+<?php
+declare(strict_types=1);
+/**
+ * Dashboard — parity with the FamGateway merchant home:
+ * greeting + MID chip, four stat cards, setup checklist, activity chart,
+ * recent transactions table with the same seven columns.
+ */
+require_once __DIR__.'/includes/merchant.php';
+require_once __DIR__.'/includes/auth.php';
+$merchant = require_login();
+$pageTitle = 'Dashboard';
+$pdo = db();
+$id = (int)$merchant['id'];
+
+$stats = $pdo->prepare(
+    "SELECT COUNT(*) total,
+            COALESCE(SUM(CASE WHEN status='success' THEN 1 ELSE 0 END),0) success,
+            COALESCE(SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END),0) pending,
+            COALESCE(SUM(CASE WHEN status='expired' THEN 1 ELSE 0 END),0) expired,
+            COALESCE(SUM(CASE WHEN status='success' THEN amount ELSE 0 END),0) revenue
+       FROM orders WHERE merchant_id=?"
+);
+$stats->execute([$id]);
+$stats = $stats->fetch();
+$failed = (int)$stats['expired'];
+
+$recentStmt = $pdo->prepare(
+    'SELECT order_id, utr, customer_name, customer_phone, amount, status, created_at
+       FROM orders WHERE merchant_id=? ORDER BY created_at DESC, id DESC LIMIT 10'
+);
+$recentStmt->execute([$id]);
+$recent = $recentStmt->fetchAll();
+
+$connected = tg_has_active_account($id);
+$mid = tg_merchant_mid($id);
+
+/* Activity series: orders per day over the selected window (7, 15 or 30 days).
+   Rendered as a CSS bar chart, so there is no canvas/JS dependency and no
+   external chart library. */
+$chartPeriod = (int)($_GET['period'] ?? 7);
+if (!in_array($chartPeriod, [7, 15, 30], true)) $chartPeriod = 7;
+$firstDay = date('Y-m-d', strtotime('-'.($chartPeriod - 1).' days'));
+
+$chart = $pdo->prepare(
+    "SELECT substr(created_at,1,10) d, COUNT(*) n,
+            COALESCE(SUM(CASE WHEN status='success' THEN amount ELSE 0 END),0) revenue
+       FROM orders WHERE merchant_id=? AND created_at>=? GROUP BY substr(created_at,1,10)"
+);
+$chart->execute([$id, $firstDay]);
+$days = [];
+foreach ($chart->fetchAll() as $row) $days[$row['d']] = $row;
+$series = [];
+for ($i = $chartPeriod - 1; $i >= 0; $i--) {
+    $d = date('Y-m-d', strtotime("-$i days"));
+    // Long windows would print 30 labels into a row; show only every other one.
+    $showLabel = $chartPeriod === 7
+        || ($chartPeriod === 15 && $i % 3 === 0)
+        || ($chartPeriod === 30 && $i % 5 === 0)
+        || $i === 0;
+    $series[] = [
+        'date' => $d,
+        'label' => $showLabel ? date($chartPeriod === 7 ? 'D' : 'j M', strtotime($d)) : '',
+        'n' => (int)($days[$d]['n'] ?? 0),
+        'revenue' => (float)($days[$d]['revenue'] ?? 0),
+    ];
+}
+$maxRequests = max(1, max(array_column($series, 'n')));
+// Summary for the window, so the number under the chart is not hand-waved.
+$seriesOrders = array_sum(array_column($series, 'n'));
+$seriesRevenue = array_sum(array_column($series, 'revenue'));
+$configProblems = function_exists('tg_config_problems') ? tg_config_problems() : [];
+
+require __DIR__.'/includes/dashboard-header.php';
+?>
+
+<div class="page-title-row dash-anim-right is-visible" style="margin-bottom:24px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px">
+  <div>
+    <h1 style="font-size:22px;font-weight:700;color:var(--color-ink);letter-spacing:-.5px">
+      <?=h(tg_greeting())?>, <?=h(explode(' ', $merchant['name'])[0])?> 👋
+    </h1>
+    <p style="font-size:13px;color:var(--color-ink-mute);margin-top:4px">Here's what's happening with your API today.</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div class="mid-badge-btn" data-copy="<?=h($mid)?>" title="Click to copy Merchant ID">
+      <span style="color:var(--color-ink-mute);font-size:11px;font-weight:700;letter-spacing:.5px">MID:</span>
+      <code><?=h($mid)?></code>
+      <?=icon('copy', 13)?>
+    </div>
+    <?php if ($connected): ?>
+      <span class="status-badge status-success"><?=icon('check-circle', 12)?> Receiving account active</span>
+    <?php else: ?>
+      <span class="status-badge status-pending" title="Add a receiving account to start verifying payments">
+        <?=icon('alert-circle', 12)?> IMAP Not Configured
+        <a href="/integrations.php" style="margin-left:8px;padding:2px 8px;background:#f59e0b;color:#fff;border-radius:4px;font-weight:600;font-size:11px;text-decoration:none">Configure</a>
+      </span>
+    <?php endif ?>
+  </div>
+</div>
+
+<?php if ($configProblems): ?>
+  <div class="callout callout-warning" style="margin-bottom:20px">
+    <?=icon('alert-triangle', 16)?>
+    <span>
+      <strong>Finish setup before taking live payments.</strong>
+      <?=h(implode(' ', $configProblems))?>
+      <a href="/integrations.php" style="font-weight:600">Open integrations →</a>
+    </span>
+  </div>
+<?php endif ?>
+
+<div class="stat-grid dash-stagger is-visible">
+  <div class="stat-card">
+    <div class="stat-card-top">
+      <div class="stat-card-label">Total Revenue</div>
+      <div class="stat-card-icon green"><?=icon('trending-up', 18)?></div>
+    </div>
+    <div class="stat-card-value tnum" style="color:#10b981">₹<?=number_format((float)$stats['revenue'], 2)?></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-top">
+      <div class="stat-card-label">Total Requests</div>
+      <div class="stat-card-icon blue"><?=icon('activity', 18)?></div>
+    </div>
+    <div class="stat-card-value tnum"><?=number_format((int)$stats['total'])?></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-top">
+      <div class="stat-card-label">Successful</div>
+      <div class="stat-card-icon green"><?=icon('check-circle', 18)?></div>
+    </div>
+    <div class="stat-card-value tnum"><?=number_format((int)$stats['success'])?></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-top">
+      <div class="stat-card-label">Failed / Pending</div>
+      <div class="stat-card-icon red"><?=icon('alert-circle', 18)?></div>
+    </div>
+    <div class="stat-card-value tnum"><?=number_format((int)$stats['pending'] + $failed)?></div>
+  </div>
+</div>
+
+<!-- Quick setup -->
+<div class="card dash-anim-up is-visible" style="margin-top:20px">
+  <div class="card-header">
+    <div class="card-title"><?=icon('zap', 16)?> <span>Quick Setup Guide</span></div>
+    <div class="card-sub">Four steps from a fresh account to automated UPI collection.</div>
+  </div>
+  <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+    <?php
+    $steps = [
+        ['1', 'Connect a receiving account', $connected ? 'Account connected' : 'Add your UPI ID and receipt mailbox.', '/integrations.php', $connected],
+        ['2', 'Create your API key', 'One key per integration; keep it server-side.', '/api-keys.php', false],
+        ['3', 'Set a webhook endpoint', 'Signed HMAC callbacks on every capture.', '/webhooks.php', false],
+        ['4', 'Read the API docs', 'Checkout URLs, polling and verification.', '/docs.php', false],
+    ];
+    foreach ($steps as [$num, $title, $sub, $href, $done]): ?>
+      <a href="<?=$href?>" class="card" style="padding:18px;text-decoration:none;box-shadow:none;border-color:var(--color-hairline)">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <span style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:<?=$done ? '#dcfce7' : 'var(--color-primary-soft)'?>;color:<?=$done ? '#166534' : 'var(--color-primary-deep)'?>">
+            <?=$done ? icon('check', 12) : h($num)?>
+          </span>
+          <strong style="font-size:13px"><?=h($title)?></strong>
+        </div>
+        <p style="font-size:12px;color:var(--color-ink-mute);line-height:1.7;margin:0"><?=h($sub)?></p>
+      </a>
+    <?php endforeach ?>
+  </div>
+</div>
+
+<!-- Activity chart -->
+<div class="card dash-anim-up is-visible" style="margin-top:20px">
+  <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+    <div>
+      <div class="card-title"><?=icon('activity', 16)?> Activity — Last <?=$chartPeriod?> Days</div>
+      <div class="card-sub"><?=$seriesOrders?> orders and ₹<?=number_format($seriesRevenue, 2)?> collected in this window</div>
+    </div>
+    <div class="chart-time-pills">
+      <?php foreach ([7, 15, 30] as $period): ?>
+        <a class="time-pill<?=$period === $chartPeriod ? ' active' : ''?>"
+           href="/dashboard.php?period=<?=$period?>"
+           aria-current="<?=$period === $chartPeriod ? 'true' : 'false'?>"><?=$period?>D</a>
+      <?php endforeach ?>
+    </div>
+  </div>
+  <div class="dash-bars" role="img" aria-label="Orders per day over the last <?=$chartPeriod?> days">
+    <?php if ($seriesOrders === 0): ?>
+      <div style="padding:26px;text-align:center;color:var(--color-ink-mute);font-size:13px">
+        No orders in this window yet. Bars appear as soon as your first payment link is paid.
+      </div>
+    <?php endif ?>
+    <?php foreach ($series as $day): ?>
+      <div class="dash-bar-col" title="<?=h(($day['label'] !== '' ? $day['label'].' ' : '').$day['date'])?> — <?=$day['n']?> orders, ₹<?=number_format($day['revenue'], 2)?>">
+        <span class="dash-bar-tip"><?=$day['n']?></span>
+        <div class="dash-bar" style="height:<?=$day['n'] === 0 ? 4 : max(8, (int)round(($day['n'] / $maxRequests) * 100))?>%"></div>
+        <span class="dash-bar-label"><?=h($day['label'])?></span>
+      </div>
+    <?php endforeach ?>
+  </div>
+</div>
+
+<!-- Recent transactions -->
+<div class="card dash-anim-up is-visible" style="padding:0;overflow:hidden;margin-top:20px">
+  <div style="padding:22px 28px;border-bottom:1px solid var(--color-hairline);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+    <div>
+      <div class="card-title"><?=icon('receipt', 16)?> Recent Transactions</div>
+      <div class="card-sub">Your last 10 orders</div>
+    </div>
+    <a href="/transactions.php" class="btn btn-secondary btn-sm"><?=icon('arrow-right', 14)?> View All</a>
+  </div>
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>Order ID</th><th>Bank RRN</th><th>Customer detail</th><th>Created on</th>
+          <th>Amount</th><th>Status</th><th style="text-align:right">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+      <?php if (!$recent): ?>
+        <tr><td colspan="7">
+          <div class="empty-state">
+            <div class="empty-state-icon"><?=icon('receipt', 22)?></div>
+            <div class="empty-state-title">No transactions yet</div>
+            <div class="empty-state-sub">Create your first payment link to get started</div>
+            <a href="/payment-links.php" class="btn btn-primary btn-sm" style="margin-top:14px"><?=icon('plus', 14)?> New payment link</a>
+          </div>
+        </td></tr>
+      <?php endif ?>
+      <?php foreach ($recent as $o): ?>
+        <tr>
+          <td><code style="font-size:12px;font-weight:600"><?=h($o['order_id'])?></code></td>
+          <td><?=h($o['utr'] ?: '—')?></td>
+          <td>
+            <div style="font-weight:500"><?=h($o['customer_name'] ?: 'Customer')?></div>
+            <?php if (!empty($o['customer_phone'])): ?><div style="font-size:11px;color:var(--color-ink-mute)"><?=h($o['customer_phone'])?></div><?php endif ?>
+          </td>
+          <td style="white-space:nowrap"><?=h(date('d M Y, H:i', strtotime((string)$o['created_at'])))?></td>
+          <td class="tnum" style="font-weight:600">₹<?=number_format((float)$o['amount'], 2)?></td>
+          <td><?=tg_status_badge((string)$o['status'])?></td>
+          <td style="text-align:right">
+            <a href="/invoice.php?order_id=<?=h(rawurlencode((string)$o['order_id']))?>" class="btn btn-secondary btn-sm">View</a>
+          </td>
+        </tr>
+      <?php endforeach ?>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<?php require __DIR__.'/includes/dashboard-footer.php'; ?>
