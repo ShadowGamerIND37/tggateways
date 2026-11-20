@@ -4,6 +4,9 @@ require_once __DIR__.'/includes/orders.php';
 // tg_audit() records the payer's claim; it lives with the merchant helpers.
 require_once __DIR__.'/includes/merchant.php';
 
+// Checkout URLs contain payment details and must not be stored by shared caches.
+tg_header('Cache-Control: private, no-store');
+
 $pdo = db();
 $orderId = substr((string)($_GET['order_id'] ?? ''), 0, 40);
 $linkSlug = substr((string)($_GET['link'] ?? ''), 0, 100);
@@ -49,10 +52,9 @@ if ($linkSlug !== '') {
  * until it expires — a silent loss. Letting the payer submit the reference
  * they can see in their own UPI app closes that gap.
  *
- * The claim is NOT trusted for fulfilment: it goes through the same
- * settle_receipt() path as an emailed receipt, so the duplicate check,
- * amount check and audit row are identical. What it changes is which party
- * provides the reference, not how far it is trusted.
+ * The claim is NOT trusted for fulfilment: it is recorded for merchant review.
+ * Only an independently verified receipt or the merchant's confirmation can
+ * settle the order; submitting a reference alone never proves payment.
  */
 $claimNotice = '';
 $claimError = '';
@@ -181,91 +183,79 @@ body{background:#f1f4f9}
 <link rel="stylesheet" href="/assets/css/checkout.css">
 </head>
 <body class="checkout-page">
-<main class="checkout">
-  <div class="checkout-top"><a class="brand" href="/"><img src="/assets/img/tg-mark.png" alt="">TG Gateways</a><span class="checkout-tag">UPI checkout</span></div>
+<main class="checkout" aria-label="UPI checkout">
+  <div class="checkout-top">
+    <a class="brand" href="/"><img src="/assets/img/tg-mark.png" alt="">TG Gateways</a>
+    <span class="checkout-tag"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg> UPI checkout</span>
+  </div>
   <?php if ($notice): ?>
-    <div class="note" style="margin-top:20px"><?=h($notice)?></div>
+    <div class="checkout-unavailable" role="status"><div class="checkout-unavailable-icon" aria-hidden="true">!</div><h1>Checkout unavailable</h1><p><?=h($notice)?></p><a href="/" class="checkout-back">Go to TG Gateways <span aria-hidden="true">→</span></a></div>
   <?php elseif ($order): ?>
-    <div class="checkout-brand">PAYING TO</div>
-    <h1><?=h($order['merchant_name'])?></h1>
-    <div class="checkout-total">₹<?=number_format((float)$order['payable_amount'],2)?></div>
-    <div class="checkout-order">INR · Order <?=h($order['order_id'])?></div>
-    <?php if ($order['status'] === 'pending'): ?>
-      <div id="payment-options">
-        <section class="checkout-scan" aria-labelledby="scan-heading">
-          <h2 class="checkout-section-title" id="scan-heading">Scan to pay</h2>
-          <p class="checkout-section-sub">Open any UPI app and scan this QR code.</p>
-          <div class="checkout-qr" id="qr" data-upi="<?=h($upi)?>" role="img" aria-label="UPI payment QR code"></div>
-        </section>
-        <section class="payment-apps" aria-labelledby="apps-heading">
-          <h2 class="checkout-section-title" id="apps-heading">Pay with an app</h2>
-          <p class="checkout-section-sub">Choose a UPI app on your phone.</p>
-          <div class="upi-actions">
-            <a class="upi-primary" href="<?=h($upi)?>" rel="noopener">
-              <svg class="upi-generic-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M9 18h6"></path></svg>
-              <span>Open UPI app</span>
-            </a>
-            <a href="<?=h($upi)?>" rel="noopener" data-upi-package="com.google.android.apps.nbu.paisa.user">
-              <img class="upi-app-icon upi-google-icon" src="/assets/img/gateways/googlepay.svg" alt=""><span>Google Pay</span>
-            </a>
-            <a href="<?=h($upi)?>" rel="noopener" data-upi-package="com.phonepe.app">
-              <img class="upi-app-icon" src="/assets/img/gateways/phonepe.png" alt=""><span>PhonePe</span>
-            </a>
-            <a href="<?=h($upi)?>" rel="noopener" data-upi-package="net.one97.paytm">
-              <img class="upi-app-icon" src="/assets/img/gateways/paytm.png" alt=""><span>Paytm</span>
-            </a>
-          </div>
-          <p class="upi-app-note" id="app-link-note">App buttons use your device's UPI app chooser when available. Apps and support vary by device.</p>
-        </section>
-        <div class="copy-upi">
-          <div class="copy-upi-label"><span>Or pay to this UPI ID</span><code id="upi-id"><?=h($order['upi_id'] ?: '—')?></code></div>
-          <button type="button" class="btn btn-outline" data-copy-target="#upi-id">Copy UPI ID</button>
-          <div class="copy-upi-hint">Use the exact amount shown above. Include the order ID as the payment note if your app allows it.</div>
+    <div class="checkout-layout">
+      <section class="checkout-summary" aria-label="Payment summary">
+        <div class="summary-kicker">PAYMENT SUMMARY</div>
+        <div class="summary-merchant"><span class="merchant-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h18l-1.5-5H4.5L3 10Z"></path><path d="M5 10v9h14v-9M9 19v-5h6v5"></path></svg></span><div><div class="checkout-brand">PAYING TO</div><h1><?=h($order['merchant_name'])?></h1></div></div>
+        <div class="summary-amount"><span class="summary-label">Amount to pay</span><div class="checkout-total">₹<?=number_format((float)$order['payable_amount'],2)?></div><span class="summary-currency">INR</span></div>
+        <div class="summary-order"><span class="summary-label">Order ID</span><div class="checkout-order"><?=h($order['order_id'])?></div></div>
+        <div class="summary-status">
+          <span class="summary-label">Payment status</span>
+          <?php if ($order['status'] === 'pending'): ?>
+            <div class="wait" id="payment-status" role="status" aria-live="polite">Waiting for payment…</div>
+            <div class="checkout-meta" id="expiry-label">Expires in <strong id="countdown"><?=sprintf('%02d:%02d', intdiv($secondsRemaining, 60), $secondsRemaining % 60)?></strong> <span class="countdown-format">(min:sec)</span></div>
+          <?php else: ?>
+            <div class="wait <?=$order['status'] === 'success' ? 'success' : 'expired'?>" role="status">
+              <?php if ($order['status'] === 'success'): ?>
+                Payment received<?=$order['utr'] ? ' · UTR '.h($order['utr']) : ''?>
+              <?php elseif ($order['status'] === 'refunded'): ?>
+                This payment was fully refunded by the merchant.
+              <?php elseif ($order['status'] === 'expired'): ?>
+                This payment order has expired. Ask the merchant for a new link.
+              <?php else: ?>
+                This payment order is no longer available. Contact the merchant.
+              <?php endif ?>
+            </div>
+          <?php endif ?>
         </div>
-      </div>
-      <div class="wait" id="payment-status" role="status" aria-live="polite">◌ Waiting for payment…</div>
-      <div class="checkout-meta" style="margin-top:12px" id="expiry-label">Expires in <strong id="countdown"><?=sprintf('%02d:%02d', intdiv($secondsRemaining, 60), $secondsRemaining % 60)?></strong> <span class="countdown-format">(min:sec)</span></div>
-      <?php if ($claimNotice !== ''): ?>
-        <div class="claim-result claim-ok"><?=h($claimNotice)?></div>
-      <?php elseif ($claimError !== ''): ?>
-        <div class="claim-result claim-bad"><?=h($claimError)?></div>
+        <div class="summary-guidance"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg><span>Payments go directly to the merchant’s UPI account. If you’ve already paid, please don’t pay again.</span></div>
+      </section>
+      <section class="checkout-content" aria-label="Payment options">
+      <?php if ($order['status'] === 'pending'): ?>
+        <div class="checkout-content-heading" id="checkout-content-heading"><div><div class="content-kicker">COMPLETE YOUR PAYMENT</div><h2>Pay with UPI</h2><p>Choose the method that works for you.</p></div><span class="content-upi" aria-hidden="true">UPI</span></div>
+        <div id="payment-options">
+          <section class="checkout-scan" aria-labelledby="scan-heading">
+            <div class="scan-heading"><span class="scan-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"></path><path d="M8 8h3v3H8zM14 8h2v2h-2zM8 14h2v2H8zM14 14h2v2h-2z"></path></svg></span><div><h2 class="checkout-section-title" id="scan-heading">Scan to pay</h2><p class="checkout-section-sub">Open any UPI app and scan this QR code.</p></div></div>
+            <div class="qr-frame"><div class="checkout-qr" id="qr" data-upi="<?=h($upi)?>" role="img" aria-label="UPI payment QR code"></div></div>
+            <noscript><p class="checkout-script-notice">JavaScript is needed to render the QR and refresh payment status. Use a UPI app link below or contact the merchant.</p></noscript>
+            <p class="scan-caption"><span aria-hidden="true">✦</span> Scan with any UPI app</p>
+          </section>
+          <div class="checkout-divider"><span>OR</span></div>
+          <section class="payment-apps" aria-labelledby="apps-heading">
+            <div class="apps-heading"><div><h2 class="checkout-section-title" id="apps-heading">Pay with an app</h2><p class="checkout-section-sub">Choose a UPI app on your phone.</p></div><span aria-hidden="true">↗</span></div>
+            <div class="upi-actions">
+              <a class="upi-primary" href="<?=h($upi)?>" rel="noopener">
+                <svg class="upi-generic-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M9 18h6"></path></svg><span>Open UPI app</span><span class="upi-arrow" aria-hidden="true">↗</span>
+              </a>
+              <a href="<?=h($upi)?>" rel="noopener" data-upi-package="com.google.android.apps.nbu.paisa.user"><img class="upi-app-icon upi-google-icon" src="/assets/img/gateways/googlepay.svg" alt=""><span>Google Pay</span></a>
+              <a href="<?=h($upi)?>" rel="noopener" data-upi-package="com.phonepe.app"><img class="upi-app-icon" src="/assets/img/gateways/phonepe.png" alt=""><span>PhonePe</span></a>
+              <a href="<?=h($upi)?>" rel="noopener" data-upi-package="net.one97.paytm"><img class="upi-app-icon" src="/assets/img/gateways/paytm.png" alt=""><span>Paytm</span></a>
+            </div>
+            <p class="upi-app-note" id="app-link-note">App buttons use your device's UPI app chooser when available. Apps and support vary by device.</p>
+          </section>
+          <div class="copy-upi"><div class="copy-upi-label"><span>Or pay to this UPI ID</span><code id="upi-id"><?=h($order['upi_id'] ?: '—')?></code></div><button type="button" class="btn btn-outline" data-copy-target="#upi-id">Copy UPI ID</button><div class="copy-upi-hint">Use the exact amount shown above. Include the order ID as the payment note if your app allows it.</div></div>
+        </div>
+        <?php if ($claimNotice !== ''): ?><div class="claim-result claim-ok" id="claim-result" role="status"><?=h($claimNotice)?></div><?php elseif ($claimError !== ''): ?><div class="claim-result claim-bad" id="claim-result" role="alert"><?=h($claimError)?></div><?php endif ?>
+        <details class="claim" id="claim-section" <?=$claimError !== '' ? 'open' : ''?>>
+          <summary>Already paid? Submit your UTR</summary>
+          <p class="claim-intro">Confirmation time depends on the merchant's receipt processing. If your UPI app shows the money left but this page has not updated, paste the reference here — the merchant can review it against their records. A submitted UTR is not automatic proof of payment.</p>
+          <form method="post" class="claim-form"><input type="hidden" name="action" value="claim_utr"><input type="hidden" name="order_id" value="<?=h((string)$order['order_id'])?>"><label class="claim-label" for="claim-utr">UPI reference / UTR</label><div class="claim-row"><input class="form-input" id="claim-utr" name="utr" inputmode="numeric" autocomplete="off" pattern="[0-9]{8,18}" maxlength="18" required placeholder="e.g. 416782930145"><button class="btn btn-primary">Submit</button></div><span class="claim-hint">12 digits for most apps. Never pay twice while waiting for confirmation.</span></form>
+        </details>
+        <div class="checkout-complete" id="checkout-finished" hidden><span class="complete-icon" id="checkout-finished-icon" aria-hidden="true"></span><h2 id="checkout-finished-title"></h2><p id="checkout-finished-message"></p></div>
+      <?php else: ?>
+        <div class="checkout-complete"><span class="complete-icon" aria-hidden="true"><?=$order['status'] === 'success' ? '✓' : 'i'?></span><h2><?=$order['status'] === 'success' ? 'Payment complete' : 'Payment unavailable'?></h2><p><?=$order['status'] === 'success' ? 'Your payment has been recorded. You can safely close this page.' : 'Please contact the merchant if you need help with this order.'?></p></div>
       <?php endif ?>
-
-      <details class="claim" <?=$claimError !== '' ? 'open' : ''?>>
-        <summary>Already paid? Submit your UTR</summary>
-        <p class="claim-intro">
-          Confirmation normally arrives from the merchant's mailbox within a couple of minutes.
-          If your UPI app shows the money left but this page has not updated, paste the reference here —
-          the merchant can review it against their records. A submitted UTR is not automatic proof of payment.
-        </p>
-        <form method="post" class="claim-form">
-          <input type="hidden" name="action" value="claim_utr">
-          <input type="hidden" name="order_id" value="<?=h((string)$order['order_id'])?>">
-          <label class="claim-label" for="claim-utr">UPI reference / UTR</label>
-          <div class="claim-row">
-            <input class="form-input" id="claim-utr" name="utr" inputmode="numeric" autocomplete="off"
-                   pattern="[0-9]{8,18}" maxlength="18" required placeholder="e.g. 416782930145">
-            <button class="btn btn-primary">Submit</button>
-          </div>
-          <span class="claim-hint">12 digits for most apps. Never pay twice while waiting for confirmation.</span>
-        </form>
-      </details>
-    <?php else: ?>
-      <div class="wait <?=$order['status'] === 'success' ? 'success' : 'expired'?>">
-        <?php if ($order['status'] === 'success'): ?>
-          ✓ Payment received<?=$order['utr'] ? ' · UTR '.h($order['utr']) : ''?>
-        <?php elseif ($order['status'] === 'refunded'): ?>
-          This payment was fully refunded by the merchant.
-        <?php else: ?>
-          This payment order has expired. Ask the merchant for a new link.
-        <?php endif ?>
-      </div>
-    <?php endif ?>
-    <div class="checkout-foot">
-      Payments go directly to the merchant's UPI account; this page only confirms the result.<br>
-      If your UPI app shows the payment completed, do not pay again.
-      <a href="/">Powered by TG Gateways</a>
+      </section>
     </div>
+    <div class="checkout-foot"><span>Payments go directly to the merchant's UPI account; this page only confirms the result.</span><a href="/">Powered by <strong>TG Gateways</strong></a></div>
   <?php endif ?>
 </main>
 <?php if ($order && $order['status'] === 'pending'): ?>
@@ -318,18 +308,44 @@ body{background:#f1f4f9}
   const redirect = <?=json_encode($redirect, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)?>;
   const statusBox = document.getElementById('payment-status');
   let done = false;
+  let pollUnavailable = false;
+
+  function showFinished(status) {
+    // Hide stale payment controls after the server reports a terminal state.
+    ['checkout-content-heading', 'claim-section', 'claim-result'].forEach((id) => {
+      const node = document.getElementById(id);
+      if (node) node.hidden = true;
+    });
+    const panel = document.getElementById('checkout-finished');
+    const icon = document.getElementById('checkout-finished-icon');
+    const title = document.getElementById('checkout-finished-title');
+    const message = document.getElementById('checkout-finished-message');
+    if (!panel || !icon || !title || !message) return;
+    const successful = status === 'success';
+    icon.textContent = successful ? '✓' : 'i';
+    title.textContent = successful ? 'Payment complete' : 'Payment unavailable';
+    message.textContent = successful ? 'Your payment has been recorded. You can safely close this page.' : 'Please contact the merchant if you need help with this order.';
+    panel.hidden = false;
+  }
 
   async function poll() {
     try {
       const response = await fetch('/api/checkout-status.php?order_id=' + encodeURIComponent(orderId), { cache: 'no-store' });
+      if (!response.ok) throw new Error('Status unavailable');
       if (response.ok) {
         const data = await response.json();
+        if (data.status === 'pending' && pollUnavailable) {
+          pollUnavailable = false;
+          statusBox.className = 'wait';
+          statusBox.textContent = performance.now() >= deadline ? 'Checking payment status…' : 'Waiting for payment…';
+        }
         if (data.status === 'success') {
           done = true;
           document.getElementById('payment-options').hidden = true;
           document.getElementById('expiry-label').hidden = true;
           statusBox.className = 'wait success';
-          statusBox.textContent = data.utr ? '✓ Payment received · UTR ' + data.utr : '✓ Payment received!';
+          statusBox.textContent = data.utr ? 'Payment received · UTR ' + data.utr : 'Payment received!';
+          showFinished('success');
           if (redirect) setTimeout(() => location.assign(redirect), 1800);
           return;
         }
@@ -339,10 +355,15 @@ body{background:#f1f4f9}
           document.getElementById('expiry-label').hidden = true;
           statusBox.className = 'wait expired';
           statusBox.textContent = data.status === 'refunded' ? 'This payment was fully refunded by the merchant.' : 'This payment order has expired';
+          showFinished(data.status);
           return;
         }
       }
-    } catch (error) { /* transient network error: retry */ }
+    } catch (error) {
+      pollUnavailable = true;
+      statusBox.className = 'wait warning';
+      statusBox.textContent = 'Unable to refresh status. If you have already paid, do not pay again. Retrying…';
+    }
     setTimeout(poll, 3000);
   }
 

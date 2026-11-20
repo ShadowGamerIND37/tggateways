@@ -2950,6 +2950,51 @@ const pollAfterExpiry = timers.shift();
 if (pollAfterExpiry) pollAfterExpiry();
 await new Promise(resolve => setImmediate(resolve));
 check('Checkout displays expiry only after the server confirms it', nodes['payment-status'].className === 'wait expired' && nodes['expiry-label'].hidden, JSON.stringify({status:nodes['payment-status'],timers:timers.length}));
+check('Checkout responses opt out of caching payment details', (featurePage.headers || []).some(h => /cache-control:.*no-store/i.test(h)));
+check('Checkout presents an accessible summary and payment choices',
+  featurePage.body.includes('aria-label="Payment summary"') && featurePage.body.includes('aria-label="Payment options"')
+  && featurePage.body.includes('Amount to pay') && featurePage.body.includes('Payment status')
+  && featurePage.body.includes('role="status" aria-live="polite"'));
+const checkoutStyles = readFileSync(path.join(root,'assets/css/checkout.css'),'utf8');
+check('Checkout layout adapts to mobile and respects reduced motion',
+  checkoutStyles.includes('@media (max-width: 720px)') && checkoutStyles.includes('@media (max-width: 440px)')
+  && checkoutStyles.includes('@media (prefers-reduced-motion: reduce)') && checkoutStyles.includes('animation: none'));
+check('Checkout explains the QR and status limitations without JavaScript', featurePage.body.includes('<noscript>') && featurePage.body.includes('JavaScript is needed to render the QR'));
+// Run the real checkout script, including pending, errors, recovery and final states.
+async function checkoutStateHarness(responses) {
+  const ids = ['qr','payment-status','payment-options','expiry-label','countdown','checkout-content-heading','claim-section','claim-result','checkout-finished','checkout-finished-icon','checkout-finished-title','checkout-finished-message'];
+  const elements = Object.fromEntries(ids.map(id => [id, {dataset:{upi:'upi://pay?pa=test%40upi&am=50.00'},textContent:'',hidden:id === 'checkout-finished',className:''}]));
+  const scheduled = [];
+  let n = 0;
+  vm.runInNewContext(checkoutScript, {
+    document:{getElementById:id=>elements[id],querySelectorAll:()=>[]},
+    qrcode:()=>({addData(){},make(){},createSvgTag(){return '<svg></svg>'}}),
+    performance:{now:()=>0},
+    fetch:async()=>{ const result=responses[Math.min(n++,responses.length-1)]; if (result === 'offline') throw new Error('offline'); return {ok:true,json:async()=>result}; },
+    setTimeout:(fn,delay)=>scheduled.push({fn,delay}),location:{assign(){}},console,
+  });
+  await new Promise(resolve=>setImmediate(resolve));
+  return {elements,scheduled};
+}
+const successfulCheckout = await checkoutStateHarness([{status:'success',utr:'123456789012'}]);
+check('Confirmed payment replaces the payment controls with the completed state',
+  successfulCheckout.elements['payment-options'].hidden && successfulCheckout.elements['claim-section'].hidden
+  && !successfulCheckout.elements['checkout-finished'].hidden && successfulCheckout.elements['checkout-finished-title'].textContent === 'Payment complete'
+  && successfulCheckout.elements['payment-status'].textContent.includes('123456789012'));
+const refundedCheckout = await checkoutStateHarness([{status:'refunded'}]);
+check('A refunded status is not shown as a completed payment',
+  refundedCheckout.elements['payment-options'].hidden && refundedCheckout.elements['checkout-finished-title'].textContent === 'Payment unavailable'
+  && refundedCheckout.elements['payment-status'].textContent.includes('refunded'));
+const offlineCheckout = await checkoutStateHarness(['offline',{status:'pending'}]);
+const offlineWarned = offlineCheckout.elements['payment-status'].className === 'wait warning'
+  && offlineCheckout.elements['payment-status'].textContent.includes('do not pay again');
+const retryPoll = offlineCheckout.scheduled.find(x=>x.delay === 3000);
+if (retryPoll) retryPoll.fn();
+await new Promise(resolve=>setImmediate(resolve));
+check('A failed status check warns without claiming payment and recovers when polling resumes',
+  offlineWarned && offlineCheckout.elements['payment-status'].className === 'wait'
+  && offlineCheckout.elements['payment-status'].textContent === 'Waiting for payment…');
+
 
 check('Checkout displays local icons for all four payment options',
   featurePage.body.includes('upi-generic-icon') && featurePage.body.includes('/assets/img/gateways/googlepay.svg')
