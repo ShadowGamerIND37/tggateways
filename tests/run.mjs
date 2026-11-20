@@ -2208,6 +2208,211 @@ check('Every documentation section is linked from the sidebar',
 // and the only way back into a locked account was an operator editing the
 // database. These check the properties that make it safe to expose publicly.
 // ============================================================
+// ============================================================
+// Idempotent order creation
+// ------------------------------------------------------------
+// A payment API cannot require the caller to distinguish "my request never
+// arrived" from "it arrived and the response was lost". Without this, the
+// standard remedy — retry on timeout — creates a second order for one intended
+// charge. These check the guarantees an integrator relies on.
+// ============================================================
+// ============================================================
+// Refunds
+// ------------------------------------------------------------
+// The gateway could take money and never give it back: there was no refund
+// table, status or event. This is a direct-UPI deployment, so the merchant
+// returns money from their own app and the app records it. What software can
+// actually guarantee is the arithmetic and the audit trail.
+// ============================================================
+section('Refunds');
+
+const refundSetup = JSON.parse(php(`<?php
+require 'includes/db.php';
+require 'includes/refund.php';
+$pdo = db();
+$pdo->prepare("INSERT INTO orders(order_id,merchant_id,amount,payable_amount,status,expires_at,created_at) VALUES('tg_RF1',1,500,500,'success',?,?)")->execute([db_now(600), db_now()]);
+$pdo->prepare("INSERT INTO orders(order_id,merchant_id,amount,payable_amount,status,expires_at,created_at) VALUES('tg_RF2',1,900,900,'pending',?,?)")->execute([db_now(600), db_now()]);
+echo json_encode(['ok'=>true]);
+`));
+check('A paid order exists to refund against', refundSetup.ok === true);
+
+const partial = JSON.parse(php(`<?php
+require 'includes/db.php';
+require 'includes/refund.php';
+$r = refund_create(db(), 1, 'tg_RF1', '200.00', 'damaged', 'Asha', '4123');
+$s = refund_summary(db(), 'tg_RF1');
+echo json_encode(['r'=>$r,'s'=>$s]);
+`));
+check('A partial refund is recorded', partial.r.ok === true, JSON.stringify(partial.r));
+check('A partial refund leaves the order paid', partial.s.order_status === 'success', partial.s.order_status);
+check('A partial refund reduces what is refundable', partial.s.remaining === 300.0, String(partial.s.remaining));
+
+const overRefund = JSON.parse(php(`<?php
+require 'includes/db.php';
+require 'includes/refund.php';
+$r = refund_create(db(), 1, 'tg_RF1', '400.00', 'too much', 'Asha', null);
+echo json_encode(['r'=>$r, 's'=>refund_summary(db(),'tg_RF1')]);
+`));
+check('Refunding more than remains is refused', overRefund.r.ok === false, JSON.stringify(overRefund.r));
+check('The refused refund changes nothing', overRefund.s.refunded === 200.0, String(overRefund.s.refunded));
+
+const complete = JSON.parse(php(`<?php
+require 'includes/db.php';
+require 'includes/refund.php';
+$r = refund_create(db(), 1, 'tg_RF1', '300.00', 'rest', 'Asha', '9999');
+$s = refund_summary(db(), 'tg_RF1');
+echo json_encode(['r'=>$r,'s'=>$s,'list'=>refunds_for_order(db(),1,'tg_RF1')]);
+`));
+check('Refunding the exact balance succeeds', complete.r.ok === true, JSON.stringify(complete.r));
+check('A fully refunded order changes status', complete.s.order_status === 'refunded', complete.s.order_status);
+check('The summary agrees the order is fully refunded', complete.s.full === true && complete.s.remaining === 0.0, JSON.stringify(complete.s));
+check('Both refunds are listed with their bank references', complete.list.length === 2, String(complete.list.length));
+
+const guards = JSON.parse(php(`<?php
+require 'includes/db.php';
+require 'includes/refund.php';
+$pdo = db();
+$out = [];
+$out['again']     = refund_create($pdo, 1, 'tg_RF1', '10.00', 'x', 'Asha', null);
+$out['unpaid']    = refund_create($pdo, 1, 'tg_RF2', '10.00', 'x', 'Asha', null);
+$out['zero']      = refund_create($pdo, 1, 'tg_RF1', '0', 'x', 'Asha', null);
+$out['negative']  = refund_create($pdo, 1, 'tg_RF1', '-50', 'x', 'Asha', null);
+$out['precision'] = refund_create($pdo, 1, 'tg_RF1', '10.123', 'x', 'Asha', null);
+$out['foreign']   = refund_create($pdo, 999, 'tg_RF1', '10', 'x', 'Mal', null);
+$out['missing']   = refund_create($pdo, 1, 'tg_NOPE', '10', 'x', 'Asha', null);
+echo json_encode($out);
+`));
+for (const [name, label] of [
+  ['again', 'A fully refunded order accepts no more refunds'],
+  ['unpaid', 'An unpaid order cannot be refunded'],
+  ['zero', 'A zero refund is refused'],
+  ['negative', 'A negative refund is refused'],
+  ['precision', 'A refund with three decimal places is refused'],
+  ['foreign', 'Another merchant cannot refund this order'],
+  ['missing', 'Refunding an unknown order is refused'],
+]) {
+  check(label, guards[name].ok === false, JSON.stringify(guards[name]));
+}
+
+check('Refunds are written to the audit log', Number(php(`<?php
+require 'includes/db.php';
+echo db()->query("SELECT COUNT(*) FROM audit_log WHERE action='order.refunded'")->fetchColumn();
+`).trim()) === 2, 'audit rows');
+
+// --- UI and presentation ---
+const txBody = readFileSync(path.join(root, 'transactions.php'), 'utf8');
+check('The transaction page offers a refund form',
+  /name="action" value="refund"/.test(txBody) && /Record refund/.test(txBody), 'no refund form');
+check('Refunding requires a CSRF token', (() => {
+  const form = (txBody.match(/<form method="post" class="refund-form">[\s\S]*?<\/form>/) || [''])[0];
+  return /name="csrf"/.test(form) && /value="refund"/.test(form);
+})(), 'csrf missing from the refund form');
+check('A refunded order has its own status badge',
+  /'refunded' => \['refunded', 'Refunded'\]/.test(readFileSync(path.join(root, 'includes/merchant.php'), 'utf8')));
+check('The badge has its own colour, not green or grey',
+  /\.status-refunded\s*\{/.test(readFileSync(path.join(root, 'assets/css/design-system.css'), 'utf8')));
+
+// Revenue must reconcile: collected minus refunded, not silently shrunk.
+const dash = readFileSync(path.join(root, 'dashboard.php'), 'utf8');
+check('Dashboard revenue subtracts refunds rather than dropping refunded orders',
+  /status IN \('success','refunded'\)/.test(dash) && /\$stats\['net'\]/.test(dash), 'revenue not netted');
+check('Dashboard shows collected minus refunded when refunds exist',
+  /collected/.test(dash) && /refunded/.test(dash), 'no reconciliation note');
+
+section('Idempotent order creation');
+
+const idemPost = (body, key) => {
+  const headers = { 'Content-Type': 'application/json', 'X-Api-Key': apiKey };
+  if (key !== undefined) headers['Idempotency-Key'] = key;
+  return request({
+    method: 'POST', script: path.join(root, 'api/create-order.php'),
+    body: JSON.stringify(body), headers,
+  });
+};
+const orderCount = () => Number(php(`<?php
+require 'includes/db.php';
+echo db()->query('SELECT COUNT(*) FROM orders')->fetchColumn();
+`).trim());
+
+const before = orderCount();
+const idemKey = 'idem-' + crypto.randomBytes(8).toString('hex');
+const payload = { amount: 249.5, note: 'cart_42' };
+
+const firstCall = idemPost(payload, idemKey);
+check('First request with a key creates the order', firstCall.status === 201, String(firstCall.status));
+check('First request creates exactly one order', orderCount() === before + 1, `${before} -> ${orderCount()}`);
+
+const idemReplay = idemPost(payload, idemKey);
+check('A replay returns the original status code', idemReplay.status === 201, String(idemReplay.status));
+check('A replay returns the same order', json(idemReplay)?.order_id === json(firstCall)?.order_id,
+  `${json(idemReplay)?.order_id} vs ${json(firstCall)?.order_id}`);
+check('A replay returns a byte-identical body', idemReplay.body === firstCall.body, 'bodies differ');
+check('A replay does not create a second order', orderCount() === before + 1, `${before} -> ${orderCount()}`);
+check('A replay is marked as such', (idemReplay.headers || []).some((h) => /Idempotent-Replay:\s*true/i.test(h)),
+  JSON.stringify(idemReplay.headers || []).slice(0, 120));
+
+const reused = idemPost({ amount: 999, note: 'different cart' }, idemKey);
+check('Reusing a key with a different body is a 409', reused.status === 409, String(reused.status));
+check('A rejected reuse creates no order', orderCount() === before + 1, `${before} -> ${orderCount()}`);
+check('The 409 explains what to do', /different request body/i.test(String(json(reused)?.error)), String(json(reused)?.error));
+
+// Re-serialising the same intent must still be recognised as a replay.
+const reordered = idemPost({ note: 'cart_42', amount: 249.5 }, idemKey);
+check('JSON key order does not defeat idempotency', reordered.status === 201 && json(reordered)?.order_id === json(firstCall)?.order_id,
+  String(reordered.status));
+
+// Without a key the endpoint keeps its original contract.
+const noKeyA = idemPost({ amount: 75 });
+const noKeyB = idemPost({ amount: 75 });
+check('Omitting the key still creates a new order each time',
+  json(noKeyA)?.order_id !== json(noKeyB)?.order_id && orderCount() === before + 3,
+  `${json(noKeyA)?.order_id} / ${json(noKeyB)?.order_id}`);
+
+// A validation failure must not consume the key, or the caller can never retry.
+const retryKey = 'retry-' + crypto.randomBytes(8).toString('hex');
+const invalid = idemPost({ amount: -5 }, retryKey);
+const corrected = idemPost({ amount: 120 }, retryKey);
+check('A 4xx does not burn the Idempotency-Key', invalid.status === 422 && corrected.status === 201,
+  `${invalid.status} then ${corrected.status}`);
+
+// Over-long and non-ASCII keys are rejected rather than silently truncated.
+check('An over-long key is rejected', idemPost(payload, 'k'.repeat(200)).status === 400);
+check('A key containing a space is rejected', idemPost(payload, 'has space').status === 400);
+
+// Keys are scoped per merchant: another merchant cannot replay into this one.
+const scoped = php(`<?php
+require 'includes/db.php';
+require 'includes/idempotency.php';
+$pdo = db();
+// A row for merchant 1 must be invisible to merchant 2.
+$pdo->prepare('INSERT INTO idempotency_keys(merchant_id,idem_key,request_hash,response_body,response_code,created_at) VALUES(1,?,?,?,201,?)')
+    ->execute(['shared-key', hash('sha256','x'), '{"order_id":"tg_A"}', db_now()]);
+$h = idem_request_hash('{"amount":1}');
+$a = idem_reserve($pdo, 1, 'shared-key', $h);
+$b = idem_reserve($pdo, 999, 'shared-key', $h);
+echo json_encode(['m1'=>$a['state'],'m999'=>$b['state']]);
+`);
+const scopedStates = JSON.parse(scoped);
+check('Idempotency keys are scoped per merchant',
+  scopedStates.m1 === 'mismatch' && scopedStates.m999 === 'new', scoped);
+
+// The canonical hash must ignore formatting, not content.
+const hashTest = php(`<?php
+require 'includes/idempotency.php';
+echo json_encode([
+  'same' => idem_request_hash('{"a":1,"b":{"c":2,"d":3}}') === idem_request_hash('{"b":{"d":3,"c":2},"a":1}'),
+  'differs' => idem_request_hash('{"a":1}') !== idem_request_hash('{"a":2}'),
+]);
+`);
+const hashes = JSON.parse(hashTest);
+check('Request hashing ignores key order but not values',
+  hashes.same === true && hashes.differs === true, hashTest);
+
+check('The OpenAPI contract advertises the header',
+  /Idempotency-Key/.test(readFileSync(path.join(root, 'openapi.json'), 'utf8')));
+check('The documentation explains retry safety',
+  /Idempotency-Key/.test(readFileSync(path.join(root, 'docs.php'), 'utf8')));
+
 section('Password recovery');
 
 const resetBody = (sql, extra = {}) => php(`<?php

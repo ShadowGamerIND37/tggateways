@@ -22,6 +22,37 @@ $id = (int)$merchant['id'];
  * the duplicate check and the audit row all behave exactly as they would for
  * an emailed receipt.
  */
+/* Refunds.
+   The gateway did not record refunds at all, so an order that had been given
+   back looked identical to one that had not. A direct-UPI merchant returns the
+   money from their own UPI app; this records that they did, with the bank
+   reference, and refuses to record more than was collected. */
+$refundMessage = '';
+$refundError = '';
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['action'] ?? '') === 'refund') {
+    verify_csrf();
+    rate_limit('refunds', 20, 300);
+    require_once __DIR__.'/includes/refund.php';
+    $refundOrder = substr((string)($_POST['order_id'] ?? ''), 0, 64);
+    $result = refund_create(
+        $pdo,
+        $id,
+        $refundOrder,
+        trim((string)($_POST['amount'] ?? '')),
+        trim((string)($_POST['reason'] ?? '')),
+        trim((string)($_POST['refunded_by'] ?? '')),
+        trim((string)($_POST['utr'] ?? '')) ?: null
+    );
+    if ($result['ok']) {
+        $refundMessage = 'Refund '.$result['refund_id'].' recorded.';
+        // Keep the drawer open on the order that was just refunded.
+        $_GET['view'] = $refundOrder;
+    } else {
+        $refundError = (string)$result['error'];
+        $_GET['view'] = $refundOrder;
+    }
+}
+
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['action'] ?? '') === 'claims') {
     verify_csrf();
     rate_limit('claims', 30, 300);
@@ -137,6 +168,11 @@ if ($viewId !== '') {
                           FROM orders WHERE merchant_id=? AND order_id=?');
     $d->execute([$id, $viewId]);
     $detail = $d->fetch() ?: null;
+    if ($detail) {
+        require_once __DIR__.'/includes/refund.php';
+        $detailRefund = refund_summary($pdo, $viewId);
+        $detailRefunds = refunds_for_order($pdo, $id, $viewId);
+    }
 }
 
 /**
@@ -305,9 +341,88 @@ require __DIR__.'/includes/dashboard-header.php';
         </div>
       <?php endforeach ?>
     </div>
-    <?php if ($detail['status'] === 'success'): ?>
-      <div style="margin-top:16px">
+    <?php if ($detail['status'] === 'success' || $detail['status'] === 'refunded'): ?>
+      <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
         <a class="btn btn-primary btn-sm" href="/invoice.php?order_id=<?=h(rawurlencode((string)$detail['order_id']))?>"><?=icon('file-text', 14)?> Open receipt</a>
+      </div>
+
+      <div class="refund-block">
+        <div class="refund-head">
+          <div>
+            <div class="refund-title"><?=icon('rotate-ccw', 15)?> Refunds</div>
+            <div class="form-hint" style="margin:2px 0 0">
+              Money is returned from your own UPI app. Record it here with the bank reference so the order matches your statement.
+            </div>
+          </div>
+          <div class="refund-balance">
+            <span>Refunded <strong class="tnum">₹<?=number_format($detailRefund['refunded'], 2)?></strong></span>
+            <span>of <strong class="tnum">₹<?=number_format($detailRefund['paid'], 2)?></strong></span>
+          </div>
+        </div>
+
+        <?php if ($refundError !== ''): ?>
+          <div class="callout callout-error" style="margin:12px 0"><?=icon('alert-circle', 15)?><span><?=h($refundError)?></span></div>
+        <?php endif ?>
+        <?php if ($refundMessage !== ''): ?>
+          <div class="callout callout-success" style="margin:12px 0"><?=icon('check-circle', 15)?><span><?=h($refundMessage)?></span></div>
+        <?php endif ?>
+
+        <?php if ($detailRefund['count'] > 0): ?>
+          <div class="table-container" style="margin:14px 0 0">
+            <table class="table">
+              <thead><tr><th>Refund</th><th>Amount</th><th>Bank reference</th><th>Reason</th><th>Issued by</th><th>When</th></tr></thead>
+              <tbody>
+              <?php foreach ($detailRefunds as $rf): ?>
+                <tr>
+                  <td><code><?=h((string)$rf['refund_id'])?></code></td>
+                  <td class="tnum">₹<?=number_format((float)$rf['amount'], 2)?></td>
+                  <td><?=h((string)($rf['utr'] ?? '—'))?></td>
+                  <td><?=h((string)($rf['reason'] ?? '—'))?></td>
+                  <td><?=h((string)($rf['refunded_by'] ?? '—'))?></td>
+                  <td><span style="font-size:11px;color:var(--color-ink-mute)"><?=h((string)$rf['created_at'])?></span></td>
+                </tr>
+              <?php endforeach ?>
+              </tbody>
+            </table>
+          </div>
+        <?php endif ?>
+
+        <?php if ($detailRefund['remaining'] > 0 && $detailRefund['order_status'] === 'success'): ?>
+          <form method="post" class="refund-form">
+            <input type="hidden" name="csrf" value="<?=h(csrf_token())?>">
+            <input type="hidden" name="action" value="refund">
+            <input type="hidden" name="order_id" value="<?=h((string)$detail['order_id'])?>">
+            <div class="form-group">
+              <label class="form-label" for="refund-amount">Amount</label>
+              <input class="form-input" id="refund-amount" name="amount" inputmode="decimal" required
+                     value="<?=h(number_format($detailRefund['remaining'], 2, '.', ''))?>"
+                     max="<?=h(number_format($detailRefund['remaining'], 2, '.', ''))?>">
+              <span class="form-hint">Up to ₹<?=number_format($detailRefund['remaining'], 2)?> still refundable.</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="refund-utr">Bank reference <span style="color:var(--color-ink-mute-2);font-weight:400">(optional)</span></label>
+              <input class="form-input" id="refund-utr" name="utr" maxlength="64" placeholder="Your UPI refund UTR">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="refund-reason">Reason <span style="color:var(--color-ink-mute-2);font-weight:400">(optional)</span></label>
+              <input class="form-input" id="refund-reason" name="reason" maxlength="255" placeholder="Damaged item, duplicate payment…">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="refund-by">Issued by</label>
+              <input class="form-input" id="refund-by" name="refunded_by" maxlength="190" value="<?=h((string)$merchant['name'])?>">
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary btn-sm" type="submit"
+                      onclick="return confirm('Record this refund? This does not move money — pay the customer from your UPI app first.')">
+                <?=icon('rotate-ccw', 14)?> Record refund
+              </button>
+            </div>
+          </form>
+        <?php elseif ($detailRefund['remaining'] <= 0 && $detailRefund['count'] > 0): ?>
+          <div class="callout callout-info" style="margin:14px 0 0">
+            <?=icon('check-circle', 15)?><span>This order has been refunded in full.</span>
+          </div>
+        <?php endif ?>
       </div>
     <?php endif ?>
   </div>

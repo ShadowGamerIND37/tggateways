@@ -46,9 +46,11 @@
     "/api/create-order": {
       "post": {
         "summary": "Create a UPI checkout order",
+        "description": "Creates a hosted UPI checkout order. Retry-safe when an Idempotency-Key header is supplied: the request is performed at most once.",
         "security": [{"ApiKey": []}],
+        "parameters": [{"name": "Idempotency-Key", "in": "header", "required": false, "description": "Caller-generated unique string, at most 190 printable ASCII characters. A retry with the same key and the same body returns the original order with the original status code and an Idempotent-Replay: true header, and creates no second order. Reusing a key with a different body returns 409. Scoped per merchant; replayable for 24 hours.", "schema": {"type": "string", "maxLength": 190, "example": "b1c2d3e4-5f60-4718-9a2b-3c4d5e6f7081"}}],
         "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/OrderCreate"}}}},
-        "responses": {"201": {"description": "Created", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/OrderCreated"}}}}, "401": {"description": "Invalid API key"}, "422": {"description": "Invalid order fields"}}
+        "responses": {"201": {"description": "Created", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/OrderCreated"}}}}, "401": {"description": "Invalid API key"}, "422": {"description": "Invalid order fields"}, "409": {"description": "Idempotency-Key reused with a different body, or a request with this key is still in flight (the latter carries Retry-After: 1).", "content": {"application/json": {"schema": {"type": "object", "properties": {"error": {"type": "string"}, "hint": {"type": "string"}}}}}}}
       }
     },
     "/api/checkout-status.php": {
