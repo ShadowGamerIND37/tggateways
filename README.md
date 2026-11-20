@@ -355,7 +355,19 @@ node tests/run.mjs                 # auto-detects php, then a php-wasm CLI
 PHP_BIN=/usr/bin/php node tests/run.mjs
 ```
 
-367 checks run against a throwaway SQLite database: receipt parsing/matching, MIME
+For the optional browser layout regression, install `playwright-core` separately and
+provide a Chromium executable and a PHP CLI with PDO SQLite. For example:
+
+```sh
+npm install --prefix /tmp/tg-layout-tests playwright-core
+PLAYWRIGHT_MODULE=/tmp/tg-layout-tests/node_modules/playwright-core \
+  CHROME_EXECUTABLE=/path/to/chromium PHP_BIN=/usr/bin/php node tests/checkout-layout.mjs
+```
+
+This renders a real checkout from a temporary SQLite database and checks desktop,
+tablet and mobile layouts; it does not launch a UPI app or send a payment.
+
+The checks run against a throwaway SQLite database: receipt parsing/matching, MIME
 decoding against plain/quoted-printable/base64/forwarded samples, the IMAP protocol client
 driven by a scripted peer, AES-GCM round-trips, auth and CSRF, input validation, rate
 limits, order creation, status and verification endpoints, the hosted checkout page,
