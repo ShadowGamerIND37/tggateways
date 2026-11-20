@@ -22,7 +22,7 @@ $checks[] = [
     'Outbound email (SMTP)',
     $smtpHost !== '' ? 'ok' : 'warn',
     $smtpHost !== ''
-        ? 'Configured via '.$smtpHost.' — 2FA codes and support replies are delivered.'
+        ? 'SMTP host configured via '.$smtpHost.'. This does not verify delivery.'
         : 'SMTP_HOST is empty. Two-factor codes and ticket replies cannot be emailed, so the 2FA step is skipped entirely.',
 ];
 
@@ -77,17 +77,23 @@ $checks[] = [
 ];
 
 $workerSeen = null;
+$mailboxSeen = null;
 try {
-    $workerSeen = $pdo->query("SELECT MAX(last_checked_at) FROM merchant_accounts")->fetchColumn();
-} catch (Throwable $e) { /* table shape may differ */ }
-$stale = $workerSeen === null || $workerSeen === false
-    || strtotime((string)$workerSeen) < time() - 900;
+    $workerSeen = $pdo->query("SELECT updated_at FROM system_state WHERE state_key='worker_last_run'")->fetchColumn();
+    $mailboxSeen = $pdo->query('SELECT MAX(last_checked_at) FROM merchant_accounts')->fetchColumn();
+} catch (Throwable $e) { error_log('admin worker health: '.$e->getMessage()); }
+$stale = !$workerSeen || strtotime((string)$workerSeen) === false || strtotime((string)$workerSeen) < time() - 900;
 $checks[] = [
-    'Receipt worker',
+    'Receipt worker heartbeat',
     $stale ? 'warn' : 'ok',
     $workerSeen
-        ? 'Last mailbox poll at '.substr((string)$workerSeen, 0, 16).' UTC.'
-        : 'No mailbox has ever been polled. Confirm the worker container is running (see the README cron section).',
+        ? 'Last completed worker run at '.$workerSeen.' (server time, '.date_default_timezone_get().'). A heartbeat does not guarantee successful mailbox polls or webhook delivery.'
+        : 'No worker completion recorded. Confirm the worker container is running (see the README cron section).',
+];
+$checks[] = [
+    'Mailbox polling',
+    $mailboxSeen ? 'ok' : 'warn',
+    $mailboxSeen ? 'Most recent mailbox check at '.$mailboxSeen.' (server time, '.date_default_timezone_get().'). This does not guarantee every account was checked successfully.' : 'No mailbox check recorded.',
 ];
 
 $env = [

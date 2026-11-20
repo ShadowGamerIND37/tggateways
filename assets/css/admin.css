@@ -426,3 +426,13 @@
   .admin-banner { margin: 14px 16px 0; }
   .admin-table th, .admin-table td { padding: 10px 13px; }
 }
+
+/* Payment operations queue. */
+.admin-ops-intro { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px; }
+.admin-ops-intro h2 { margin:0 0 4px; font-size:17px; }
+.admin-ops-intro p { margin:0; color:var(--color-ink-mute, #68758a); font-size:12px; line-height:1.6; }
+.admin-ops-tabs { display:flex; gap:6px; border-bottom:1px solid var(--color-hairline, #e7ebf2); margin-bottom:20px; overflow-x:auto; }
+.admin-ops-tabs a { padding:10px 14px; color:var(--color-ink-mute, #68758a); font-size:12px; font-weight:600; text-decoration:none; white-space:nowrap; border-bottom:2px solid transparent; }
+.admin-ops-tabs a.active { color:var(--color-primary, #2563eb); border-bottom-color:var(--color-primary, #2563eb); }
+.admin-ops-hint { margin:0 0 16px; padding:12px 14px; border:1px solid #dce9fc; border-radius:10px; background:#f5f9ff; color:#50647f; font-size:12px; line-height:1.7; }
+.admin-ops-tabs a:focus-visible { outline:2px solid var(--color-primary, #2563eb); outline-offset:-2px; }

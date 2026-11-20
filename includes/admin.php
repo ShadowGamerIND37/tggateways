@@ -246,7 +246,7 @@ function tg_admin_can(string $ability): bool {
     $role = (string)($admin['role'] ?? 'viewer');
     return match ($ability) {
         'manage_admins' => $role === 'owner',
-        'manage_merchants', 'manage_billing', 'manage_addons', 'view_pii' => in_array($role, ['owner', 'staff'], true),
+        'manage_merchants', 'manage_billing', 'manage_addons', 'manage_support', 'view_pii' => in_array($role, ['owner', 'staff'], true),
         default => true,
     };
 }

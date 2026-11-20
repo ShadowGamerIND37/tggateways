@@ -9,6 +9,7 @@ declare(strict_types=1);
  */
 require_once __DIR__.'/../includes/admin-shell.php';
 require_once __DIR__.'/../includes/notify.php';
+require_once __DIR__.'/../includes/pager.php';
 
 $pdo = db();
 $admin = tg_admin_require();
@@ -17,6 +18,7 @@ $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     tg_admin_verify_csrf();
+    if (!tg_admin_can('manage_support')) { http_response_code(403); exit('Your role cannot reply to tickets.'); }
     $ticketId = (int)($_POST['ticket_id'] ?? 0);
     $body = trim((string)($_POST['body'] ?? ''));
     $close = !empty($_POST['close']);
@@ -29,35 +31,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($body === '') {
             $error = 'Write a reply before sending.';
         } else {
+            $body = mb_substr($body, 0, 5000);
+            $pdo->beginTransaction();
             $pdo->prepare("INSERT INTO ticket_messages(ticket_id,author,body,created_at) VALUES(?,'admin',?,?)")
-                ->execute([$ticketId, mb_substr($body, 0, 5000), db_now()]);
-            $pdo->prepare("UPDATE tickets SET status=?,updated_at=? WHERE id=?")
-                ->execute([$close ? 'closed' : 'open', db_now(), $ticketId]);
+                ->execute([$ticketId, $body, db_now()]);
+            $pdo->prepare("UPDATE tickets SET status=?,last_author='admin',updated_at=? WHERE id=?")
+                ->execute([$close ? 'resolved' : 'awaiting_reply', db_now(), $ticketId]);
+            $pdo->commit();
             tg_audit((int)($ticket['merchant_id'] ?? 0) ?: null, 'admin.ticket_reply', '#'.$ticketId);
-            if (!empty($ticket['merchant_email'])) {
-                tg_smtp_send(
+            $sent = false;
+            try {
+              if (!empty($ticket['merchant_email'])) {
+                $sent = tg_smtp_send(
                     (string)$ticket['merchant_email'],
                     'Reply to your support ticket #'.$ticketId,
                     "Hello ".($ticket['merchant_name'] ?? 'there').",\n\n".$body."\n\n— TG Gateways support"
                 );
-            }
-            $notice = 'Reply sent'.($close ? ' and the ticket was closed.' : ' to the merchant.');
+              }
+            } catch (Throwable $e) { error_log('admin ticket notification: '.$e->getMessage()); }
+            $notice = 'Reply saved'.($close ? ' and the ticket was closed.' : '.');
+            $notice .= $sent ? ' The mail server accepted the notification.' : ' Email notification could not be sent; check SMTP and contact the merchant separately.';
         }
     } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
         $error = 'The reply could not be saved.';
         error_log('admin ticket reply: '.$e->getMessage());
     }
 }
 
-$status = (string)($_GET['status'] ?? 'open');
-$where = in_array($status, ['open', 'closed', 'pending'], true) ? ' WHERE t.status=?' : '';
+$status = is_string($_GET['status'] ?? null) ? $_GET['status'] : 'active';
+if ($status === 'active') $where = " WHERE t.status NOT IN ('resolved','closed')";
+elseif (in_array($status, ['open','in_progress','awaiting_reply','resolved','pending','closed'], true)) $where = ' WHERE t.status=?';
+else { $status = ''; $where = ''; }
 $rows = [];
 $errorLoad = '';
+$page = tg_paginate(0, 25);
 try {
+    $args = $where === ' WHERE t.status=?' ? [$status] : [];
+    $count = $pdo->prepare('SELECT COUNT(*) FROM tickets t'.$where);
+    $count->execute($args);
+    $page = tg_paginate((int)$count->fetchColumn(), 25);
     $stmt = $pdo->prepare("SELECT t.id,t.subject,t.status,t.created_at,t.updated_at,m.name merchant,m.email merchant_email,
                                   (SELECT COUNT(*) FROM ticket_messages tm WHERE tm.ticket_id=t.id) messages
-                           FROM tickets t LEFT JOIN merchants m ON m.id=t.merchant_id".$where.' ORDER BY t.id DESC LIMIT 100');
-    $stmt->execute($where !== '' ? [$status] : []);
+                           FROM tickets t LEFT JOIN merchants m ON m.id=t.merchant_id".$where.' ORDER BY t.id DESC LIMIT '.$page['perPage'].' OFFSET '.$page['offset']);
+    $stmt->execute($args);
     $rows = $stmt->fetchAll();
 } catch (Throwable $e) {
     $errorLoad = 'Tickets could not be loaded.';
@@ -104,13 +121,14 @@ admin_flash($notice, $error !== '' ? $error : $errorLoad);
           <div style="font-size:12.5px;line-height:1.8;white-space:pre-wrap"><?=h((string)$m['body'])?></div>
         </div>
       <?php endforeach ?>
+      <?php if (tg_admin_can('manage_support')): ?>
       <form method="post" style="margin-top:20px;border-top:1px solid var(--color-hairline);padding-top:18px">
         <input type="hidden" name="admin_csrf" value="<?=h(tg_admin_csrf())?>">
         <input type="hidden" name="ticket_id" value="<?=$openId?>">
         <div class="admin-field">
           <label for="body">Reply to the merchant</label>
           <textarea class="admin-textarea" id="body" name="body" rows="5" placeholder="Write your reply…"></textarea>
-          <div class="hint">Sent by email through the deployment's SMTP settings and stored on the ticket.</div>
+          <div class="hint">Saved on the ticket; an email notification is attempted through the deployment's SMTP settings.</div>
         </div>
         <div class="admin-actions">
           <button class="admin-btn admin-btn-primary">Send reply</button>
@@ -119,15 +137,16 @@ admin_flash($notice, $error !== '' ? $error : $errorLoad);
           </label>
         </div>
       </form>
+      <?php else: ?><p class="muted">Your role has read-only access to support tickets.</p><?php endif ?>
     </div>
   </div>
 <?php endif ?>
 
 <form method="get" class="admin-toolbar">
   <select class="admin-select" name="status" style="max-width:170px" onchange="this.form.submit()" aria-label="Ticket status">
-    <option value="open"<?=$status === 'open' ? ' selected' : ''?>>Open</option>
-    <option value="pending"<?=$status === 'pending' ? ' selected' : ''?>>Pending</option>
-    <option value="closed"<?=$status === 'closed' ? ' selected' : ''?>>Closed</option>
+    <?php foreach (['active'=>'All active', 'open'=>'Open', 'in_progress'=>'In progress', 'awaiting_reply'=>'Awaiting reply', 'resolved'=>'Resolved', 'pending'=>'Pending (legacy)', 'closed'=>'Closed (legacy)', ''=>'All tickets'] as $value=>$label): ?>
+      <option value="<?=h($value)?>"<?=$status === $value ? ' selected' : ''?>><?=h($label)?></option>
+    <?php endforeach ?>
   </select>
   <button class="admin-btn admin-btn-ghost" type="submit"><?=icon('search', 14)?> Filter</button>
   <a class="admin-btn admin-btn-ghost" href="/admin/tickets.php?status=">All tickets</a>
@@ -147,7 +166,7 @@ admin_flash($notice, $error !== '' ? $error : $errorLoad);
             <td><a href="/admin/tickets.php?ticket=<?=(int)$t['id']?>" style="color:var(--color-primary);font-weight:500;text-decoration:none"><?=h((string)$t['subject'])?></a></td>
             <td class="muted" style="font-size:11.5px"><?=h((string)($t['merchant'] ?? '—'))?></td>
             <td>
-              <span class="admin-pill <?=$t['status'] === 'open' ? 'admin-pill-warn' : ($t['status'] === 'closed' ? 'admin-pill-neutral' : 'admin-pill-info')?>"><?=h(ucfirst((string)$t['status']))?></span>
+              <span class="admin-pill <?=$t['status'] === 'open' ? 'admin-pill-warn' : (in_array($t['status'], ['closed','resolved'], true) ? 'admin-pill-neutral' : 'admin-pill-info')?>"><?=h(ucwords(str_replace('_', ' ', (string)$t['status'])))?></span>
             </td>
             <td class="num muted"><?=(int)$t['messages']?></td>
             <td class="muted" style="font-size:11px"><?=h(substr((string)($t['updated_at'] ?? $t['created_at']), 0, 16))?></td>
@@ -157,6 +176,7 @@ admin_flash($notice, $error !== '' ? $error : $errorLoad);
       </table>
     <?php endif ?>
   </div>
+  <?=tg_pager($page, ['status'=>$status, 'per_page'=>$page['perPage']])?>
 </div>
 
 <?php admin_footer(); ?>

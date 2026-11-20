@@ -8,11 +8,12 @@ declare(strict_types=1);
  * the merchant. Corrections belong to the receipt pipeline.
  */
 require_once __DIR__.'/../includes/admin-shell.php';
+require_once __DIR__.'/../includes/pager.php';
 
 $pdo = db();
 tg_admin_require();
 
-$q = trim((string)($_GET['q'] ?? ''));
+$q = mb_substr(trim(is_string($_GET['q'] ?? null) ? $_GET['q'] : ''), 0, 80);
 $status = (string)($_GET['status'] ?? '');
 $where = [];
 $args = [];
@@ -21,19 +22,25 @@ if ($q !== '') {
     $like = '%'.$q.'%';
     array_push($args, $like, $like, $like, $like);
 }
-if (in_array($status, ['pending', 'success', 'expired', 'failed'], true)) {
+if (in_array($status, ['pending', 'success', 'expired', 'failed', 'refunded'], true)) {
     $where[] = 'o.status = ?';
     $args[] = $status;
 }
-$sql = "SELECT o.order_id,o.amount,o.payable_amount,o.status,o.utr,o.sender_name,o.paid_via,o.created_at,o.paid_at,
-               m.name merchant,m.email merchant_email,m.id merchant_id
-        FROM orders o LEFT JOIN merchants m ON m.id=o.merchant_id"
-     . ($where ? ' WHERE '.implode(' AND ', $where) : '')
-     . ' ORDER BY o.id DESC LIMIT 300';
-
+$from = ' FROM orders o LEFT JOIN merchants m ON m.id=o.merchant_id'
+     . ($where ? ' WHERE '.implode(' AND ', $where) : '');
 $rows = [];
 $error = '';
+$totals = ['success' => 0.0, 'pending' => 0, 'expired' => 0];
+$page = tg_paginate(0, 50);
 try {
+    // Totals are calculated over all matches, not just this page.
+    $stats = $pdo->prepare("SELECT COUNT(*) total, COALESCE(SUM(CASE WHEN o.status IN ('success','refunded') THEN o.payable_amount ELSE 0 END),0) gross, COALESCE(SUM(CASE WHEN o.status='pending' THEN 1 ELSE 0 END),0) pending, COALESCE(SUM(CASE WHEN o.status='expired' THEN 1 ELSE 0 END),0) expired".$from);
+    $stats->execute($args);
+    $all = $stats->fetch();
+    $page = tg_paginate((int)$all['total'], 50);
+    $totals = ['success'=>(float)$all['gross'], 'pending'=>(int)$all['pending'], 'expired'=>(int)$all['expired']];
+    $sql = 'SELECT o.order_id,o.amount,o.payable_amount,o.status,o.utr,o.created_at,m.name merchant,m.email merchant_email,m.id merchant_id'
+        .$from.' ORDER BY o.id DESC LIMIT '.$page['perPage'].' OFFSET '.$page['offset'];
     $stmt = $pdo->prepare($sql);
     $stmt->execute($args);
     $rows = $stmt->fetchAll();
@@ -42,31 +49,25 @@ try {
     error_log('admin orders: '.$e->getMessage());
 }
 
-$totals = ['success' => 0.0, 'pending' => 0, 'expired' => 0];
-foreach ($rows as $r) {
-    if ($r['status'] === 'success') $totals['success'] += (float)$r['payable_amount'];
-    elseif ($r['status'] === 'pending') $totals['pending']++;
-    elseif ($r['status'] === 'expired') $totals['expired']++;
-}
-
 admin_header('Orders', 'orders');
 admin_flash('', $error);
 ?>
 
-<div class="admin-stats">
+<?php if (!$error): ?><div class="admin-stats">
   <div class="admin-stat">
-    <div class="admin-stat-label">Collected (shown rows)</div>
+    <div class="admin-stat-label">Gross collected (matching orders)</div>
     <div class="admin-stat-value pos">₹<?=number_format($totals['success'], 2)?></div>
+    <div class="admin-stat-foot">Before refunds; includes fully refunded orders.</div>
   </div>
   <div class="admin-stat">
-    <div class="admin-stat-label">Still pending</div>
+    <div class="admin-stat-label">Pending (stored status)</div>
     <div class="admin-stat-value warn"><?=number_format($totals['pending'])?></div>
   </div>
   <div class="admin-stat">
     <div class="admin-stat-label">Expired unpaid</div>
     <div class="admin-stat-value"><?=number_format($totals['expired'])?></div>
   </div>
-</div>
+</div><?php endif ?>
 
 <form method="get" class="admin-toolbar">
   <div class="admin-search">
@@ -75,13 +76,13 @@ admin_flash('', $error);
   </div>
   <select class="admin-select" name="status" style="max-width:160px" onchange="this.form.submit()" aria-label="Status">
     <option value="">All statuses</option>
-    <?php foreach (['pending', 'success', 'expired', 'failed'] as $s): ?>
+    <?php foreach (['pending', 'success', 'expired', 'failed', 'refunded'] as $s): ?>
       <option value="<?=$s?>"<?=$status === $s ? ' selected' : ''?>><?=ucfirst($s)?></option>
     <?php endforeach ?>
   </select>
   <button class="admin-btn admin-btn-ghost"><?=icon('search', 14)?> Filter</button>
   <?php if ($q !== '' || $status !== ''): ?><a class="admin-btn admin-btn-ghost" href="/admin/orders.php">Clear</a><?php endif ?>
-  <span style="margin-left:auto;font-size:11.5px;color:var(--color-ink-mute)"><?=count($rows)?> shown (max 300)</span>
+  <span style="margin-left:auto;font-size:11.5px;color:var(--color-ink-mute)"><?=number_format($page['total'])?> matching orders</span>
 </form>
 
 <div class="admin-panel">
@@ -118,6 +119,7 @@ admin_flash('', $error);
       </table>
     <?php endif ?>
   </div>
+  <?=tg_pager($page, ['q'=>$q, 'status'=>$status, 'per_page'=>$page['perPage']])?>
 </div>
 
 <?php admin_footer(); ?>
