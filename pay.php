@@ -133,6 +133,10 @@ $secondsRemaining = max(0, $deadline - time());
 $upi = $order ? upi_intent($order) : '';
 $redirect = $order && valid_http_url($order['redirect_url']) ? (string)$order['redirect_url'] : '';
 $brand = $order && preg_match('/^#[0-9a-f]{6}$/i', (string)$order['brand_color']) ? $order['brand_color'] : '#2563eb';
+// Include checkout styles in the no-store page so public proxies cannot pair
+// fresh markup with an old cached stylesheet. The file remains the single source.
+$checkoutCss = @file_get_contents(__DIR__.'/assets/css/checkout.css');
+if ($checkoutCss === false) error_log('Checkout stylesheet could not be read; falling back to the static asset.');
 ?><!doctype html>
 <html lang="en">
 <head>
@@ -180,7 +184,11 @@ body{background:#f1f4f9}
 .wait{font-size:13px;line-height:1.5}.claim summary{font-size:13px}.claim-intro,.claim-hint{font-size:12px}.checkout-foot{font-size:11px}
 [hidden]{display:none!important}@media(max-width:480px){.checkout{margin:18px auto;padding:22px}.checkout-qr{max-width:100%}.upi-actions a{flex:1 1 40%}}
 </style>
+<?php if ($checkoutCss !== false): ?>
+<style data-checkout-css><?=str_ireplace('</style', '<\\/style', $checkoutCss)?></style>
+<?php else: ?>
 <link rel="stylesheet" href="/assets/css/checkout.css">
+<?php endif ?>
 </head>
 <body class="checkout-page">
 <main class="checkout" aria-label="UPI checkout">

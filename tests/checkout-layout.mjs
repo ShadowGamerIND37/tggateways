@@ -39,9 +39,19 @@ $p->prepare("INSERT INTO orders(order_id,merchant_id,merchant_account_id,amount,
   execFileSync(php, [path.join(root, 'tests/request.php'), spec], { cwd: root, env, stdio: 'pipe' });
   const response = JSON.parse(readFileSync(output, 'utf8'));
   if (response.status !== 200 || !response.body.includes('id="payment-options"')) throw new Error('Pending checkout fixture did not render');
+  const checkoutCss = readFileSync(path.join(root, 'assets/css/checkout.css'), 'utf8');
+  if (!response.body.includes('<style data-checkout-css>'+checkoutCss+'</style>')) throw new Error('Checkout must embed the current CSS');
+  let staleCssRequests = 0;
   server = createServer((req, res) => {
     const url = new URL(req.url, 'http://localhost');
     if (url.pathname === '/pay.php') { res.writeHead(200, {'Content-Type':'text/html; charset=utf-8'}); return res.end(response.body); }
+    // Simulate a proxy serving old CSS even for cache-busted URLs. The checkout
+    // must not depend on it; the current styles travel in the no-store page.
+    if (url.pathname === '/assets/css/checkout.css') {
+      staleCssRequests++;
+      res.writeHead(200, {'Content-Type':'text/css'});
+      return res.end(checkoutCss.split('/* The shared marketing stylesheet caps')[0]);
+    }
     if (url.pathname === '/api/checkout-status.php') { res.writeHead(200, {'Content-Type':'application/json'}); return res.end('{"status":"pending"}'); }
     if (!url.pathname.startsWith('/assets/')) { res.writeHead(404); return res.end(); }
     const file = path.resolve(root, '.' + url.pathname);
@@ -89,6 +99,7 @@ $p->prepare("INSERT INTO orders(order_id,merchant_id,merchant_account_id,amount,
     console.log(`✓ ${width}px checkout: card ${Math.round(layout.card.width)}px, payment column ${Math.round(layout.content.width)}px`);
     await page.close();
   }
+  if (staleCssRequests !== 0) throw new Error('Checkout requested the potentially stale external stylesheet');
 } finally {
   if (browser) await browser.close();
   if (server) await new Promise(resolve => server.close(resolve));

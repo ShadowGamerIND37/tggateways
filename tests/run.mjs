@@ -3017,6 +3017,7 @@ check('Checkout presents an accessible summary and payment choices',
   && featurePage.body.includes('Amount to pay') && featurePage.body.includes('Payment status')
   && featurePage.body.includes('role="status" aria-live="polite"'));
 const checkoutStyles = readFileSync(path.join(root,'assets/css/checkout.css'),'utf8');
+check('Checkout embeds the current CSS in its no-store response', featurePage.body.includes('<style data-checkout-css>'+checkoutStyles+'</style>') && !featurePage.body.includes('href="/assets/css/checkout.css"'));
 check('Checkout layout adapts to mobile and respects reduced motion',
   checkoutStyles.includes('@media (max-width: 720px)') && checkoutStyles.includes('@media (max-width: 440px)')
   && checkoutStyles.includes('@media (prefers-reduced-motion: reduce)') && checkoutStyles.includes('animation: none'));
