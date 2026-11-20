@@ -139,21 +139,21 @@ require __DIR__.'/includes/dashboard-header.php';
       <input type="hidden" name="action" value="create">
       <div class="form-group">
         <label for="link-title">Link title</label>
-        <input id="link-title" name="title" maxlength="160" placeholder="e.g. Design consultation" required>
+        <input class="form-input" id="link-title" name="title" maxlength="160" placeholder="e.g. Design consultation" required>
       </div>
       <div class="form-group">
         <label for="link-amount">Amount (INR)</label>
-        <input id="link-amount" type="number" min="1" max="1000000" step="0.01" name="amount" placeholder="499.00" required>
+        <input class="form-input" id="link-amount" type="number" min="1" max="1000000" step="0.01" name="amount" placeholder="499.00" required>
       </div>
       <div class="form-group">
         <label for="link-slug">Custom slug <span class="form-hint" style="display:inline">(optional)</span></label>
-        <input id="link-slug" name="slug" maxlength="61" pattern="[a-z0-9][a-z0-9\-]{2,60}"
+        <input class="form-input" id="link-slug" name="slug" maxlength="61" pattern="[a-z0-9][a-z0-9\-]{2,60}"
                placeholder="leave blank for a random id">
         <span class="form-hint">Your URL becomes <code>/pay.php?link=&lt;slug&gt;</code>.</span>
       </div>
       <div class="form-group">
         <label for="link-expiry">Expiry</label>
-        <select id="link-expiry" name="expiry_days">
+        <select class="form-input" id="link-expiry" name="expiry_days">
           <option value="0">No expiry</option>
           <option value="1">1 day</option>
           <option value="7">7 days</option>
@@ -162,11 +162,11 @@ require __DIR__.'/includes/dashboard-header.php';
       </div>
       <div class="form-group" style="grid-column:1/-1">
         <label for="link-redirect">Post-payment redirect URL <span class="form-hint" style="display:inline">(optional)</span></label>
-        <input id="link-redirect" type="url" name="redirect_url" placeholder="https://your-site.example/thank-you">
+        <input class="form-input" id="link-redirect" type="url" name="redirect_url" placeholder="https://your-site.example/thank-you">
       </div>
       <div class="form-group" style="grid-column:1/-1">
         <label for="link-desc">Description <span class="form-hint" style="display:inline">(optional)</span></label>
-        <textarea id="link-desc" name="description" rows="2" maxlength="1500"
+        <textarea class="form-input" id="link-desc" name="description" rows="2" maxlength="1500"
                   placeholder="Shown to your customer on the checkout page"></textarea>
       </div>
       <div class="form-actions" style="grid-column:1/-1">

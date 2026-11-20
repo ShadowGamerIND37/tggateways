@@ -16,7 +16,7 @@
  * Exit code 0 means every test passed.
  */
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -2050,6 +2050,76 @@ check('Addon cards show the real brand marks',
   'one or more gateway logos missing');
 check('A refused purchase creates no invoice',
   !/INV-\d{6}-/.test(invoicesAfter.body || ''), 'an invoice appeared for a refused addon');
+
+// ============================================================
+// Form control styling
+// ------------------------------------------------------------
+// Several panels were written against an older markup idiom: a `.field`
+// wrapper, a bare <input> with no class, and no `.field` rule in the sheet.
+// Those controls fell through to the browser default and rendered at a
+// different height and font to the styled inputs beside them. `.field` had
+// only `.field-label` / `.field-val`, and the single global input rule set
+// nothing but font-family.
+//
+// These checks fail if a new page reintroduces an unstyled control, or if the
+// fallback that now catches them is removed.
+// ============================================================
+section('Form control styling');
+
+const formCss = readFileSync(path.join(root, 'assets/css/design-system.css'), 'utf8');
+const textBoxBlock = formCss.slice(formCss.indexOf('Text boxes: one look for every form control'));
+
+check('A baseline style exists for unstyled text inputs',
+  textBoxBlock.includes('input[type="text"]') && textBoxBlock.includes('input[type="number"]')
+  && textBoxBlock.includes('input[type="url"]'),
+  'the fallback selector list is missing a text-like input type');
+check('Selects and textareas are covered by the baseline',
+  /^select\s*\{/m.test(textBoxBlock) && /^textarea\s*\{/m.test(textBoxBlock),
+  'select or textarea has no baseline rule');
+check('The legacy .field wrapper is styled',
+  /^\.field\s*\{/m.test(textBoxBlock) && /\.field > label/.test(textBoxBlock),
+  '.field still has no rule, so its labels sit tight against the control');
+check('Focus is visible on the baseline controls',
+  textBoxBlock.includes('box-shadow') && /:focus/.test(textBoxBlock),
+  'no focus ring in the baseline block');
+check('Read-only and disabled controls are distinguishable',
+  textBoxBlock.includes('input[readonly]') && textBoxBlock.includes(':disabled'),
+  'read-only/disabled states are not styled');
+
+// Every visible control in every merchant and admin page must carry a class.
+const pageFiles = [...readdirSync(root).filter((f) => f.endsWith('.php')),
+                   ...readdirSync(path.join(root, 'admin')).filter((f) => f.endsWith('.php')).map((f) => `admin/${f}`)];
+const bare = [];
+for (const file of pageFiles) {
+  const body = readFileSync(path.join(root, file), 'utf8');
+  const controls = body.match(/<(?:input|select|textarea)\b[^>]*>/g) || [];
+  for (const control of controls) {
+    if (/type="(hidden|submit|button)"/.test(control)) continue;
+    const isRadioOrCheck = /type="(checkbox|radio)"/.test(control);
+    const styled = /class="[^"]*(form-input|form-select|admin-input|admin-select|admin-textarea)/.test(control);
+    // Checkboxes, radios and file pickers are styled by element, not class.
+    // A search box inside .admin-search is deliberately borderless: the
+    // wrapper draws the frame, so the element itself carries no class.
+    const inWrapper = /type="search"/.test(control) && /admin-search/.test(body);
+    if (!styled && !isRadioOrCheck && !/type="file"/.test(control) && !inWrapper) {
+      bare.push(`${file}: ${control.replace(/\s+/g, ' ').slice(0, 70)}`);
+    }
+  }
+}
+check('No page ships an unstyled text box',
+  bare.length === 0, bare.slice(0, 4).join(' | '));
+
+// The CSS must stay parseable: an unbalanced brace silently kills every rule
+// after it, which would unstyle the whole application without an error.
+const opens = (formCss.match(/\{/g) || []).length;
+const closes = (formCss.match(/\}/g) || []).length;
+check('The stylesheet braces balance', opens === closes, `${opens} open / ${closes} close`);
+
+const usedVars = new Set([...formCss.matchAll(/var\(--([a-z0-9-]+)/g)].map((m) => m[1]));
+const definedVars = new Set([...formCss.matchAll(/--([a-z0-9-]+)\s*:/g)].map((m) => m[1]));
+const undefinedVars = [...usedVars].filter((v) => !definedVars.has(v));
+check('Every CSS variable used is defined',
+  undefinedVars.length === 0, undefinedVars.slice(0, 6).join(', '));
 
 section('Public status page');
 const statusOut = JSON.parse(php(`<?php
