@@ -14,7 +14,7 @@ if ($linkSlug !== '') {
     $q = $pdo->prepare('SELECT l.*,m.name merchant_name,m.id merchant_id,m.payment_timeout_minutes FROM payment_links l JOIN merchants m ON m.id=l.merchant_id WHERE l.slug=? AND l.is_active=1');
     $q->execute([$linkSlug]);
     $link = $q->fetch();
-    if (!$link || ($link['expires_at'] && strtotime((string)$link['expires_at']) < time())) {
+    if (!$link || ($link['expires_at'] && strtotime((string)$link['expires_at']) <= time())) {
         $notice = 'This payment link is unavailable or has expired.';
     } else {
         // The seconds column may not exist until the first dashboard migration.
@@ -127,6 +127,7 @@ if (!$order) {
 }
 
 $deadline = $order ? strtotime((string)$order['expires_at']) : time();
+$secondsRemaining = max(0, $deadline - time());
 $upi = $order ? upi_intent($order) : '';
 $redirect = $order && valid_http_url($order['redirect_url']) ? (string)$order['redirect_url'] : '';
 $brand = $order && preg_match('/^#[0-9a-f]{6}$/i', (string)$order['brand_color']) ? $order['brand_color'] : '#2563eb';
@@ -223,7 +224,7 @@ body{background:#f1f4f9}
         </div>
       </div>
       <div class="wait" id="payment-status" role="status" aria-live="polite">◌ Waiting for payment…</div>
-      <div class="checkout-meta" style="margin-top:12px" id="expiry-label">Expires in <strong id="countdown">--:--</strong></div>
+      <div class="checkout-meta" style="margin-top:12px" id="expiry-label">Expires in <strong id="countdown"><?=sprintf('%02d:%02d', intdiv($secondsRemaining, 60), $secondsRemaining % 60)?></strong> <span class="countdown-format">(min:sec)</span></div>
       <?php if ($claimNotice !== ''): ?>
         <div class="claim-result claim-ok"><?=h($claimNotice)?></div>
       <?php elseif ($claimError !== ''): ?>
@@ -312,7 +313,7 @@ body{background:#f1f4f9}
   });
 
   const orderId = <?=json_encode($order['order_id'])?>;
-  const secondsRemaining = <?=json_encode(max(0, $deadline - time()))?>;
+  const secondsRemaining = <?=json_encode($secondsRemaining)?>;
   const deadline = performance.now() + secondsRemaining * 1000;
   const redirect = <?=json_encode($redirect, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)?>;
   const statusBox = document.getElementById('payment-status');
