@@ -208,7 +208,7 @@ require __DIR__.'/includes/dashboard-header.php';
     <a href="/transactions.php" class="btn btn-secondary btn-sm"><?=icon('arrow-right', 14)?> View All</a>
   </div>
   <div class="table-responsive">
-    <table>
+    <table class="table">
       <thead>
         <tr>
           <th>Order ID</th><th>Bank RRN</th><th>Customer detail</th><th>Created on</th>

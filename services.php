@@ -39,7 +39,7 @@ require __DIR__.'/includes/dashboard-header.php';
     <div class="card-sub">One core gateway plus <?=count($addons)?> addon<?=count($addons) === 1 ? '' : 's'?>.</div>
   </div>
   <div class="table-responsive">
-    <table>
+    <table class="table">
       <thead><tr><th>Service &amp; Integration</th><th>Active plan &amp; billing</th><th>Validity &amp; status</th><th style="text-align:right">Action</th></tr></thead>
       <tbody>
         <tr>

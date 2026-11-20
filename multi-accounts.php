@@ -405,7 +405,7 @@ require __DIR__.'/includes/dashboard-header.php';
     </div>
   </div>
   <div class="table-responsive">
-    <table>
+    <table class="table">
       <thead><tr><th>Account</th><th>UPI ID</th><th>Receipt mailbox</th><th>State</th><th style="text-align:right">Actions</th></tr></thead>
       <tbody>
       <?php if (!$standby): ?>

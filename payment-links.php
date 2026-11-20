@@ -194,7 +194,7 @@ require __DIR__.'/includes/dashboard-header.php';
       </div>
     <?php else: ?>
       <div class="table-responsive">
-        <table>
+        <table class="table">
           <thead>
             <tr>
               <th>Link (Slug)</th>
