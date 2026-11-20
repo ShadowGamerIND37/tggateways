@@ -163,3 +163,20 @@ body.checkout-page {
   .checkout-page .upi-actions a:hover { transform: none; }
 }
 .checkout-script-notice { margin: 12px 0 0; color: #805a1b; font-size: 11px; line-height: 1.6; text-align: center; }
+
+/* The shared marketing stylesheet caps .checkout at 460px. Let this page's
+   responsive width rules control the card instead of squeezing its columns. */
+.checkout-page .checkout { max-width: none; }
+/* A two-column summary needs enough room for both payment methods. */
+@media (min-width: 721px) and (max-width: 850px) {
+  .checkout-page .checkout { width: min(600px, calc(100% - 32px)); }
+  .checkout-layout { grid-template-columns: minmax(0, 1fr); }
+  .checkout-summary { border-right: 0; border-bottom: 1px solid #edf1f7; }
+}
+/* Keep the QR centred even when its container has ample horizontal space. */
+.checkout-page .qr-frame { width: min(196px, 100%); }
+.checkout-page .checkout-qr { width: 100%; }
+@media (max-width: 400px) {
+  .checkout-page .checkout .brand { font-size: 14px; white-space: nowrap; }
+  .checkout-page .checkout .brand img { width: 26px; height: 26px; }
+}
