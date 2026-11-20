@@ -22,6 +22,7 @@ function tg_admin_nav(): array {
         ['overview',  'Overview',       '/admin/index.php',      'layout-dashboard'],
         ['merchants', 'Merchants',      '/admin/merchants.php',  'users'],
         ['orders',    'Orders',         '/admin/orders.php',     'receipt'],
+        ['operations','Payment operations','/admin/operations.php', 'activity'],
         ['addons',    'Addons & Billing','/admin/addons.php',    'puzzle'],
         ['tickets',   'Support',        '/admin/tickets.php',    'life-buoy'],
         ['audit',     'Audit log',      '/admin/audit.php',      'shield'],
@@ -52,6 +53,7 @@ function admin_header(string $title, string $activeKey): void {
     </a>
     <nav class="admin-nav">
       <?php foreach (tg_admin_nav() as [$key, $label, $href, $icon]): ?>
+        <?php if ($key === 'operations' && !tg_admin_can('view_pii')) continue; ?>
         <a href="<?=h($href)?>" class="admin-nav-item<?=$key === $activeKey ? ' active' : ''?>">
           <?=icon($icon, 16)?><span><?=h($label)?></span>
         </a>

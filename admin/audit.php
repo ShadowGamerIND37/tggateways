@@ -4,15 +4,15 @@ declare(strict_types=1);
  * Deployment-wide audit trail.
  *
  * Reads the same `audit_log` table the merchant panel writes to, so an operator
- * sees admin actions and merchant actions in one ordered stream. Exports to CSV
- * for an incident report.
+ * sees admin actions and merchant actions in one ordered stream.
  */
 require_once __DIR__.'/../includes/admin-shell.php';
+require_once __DIR__.'/../includes/pager.php';
 
 $pdo = db();
 tg_admin_require();
 
-$q = trim((string)($_GET['q'] ?? ''));
+$q = mb_substr(trim(is_string($_GET['q'] ?? null) ? $_GET['q'] : ''), 0, 80);
 $where = [];
 $args = [];
 if ($q !== '') {
@@ -20,15 +20,16 @@ if ($q !== '') {
     $like = '%'.$q.'%';
     array_push($args, $like, $like, $like);
 }
-$sql = 'SELECT a.action,a.detail,a.ip,a.created_at,m.email merchant_email
-        FROM audit_log a LEFT JOIN merchants m ON m.id=a.merchant_id'
-     . ($where ? ' WHERE '.implode(' AND ', $where) : '')
-     . ' ORDER BY a.id DESC LIMIT 400';
-
+$from = ' FROM audit_log a LEFT JOIN merchants m ON m.id=a.merchant_id'
+     . ($where ? ' WHERE '.implode(' AND ', $where) : '');
 $rows = [];
 $error = '';
+$page = tg_paginate(0, 50);
 try {
-    $stmt = $pdo->prepare($sql);
+    $count = $pdo->prepare('SELECT COUNT(*)'.$from);
+    $count->execute($args);
+    $page = tg_paginate((int)$count->fetchColumn(), 50);
+    $stmt = $pdo->prepare('SELECT a.action,a.detail,a.ip,a.created_at,m.email merchant_email'.$from.' ORDER BY a.id DESC LIMIT '.$page['perPage'].' OFFSET '.$page['offset']);
     $stmt->execute($args);
     $rows = $stmt->fetchAll();
 } catch (Throwable $e) {
@@ -47,7 +48,7 @@ admin_flash('', $error);
   </div>
   <button class="admin-btn admin-btn-ghost"><?=icon('search', 14)?> Filter</button>
   <?php if ($q !== ''): ?><a class="admin-btn admin-btn-ghost" href="/admin/audit.php">Clear</a><?php endif ?>
-  <span style="margin-left:auto;font-size:11.5px;color:var(--color-ink-mute)"><?=count($rows)?> entries (max 400)</span>
+  <span style="margin-left:auto;font-size:11.5px;color:var(--color-ink-mute)"><?=number_format($page['total'])?> matching entries</span>
 </form>
 
 <div class="admin-panel">
@@ -74,6 +75,7 @@ admin_flash('', $error);
       </table>
     <?php endif ?>
   </div>
+  <?=tg_pager($page, ['q'=>$q, 'per_page'=>$page['perPage']])?>
 </div>
 
 <?php admin_footer(); ?>

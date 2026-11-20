@@ -8,6 +8,7 @@ declare(strict_types=1);
  * usually trying to find out what changed in the last few minutes.
  */
 require_once __DIR__.'/../includes/admin-shell.php';
+require_once __DIR__.'/../includes/webhook.php';
 
 $pdo = db();
 $admin = tg_admin_require();
@@ -35,8 +36,8 @@ $paidToday     = (float)admin_scalar("SELECT COALESCE(SUM(payable_amount),0) FRO
 $paidTotal     = (float)admin_scalar("SELECT COALESCE(SUM(payable_amount),0) FROM orders WHERE status='success'");
 $ordersToday   = (int)admin_scalar("SELECT COUNT(*) FROM orders WHERE created_at>=?", [date('Y-m-d').' 00:00:00']);
 $pending       = (int)admin_scalar("SELECT COUNT(*) FROM orders WHERE status='pending' AND expires_at>?", [db_now()]);
-$failedHooks   = (int)admin_scalar('SELECT COUNT(*) FROM webhook_logs WHERE delivered_at IS NULL AND attempt_count>=?', [3]);
-$openTickets   = (int)admin_scalar("SELECT COUNT(*) FROM tickets WHERE status<>'closed'");
+$failedHooks   = (int)admin_scalar('SELECT COUNT(*) FROM webhook_logs WHERE delivered_at IS NULL AND (next_retry_at IS NULL OR attempt_count>=?)', [webhook_max_attempts()]);
+$openTickets   = (int)admin_scalar("SELECT COUNT(*) FROM tickets WHERE status NOT IN ('closed','resolved')");
 $unpaidInv     = (float)admin_scalar("SELECT COALESCE(SUM(amount+tax_amount),0) FROM invoices WHERE status='unpaid'");
 
 $recentOrders = [];
@@ -101,9 +102,9 @@ admin_header('Overview', 'overview');
     <div class="admin-stat-foot"><a href="/admin/tickets.php" style="color:inherit">Review support →</a></div>
   </div>
   <div class="admin-stat">
-    <div class="admin-stat-label">Failing webhooks</div>
+    <div class="admin-stat-label">Webhooks needing attention</div>
     <div class="admin-stat-value<?=$failedHooks > 0 ? ' neg' : ''?>"><?=number_format($failedHooks)?></div>
-    <div class="admin-stat-foot">3+ failed attempts</div>
+    <div class="admin-stat-foot"><?php if (tg_admin_can('view_pii')): ?><a href="/admin/operations.php?view=webhooks&amp;state=attention" style="color:inherit">Inspect queue →</a><?php else: ?>Retry limit reached or unscheduled<?php endif ?></div>
   </div>
   <div class="admin-stat">
     <div class="admin-stat-label">Unpaid addon invoices</div>

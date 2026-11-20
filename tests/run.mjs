@@ -87,6 +87,7 @@ function baseEnv() {
     SESSION_SECURE: 'false',
     APP_ENV: 'test',
     WEBHOOK_BACKOFF_SECONDS: '5',
+    SMTP_HOST: '',
   };
 }
 
@@ -901,7 +902,7 @@ check('The overview warns that the default password is still in use',
   /admin<\/code>\/<code>admin/.test(adminHome[0].body || ''), (adminHome[0].body || '').match(/default.{0,80}/i)?.[0] || 'no warning');
 
 // Every page must load, not just the overview.
-const adminPages = ['merchants.php', 'orders.php', 'addons.php', 'tickets.php', 'audit.php', 'admins.php', 'settings.php'];
+const adminPages = ['merchants.php', 'operations.php', 'orders.php', 'addons.php', 'tickets.php', 'audit.php', 'admins.php', 'settings.php'];
 const adminPageResults = requests(adminPages.map((p) => ({
   method: 'GET', script: path.join(root, 'admin', p), cookies: adminCookies,
 })), adminSession);
@@ -911,6 +912,66 @@ for (const [i, page] of adminPages.entries()) {
     && !adminPageResults[i].exception,
     `${adminPageResults[i].status} ${adminPageResults[i].exception || ''}`);
 }
+
+// Operational queues and support permissions use the real admin endpoints.
+const opsFixture = JSON.parse(php(`<?php
+require 'includes/db.php';
+$p=db();
+$p->prepare('INSERT INTO merchants(name,email,password,api_key) VALUES(?,?,?,?)')->execute(['Ops Fixture','ops-fixture@example.com','x','tg_OPSFIXTURE']);
+$m=(int)$p->lastInsertId();
+$p->prepare('INSERT INTO merchant_accounts(merchant_id,account_label,upi_id,linked_email,google_app_password) VALUES(?,?,?,?,?)')->execute([$m,'Ops account','ops@upi','ops@example.com','secret']);
+$a=(int)$p->lastInsertId();
+for ($i=0;$i<55;$i++) {
+ $id='ops-order-'.str_pad((string)$i,3,'0',STR_PAD_LEFT);
+ $p->prepare('INSERT INTO orders(order_id,merchant_id,merchant_account_id,amount,payable_amount,status,expires_at) VALUES(?,?,?,?,?,?,?)')->execute([$id,$m,$a,10,10,$i===0?'refunded':'success','2030-01-01 00:00:00']);
+}
+$p->prepare('INSERT INTO webhook_logs(order_id,payload,signature,attempt_count,next_retry_at,response_code) VALUES(?,?,?,?,?,?)')->execute(['ops-order-000','PRIVATE_PAYLOAD','PRIVATE_SIGNATURE',2,'2030-01-01 00:00:00',500]);
+$p->prepare('INSERT INTO webhook_logs(order_id,payload,attempt_count,next_retry_at) VALUES(?,?,?,?)')->execute(['ops-order-001','PRIVATE_PAYLOAD',5,null]);
+$p->prepare('INSERT INTO receipt_events(merchant_id,merchant_account_id,utr,amount,matched_order_id,state,detail) VALUES(?,?,?,?,?,?,?)')->execute([$m,$a,'ops-utr',10,'ops-order-000','ambiguous','PRIVATE_DETAIL']);
+$p->prepare('INSERT INTO tickets(merchant_id,reference,subject) VALUES(?,?,?)')->execute([$m,'ops-ticket','Ops support test']);
+$t=(int)$p->lastInsertId();
+$p->prepare('INSERT INTO system_state(state_key,state_value,updated_at) VALUES(?,?,?) ON CONFLICT(state_key) DO UPDATE SET state_value=excluded.state_value,updated_at=excluded.updated_at')->execute(['worker_last_run','{}','2020-01-02 03:04:05']);
+echo json_encode(['merchant'=>$m,'ticket'=>$t]);
+`));
+const opsScript = path.join(root, 'admin/operations.php');
+const ordersScript = path.join(root, 'admin/orders.php');
+const ticketsScript = path.join(root, 'admin/tickets.php');
+const opsPages = requests([
+  {script:opsScript,cookies:adminCookies,query:{view:'webhooks',state:'scheduled',q:'ops-order'}},
+  {script:opsScript,cookies:adminCookies,query:{view:'webhooks',state:'attention',q:'ops-order'}},
+  {script:opsScript,cookies:adminCookies,query:{view:'receipts',state:'ambiguous',q:'ops-utr'}},
+  {script:ordersScript,cookies:adminCookies,query:{q:'ops-order',per_page:'25',page:'3'}},
+  {script:ordersScript,cookies:adminCookies,query:{q:'ops-order',status:'refunded'}},
+  {script:path.join(root,'admin/settings.php'),cookies:adminCookies},
+  {script:ticketsScript,cookies:adminCookies,query:{ticket:String(opsFixture.ticket)}},
+], adminSession);
+check('Operations scheduled filter finds retry without leaking secrets', opsPages[0].status===200 && /ops-order-000/.test(opsPages[0].body) && !/ops-order-001|PRIVATE_PAYLOAD|PRIVATE_SIGNATURE/.test(opsPages[0].body), opsPages[0].exception || '');
+check('Operations attention filter finds unscheduled event', opsPages[1].status===200 && /ops-order-001/.test(opsPages[1].body) && !/ops-order-000/.test(opsPages[1].body), opsPages[1].exception || '');
+check('Receipt queue filters ambiguous events without exposing detail', opsPages[2].status===200 && /ops-utr/.test(opsPages[2].body) && /already settled/.test(opsPages[2].body) && !/PRIVATE_DETAIL/.test(opsPages[2].body), opsPages[2].exception || '');
+check('Orders reach older pages and aggregate all filtered orders', opsPages[3].status===200 && /55 matching orders/.test(opsPages[3].body) && /550\.00/.test(opsPages[3].body) && /ops-order-000/.test(opsPages[3].body) && !/ops-order-054/.test(opsPages[3].body), opsPages[3].exception || '');
+check('Refunded orders can be filtered', opsPages[4].status===200 && /ops-order-000/.test(opsPages[4].body) && !/ops-order-001/.test(opsPages[4].body), opsPages[4].exception || '');
+check('Deployment reports worker completion separately from mailbox polling', /2020-01-02 03:04:05/.test(opsPages[5].body) && /Mailbox polling/.test(opsPages[5].body) && /does not guarantee/.test(opsPages[5].body));
+const opsTicketCsrf = /name="admin_csrf" value="([a-f0-9]{64})"/.exec(opsPages[6].body || '')?.[1];
+const supportPost = requests([{method:'POST',script:ticketsScript,cookies:adminCookies,query:{ticket:String(opsFixture.ticket)},post:{admin_csrf:opsTicketCsrf,ticket_id:String(opsFixture.ticket),body:'Saved reply'}}],adminSession)[0];
+check('Support reply is saved and reports failed SMTP honestly', supportPost.status===200 && /Reply saved/.test(supportPost.body) && /Email notification could not be sent/.test(supportPost.body) && /Saved reply/.test(supportPost.body), supportPost.exception || '');
+const supportState = JSON.parse(php(`<?php require 'includes/db.php'; $q=db()->prepare('SELECT status,last_author FROM tickets WHERE id=?'); $q->execute([${opsFixture.ticket}]); echo json_encode($q->fetch());`));
+check('Support reply uses merchant-facing status and author', supportState.status==='awaiting_reply' && supportState.last_author==='admin', JSON.stringify(supportState));
+php(`<?php require 'includes/db.php'; db()->exec("UPDATE admins SET role='staff' WHERE email='admin'");`);
+const staffPost = requests([{method:'POST',script:ticketsScript,cookies:adminCookies,post:{admin_csrf:opsTicketCsrf,ticket_id:String(opsFixture.ticket),body:'Staff reply',close:'1'}}],adminSession)[0];
+const closedState = JSON.parse(php(`<?php require 'includes/db.php'; $q=db()->prepare('SELECT status,last_author FROM tickets WHERE id=?'); $q->execute([${opsFixture.ticket}]); echo json_encode($q->fetch());`));
+check('Staff can reply and resolve a ticket', staffPost.status===200 && /ticket was closed/.test(staffPost.body) && closedState.status==='resolved', JSON.stringify(closedState));
+
+// Change the session account role temporarily to exercise an actual viewer session.
+php(`<?php require 'includes/db.php'; db()->exec("UPDATE admins SET role='viewer' WHERE email='admin'");`);
+const viewerOps = requests([{script:opsScript,cookies:adminCookies}],adminSession)[0];
+const viewerTicket = requests([{script:ticketsScript,cookies:adminCookies,query:{ticket:String(opsFixture.ticket)}}],adminSession)[0];
+const viewerPost = requests([{method:'POST',script:ticketsScript,cookies:adminCookies,post:{admin_csrf:opsTicketCsrf,ticket_id:String(opsFixture.ticket),body:'Forbidden reply'}}],adminSession)[0];
+const viewerState = JSON.parse(php(`<?php require 'includes/db.php'; echo json_encode((int)db()->query("SELECT COUNT(*) FROM ticket_messages WHERE body='Forbidden reply'")->fetchColumn());`));
+php(`<?php require 'includes/db.php'; db()->exec("UPDATE admins SET role='owner' WHERE email='admin'");`);
+check('Viewer cannot open sensitive operations', viewerOps.status===403, String(viewerOps.status));
+check('Viewer can read support but cannot see reply form', viewerTicket.status===200 && /read-only access/.test(viewerTicket.body) && !/name="body"/.test(viewerTicket.body));
+check('Viewer cannot post support replies even with CSRF', viewerPost.status===403 && viewerState===0, String(viewerPost.status));
+php(`<?php require 'includes/db.php'; db()->prepare('DELETE FROM merchants WHERE id=?')->execute([${opsFixture.merchant}]);`);
 
 // --- Suspension actually stops a merchant ---
 const suspendFixture = JSON.parse(php(`<?php
