@@ -75,7 +75,8 @@ $accountStmt->execute([$merchant['id']]);
 $account = $accountStmt->fetch();
 if (!$account) $fail(['error'=>'Merchant has not configured an active UPI account'], 409);
 
-$timeout = max(2, min(120, (int)($merchant['payment_timeout_minutes'] ?? 10)));
+$timeout = payment_window_seconds($merchant);
+$expiresAt = db_now($timeout);
 $orderId = 'tg_'.strtoupper(bin2hex(random_bytes(14)));
 $amountText = number_format($amount, 2, '.', '');
 $note = isset($in['note']) && $in['note'] !== '' ? substr((string)$in['note'], 0, 255) : null;
@@ -92,7 +93,7 @@ try {
         $email ?: null,
         substr((string)($in['customer_phone'] ?? ''), 0, 32) ?: null,
         $note,
-        db_now($timeout * 60),
+        $expiresAt,
         db_now(),
     ]);
 } catch (Throwable $e) {
@@ -118,8 +119,8 @@ $responseBody = json_encode([
     'qr_path' => '/api/qr-image.php?order_id='.rawurlencode($orderId),
     'upi_intent' => $upi,
     'upi_id' => $account['upi_id'],
-    'expires_at' => db_now($timeout * 60),
-    'expires_in_seconds' => $timeout * 60,
+    'expires_at' => $expiresAt,
+    'expires_in_seconds' => $timeout,
 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
 /* Persist the exact bytes before sending them, so a replay is byte-identical

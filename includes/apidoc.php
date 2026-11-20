@@ -229,7 +229,8 @@ and compare monetary values in integer paise or a decimal type, not binary float
 Persist order_id alongside the merchant's internal cart or purchase, expected
 amount and currency. Show checkout_url to the customer or use qr_url/upi_intent.
 The configured APP_URL must be correct for absolute URLs. The default payment
-window is 10 minutes; expiry alone does not prove whether money arrived late.
+window is 10 minutes by default; merchants can configure seconds or minutes for
+new orders. Expiry alone does not prove whether money arrived late.
 
 RETRIES AND IDEMPOTENCY
 Generate and persist one unique Idempotency-Key for each intended order before

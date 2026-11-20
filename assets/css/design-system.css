@@ -2247,3 +2247,12 @@ table td code {
   line-height: 1.5;
   color: var(--color-ink-mute-2, #8b97a8);
 }
+
+/* Checkout window and API activity additions. */
+.payment-window-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(110px, .7fr); gap: 8px; }
+.api-activity-chart { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; align-items: end; height: 180px; margin-top: 20px; }
+.api-activity-day { min-width: 0; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; }
+.api-activity-track { height: 120px; width: 100%; max-width: 34px; display: flex; align-items: flex-end; background: #f1f5fb; border-radius: 6px; overflow: hidden; }
+.api-activity-bar { width: 100%; background: var(--color-primary, #2563eb); border-radius: 6px 6px 0 0; }
+.api-activity-value, .api-activity-label { font-size: 11px; color: var(--color-ink-mute, #68758a); font-variant-numeric: tabular-nums; }
+.api-activity-hint { margin: 14px 0 0; color: var(--color-ink-mute, #68758a); font-size: 12px; line-height: 1.6; }

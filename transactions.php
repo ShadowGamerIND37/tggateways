@@ -499,7 +499,7 @@ require __DIR__.'/includes/dashboard-header.php';
           <td><?=tg_status_badge((string)$r['status'])?></td>
           <td style="text-align:right;white-space:nowrap">
             <a class="btn btn-secondary btn-sm" href="<?=h($query(['view' => (string)$r['order_id']]))?>">Details</a>
-            <?php if ($r['status'] === 'success'): ?>
+            <?php if (in_array($r['status'], ['success','refunded'], true)): ?>
               <a class="btn btn-secondary btn-sm" href="/invoice.php?order_id=<?=rawurlencode((string)$r['order_id'])?>">Receipt</a>
             <?php elseif ($r['status'] === 'pending'): ?>
               <a class="btn btn-secondary btn-sm" href="/pay.php?order_id=<?=rawurlencode((string)$r['order_id'])?>">Checkout</a>

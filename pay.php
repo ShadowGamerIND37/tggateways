@@ -17,11 +17,17 @@ if ($linkSlug !== '') {
     if (!$link || ($link['expires_at'] && strtotime((string)$link['expires_at']) < time())) {
         $notice = 'This payment link is unavailable or has expired.';
     } else {
+        // The seconds column may not exist until the first dashboard migration.
+        try {
+            $window = $pdo->prepare('SELECT payment_timeout_seconds FROM merchants WHERE id=?');
+            $window->execute([(int)$link['merchant_id']]);
+            $link['payment_timeout_seconds'] = $window->fetchColumn();
+        } catch (Throwable $e) { $link['payment_timeout_seconds'] = null; }
         $account = active_account($pdo, (int)$link['merchant_id']);
         if (!$account) {
             $notice = 'This merchant has not configured a receiving account yet.';
         } else {
-            $created = create_order_record($pdo, (int)$link['merchant_id'], (int)$link['payment_timeout_minutes'], [
+            $created = create_order_record($pdo, (int)$link['merchant_id'], payment_window_seconds($link), [
                 'amount' => $link['amount'],
                 'merchant_account_id' => $account['id'],
                 'payment_link_id' => $link['id'],
@@ -116,8 +122,8 @@ $order = $orderId !== '' ? find_checkout_order($pdo, $orderId) : null;
 if (!$order) {
     $notice = $notice ?: 'Payment order was not found.';
 } elseif ($order['status'] === 'pending' && strtotime((string)$order['expires_at']) <= time()) {
-    $pdo->prepare("UPDATE orders SET status='expired' WHERE order_id=? AND status='pending'")->execute([$order['order_id']]);
-    $order['status'] = 'expired';
+    $pdo->prepare("UPDATE orders SET status='expired' WHERE order_id=? AND status='pending' AND expires_at<=?")->execute([$order['order_id'], db_now()]);
+    $order = find_checkout_order($pdo, $orderId);
 }
 
 $deadline = $order ? strtotime((string)$order['expires_at']) : time();
@@ -164,6 +170,12 @@ body{background:#f1f4f9}
 .checkout-foot a{color:#5473ad}
 .copy-upi{margin-top:12px;font-size:10px;color:#6b7a90}
 .copy-upi code{background:#f4f6fa;border:1px solid #e7ebf2;border-radius:7px;padding:3px 7px}
+/* Checkout refinements use the existing palette and remain readable on mobile. */
+.checkout{border-radius:22px;box-shadow:0 22px 64px #20365b1a;padding:30px}
+.checkout-brand{font-weight:700}.checkout h1{font-size:21px}.checkout-total{font-size:38px;font-variant-numeric:tabular-nums}
+.checkout-meta{font-size:11px;overflow-wrap:anywhere}.upi-actions a{font-size:12px;min-height:40px;display:inline-flex;align-items:center;justify-content:center}
+.wait{font-size:13px;line-height:1.5}.claim summary{font-size:13px}.claim-intro,.claim-hint{font-size:12px}.checkout-foot{font-size:11px}
+[hidden]{display:none!important}@media(max-width:480px){.checkout{margin:18px auto;padding:22px}.checkout-qr{max-width:100%}.upi-actions a{flex:1 1 40%}}
 </style>
 </head>
 <body>
@@ -177,19 +189,17 @@ body{background:#f1f4f9}
     <div class="checkout-total">₹<?=number_format((float)$order['payable_amount'],2)?></div>
     <div class="checkout-meta">INR · Order <?=h($order['order_id'])?></div>
     <?php if ($order['status'] === 'pending'): ?>
-      <div class="checkout-qr" id="qr" data-upi="<?=h($upi)?>" aria-label="UPI payment QR code"></div>
+      <div id="payment-options"><div class="checkout-qr" id="qr" data-upi="<?=h($upi)?>" aria-label="UPI payment QR code"></div>
       <div class="upi-actions">
         <a href="<?=h($upi)?>" rel="noopener">▦ Open UPI app</a>
         <a href="<?=h($upi)?>" rel="noopener">Google Pay</a>
         <a href="<?=h($upi)?>" rel="noopener">PhonePe</a>
         <a href="<?=h($upi)?>" rel="noopener">Paytm</a>
       </div>
-      <div class="wait" id="payment-status">◌ Waiting for payment…</div>
-      <div class="checkout-meta" style="margin-top:12px">Expires in <strong id="countdown">--:--</strong></div>
       <div class="copy-upi">or pay to <code id="upi-id"><?=h($order['upi_id'] ?: '—')?></code>
         <button type="button" class="btn btn-outline" style="padding:4px 8px;font-size:9px" data-copy-target="#upi-id">Copy UPI ID</button>
-      </div>
-
+      </div></div><div class="wait" id="payment-status" role="status" aria-live="polite">◌ Waiting for payment…</div>
+      <div class="checkout-meta" style="margin-top:12px" id="expiry-label">Expires in <strong id="countdown">--:--</strong></div>
       <?php if ($claimNotice !== ''): ?>
         <div class="claim-result claim-ok"><?=h($claimNotice)?></div>
       <?php elseif ($claimError !== ''): ?>
@@ -201,7 +211,7 @@ body{background:#f1f4f9}
         <p class="claim-intro">
           Confirmation normally arrives from the merchant's mailbox within a couple of minutes.
           If your UPI app shows the money left but this page has not updated, paste the reference here —
-          it goes through the same verification, it just does not wait for the email.
+          the merchant can review it against their records. A submitted UTR is not automatic proof of payment.
         </p>
         <form method="post" class="claim-form">
           <input type="hidden" name="action" value="claim_utr">
@@ -219,6 +229,8 @@ body{background:#f1f4f9}
       <div class="wait <?=$order['status'] === 'success' ? 'success' : 'expired'?>">
         <?php if ($order['status'] === 'success'): ?>
           ✓ Payment received<?=$order['utr'] ? ' · UTR '.h($order['utr']) : ''?>
+        <?php elseif ($order['status'] === 'refunded'): ?>
+          This payment was fully refunded by the merchant.
         <?php else: ?>
           This payment order has expired. Ask the merchant for a new link.
         <?php endif ?>
@@ -261,7 +273,8 @@ body{background:#f1f4f9}
   });
 
   const orderId = <?=json_encode($order['order_id'])?>;
-  const deadline = <?=json_encode($deadline)?>;
+  const secondsRemaining = <?=json_encode(max(0, $deadline - time()))?>;
+  const deadline = performance.now() + secondsRemaining * 1000;
   const redirect = <?=json_encode($redirect)?>;
   const statusBox = document.getElementById('payment-status');
   let done = false;
@@ -273,15 +286,19 @@ body{background:#f1f4f9}
         const data = await response.json();
         if (data.status === 'success') {
           done = true;
+          document.getElementById('payment-options').hidden = true;
+          document.getElementById('expiry-label').hidden = true;
           statusBox.className = 'wait success';
           statusBox.textContent = data.utr ? '✓ Payment received · UTR ' + data.utr : '✓ Payment received!';
           if (redirect) setTimeout(() => location.assign(redirect), 1800);
           return;
         }
-        if (data.status === 'expired') {
+        if (data.status === 'expired' || data.status === 'refunded') {
           done = true;
+          document.getElementById('payment-options').hidden = true;
+          document.getElementById('expiry-label').hidden = true;
           statusBox.className = 'wait expired';
-          statusBox.textContent = 'This payment order has expired';
+          statusBox.textContent = data.status === 'refunded' ? 'This payment was fully refunded by the merchant.' : 'This payment order has expired';
           return;
         }
       }
@@ -291,12 +308,12 @@ body{background:#f1f4f9}
 
   function tick() {
     if (done) return;
-    const remaining = Math.max(0, deadline - Math.floor(Date.now() / 1000));
+    const remaining = Math.max(0, Math.ceil((deadline - performance.now()) / 1000));
     document.getElementById('countdown').textContent =
       String(Math.floor(remaining / 60)).padStart(2, '0') + ':' + String(remaining % 60).padStart(2, '0');
     if (remaining === 0) {
-      statusBox.className = 'wait expired';
-      statusBox.textContent = 'This payment order has expired';
+      document.getElementById('payment-options').hidden = true;
+      statusBox.textContent = 'Checking payment status…';
       return;
     }
     setTimeout(tick, 1000);

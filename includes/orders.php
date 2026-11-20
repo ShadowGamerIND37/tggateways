@@ -6,10 +6,11 @@ require_once __DIR__.'/db.php';
 function h(?string $s): string { return htmlspecialchars($s ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 
 /** Create a pending order. Shared by the API and hosted payment links. */
-function create_order_record(PDO $pdo, int $merchantId, int $timeoutMinutes, array $fields): array {
+function create_order_record(PDO $pdo, int $merchantId, int $timeoutSeconds, array $fields): array {
     $orderId = 'tg_'.strtoupper(bin2hex(random_bytes(14)));
     $amountText = number_format((float)$fields['amount'], 2, '.', '');
-    $timeout = max(2, min(120, $timeoutMinutes));
+    $timeout = max(1, min(7200, $timeoutSeconds));
+    $expiresAt = db_now($timeout);
     $stmt = $pdo->prepare("INSERT INTO orders(order_id,merchant_id,merchant_account_id,payment_link_id,amount,payable_amount,status,source,webhook_url,redirect_url,customer_name,customer_email,customer_phone,note,expires_at,created_at) VALUES(?,?,?,?,?,?,'pending',?,?,?,?,?,?,?,?,?)");
     $stmt->execute([
         $orderId,
@@ -25,10 +26,10 @@ function create_order_record(PDO $pdo, int $merchantId, int $timeoutMinutes, arr
         $fields['customer_email'] ?? null,
         $fields['customer_phone'] ?? null,
         $fields['note'] ?? null,
-        db_now($timeout * 60),
+        $expiresAt,
         db_now(),
     ]);
-    return ['order_id'=>$orderId,'amount'=>$amountText,'expires_at'=>db_now($timeout * 60),'expires_in_seconds'=>$timeout*60];
+    return ['order_id'=>$orderId,'amount'=>$amountText,'expires_at'=>$expiresAt,'expires_in_seconds'=>$timeout];
 }
 
 /** Build the UPI deep link for an order. */

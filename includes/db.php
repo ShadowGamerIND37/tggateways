@@ -108,7 +108,7 @@ function merchant_by_api_key(?string $rawKey = null): array {
     $key = $rawKey ?? api_key_from_request();
     if (!$key || strlen($key) > 128) json_response(['error'=>'Valid API key required'], 401);
     // api_key is stored as ascii_bin / case-sensitive text, so no BINARY cast is needed.
-    $q=db()->prepare('SELECT id,name,email,api_key,webhook_url,redirect_url,discord_webhook_url,brand_color,status,suspended_reason FROM merchants WHERE api_key = ?');
+    $q=db()->prepare('SELECT * FROM merchants WHERE api_key = ?');
     $q->execute([$key]);
     $merchant=$q->fetch();
     if (!$merchant) json_response(['error'=>'Invalid API key'], 401);
@@ -124,6 +124,7 @@ function merchant_by_api_key(?string $rawKey = null): array {
         ], 403);
     }
     merchant_touch_api_key((int)$merchant['id']);
+    merchant_record_api_request((int)$merchant['id']);
     return $merchant;
 }
 
@@ -149,6 +150,24 @@ function merchant_touch_api_key(int $merchantId): void {
         // on a database that has not run the migration yet.
         error_log('merchant_touch_api_key: '.$e->getMessage());
     }
+}
+
+/** Record authenticated API requests, aggregated per day; never store keys or IPs. */
+function merchant_record_api_request(int $merchantId): void {
+    try {
+        $sql = db_driver() === 'sqlite'
+            ? 'INSERT INTO api_request_activity (merchant_id,activity_date,request_count) VALUES (?,?,1) ON CONFLICT(merchant_id,activity_date) DO UPDATE SET request_count=request_count+1'
+            : 'INSERT INTO api_request_activity (merchant_id,activity_date,request_count) VALUES (?,?,1) ON DUPLICATE KEY UPDATE request_count=request_count+1';
+        db()->prepare($sql)->execute([$merchantId, date('Y-m-d')]);
+    } catch (Throwable $e) {
+        error_log('API request activity unavailable: '.$e->getMessage());
+    }
+}
+
+/** New installations use seconds; old rows keep their existing minute setting. */
+function payment_window_seconds(array $merchant): int {
+    $seconds = $merchant['payment_timeout_seconds'] ?? null;
+    return $seconds !== null ? max(1, min(7200, (int)$seconds)) : max(2, min(120, (int)($merchant['payment_timeout_minutes'] ?? 10))) * 60;
 }
 
 function require_method(string ...$methods): void {

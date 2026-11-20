@@ -38,7 +38,7 @@ require __DIR__.'/includes/dashboard-header.php';
 
 <div class="page-title-row" style="margin-bottom:20px">
   <h1 style="font-size:22px;font-weight:700;letter-spacing:-.5px;margin:0">Invoices &amp; Billing History</h1>
-  <p style="font-size:13px;color:var(--color-ink-mute);margin:4px 0 0">Official tax invoices, subscription billing and addon receipts.</p>
+  <p style="font-size:13px;color:var(--color-ink-mute);margin:4px 0 0">Billing records for addons and services, separate from customer payment receipts.</p>
 </div>
 
 <?php if ($invoiceTotal > 0): ?>
@@ -61,10 +61,10 @@ require __DIR__.'/includes/dashboard-header.php';
 <div class="card" style="padding:0;overflow:hidden">
   <div class="table-responsive">
     <table class="table">
-      <thead><tr><th>Invoice</th><th>Description</th><th>Issued</th><th>Amount</th><th>GST</th><th>Status</th></tr></thead>
+      <thead><tr><th>Invoice</th><th>Description</th><th>Issued</th><th>Amount</th><th>Tax</th><th>Total</th><th>Status</th><th></th></tr></thead>
       <tbody>
       <?php if (!$invoices): ?>
-        <tr><td colspan="6">
+        <tr><td colspan="8">
           <div class="empty-state">
             <div class="empty-state-icon"><?=icon('file-text', 22)?></div>
             <div class="empty-state-title">No Invoices Yet</div>
@@ -80,7 +80,9 @@ require __DIR__.'/includes/dashboard-header.php';
           <td style="white-space:nowrap"><?=h(date('d M Y', strtotime((string)$inv['issued_at'])))?></td>
           <td class="tnum" style="font-weight:600">₹<?=number_format((float)$inv['amount'], 2)?></td>
           <td class="tnum">₹<?=number_format((float)$inv['tax_amount'], 2)?></td>
+          <td class="tnum" style="font-weight:600">₹<?=number_format((float)$inv['amount'] + (float)$inv['tax_amount'], 2)?></td>
           <td><span class="status-badge status-<?=($inv['status'] ?? '') === 'paid' ? 'success' : 'pending'?>"><?=h(ucfirst((string)($inv['status'] ?? 'paid')))?></span></td>
+          <td><a class="btn btn-secondary btn-sm" href="/billing-invoice.php?id=<?=(int)$inv['id']?>">View</a></td>
         </tr>
       <?php endforeach ?>
       </tbody>

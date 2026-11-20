@@ -2883,6 +2883,95 @@ steps = requests([
 check('Legacy status without key → 401', steps[0].status === 401, String(steps[0].status));
 check('Legacy status resolves order_ref', steps[1].status === 200 && json(steps[1])?.payable_amount === 1500, String(steps[1].status));
 
+section('Checkout windows, API activity and billing records');
+const featureSeed = JSON.parse(php(`<?php
+require 'includes/db.php';
+$pdo = db();
+$pdo->prepare('INSERT INTO merchants(name,email,password,api_key,payment_timeout_minutes) VALUES(?,?,?,?,?)')->execute(['Expiry Test','expiry@example.com',password_hash('expiry-test-pass', PASSWORD_DEFAULT),'tg_feature_test_key',7]);
+$id=(int)$pdo->lastInsertId();
+$pdo->prepare('INSERT INTO merchant_accounts(merchant_id,account_label,upi_id,payee_name,linked_email,google_app_password,is_active,created_at) VALUES(?,?,?,?,?,?,1,?)')->execute([$id,'Main','test@upi','Test','test@example.com','v1:test',db_now()]);
+$pdo->prepare('INSERT INTO payment_links(merchant_id,slug,title,amount,is_active,created_at) VALUES(?,?,?,?,1,?)')->execute([$id,'feature-window-link','Window',50,db_now()]);
+$pdo->prepare('INSERT INTO invoices(merchant_id,invoice_no,description,amount,tax_amount,status,issued_at) VALUES(?,?,?,?,?,?,?)')->execute([$id,'INV-FEATURE','Test billing',100,18,'paid',db_now()]);
+echo json_encode(['merchant'=>$id, 'invoice'=>(int)$pdo->lastInsertId()]);
+`));
+const featureAuth = signIn('expiry@example.com', 'expiry-test-pass');
+const windowSet = request({method:'POST', script:path.join(root,'settings.php'), post:{csrf:featureAuth.csrf, action:'general', payment_timeout_minutes:'45', payment_timeout_unit:'seconds'}},featureAuth.session);
+check('Settings saves a seconds payment window', windowSet.status === 200 && windowSet.body.includes('Payment defaults saved.'));
+const windowForm = request({method:'GET',script:path.join(root,'settings.php')},featureAuth.session);
+check('Settings reloads the chosen seconds and value', /value="45"/.test(windowForm.body) && /value="seconds" selected/.test(windowForm.body));
+const badWindow = request({method:'POST',script:path.join(root,'settings.php'), post:{csrf:featureAuth.csrf,action:'general',payment_timeout_minutes:'0',payment_timeout_unit:'seconds'}},featureAuth.session);
+check('Settings rejects invalid seconds', badWindow.body.includes('Choose 1–3600 seconds'));
+const featureOrder = request({method:'POST',script:path.join(root,'api/create-order.php'),headers:{'X-Api-Key':'tg_feature_test_key'},body:JSON.stringify({amount:50})});
+const featureOrderJson = json(featureOrder) || {};
+check('API creation uses the configured seconds', featureOrder.status === 201 && featureOrderJson.expires_in_seconds === 45, featureOrder.body);
+const storedExpiry = JSON.parse(php(`<?php
+require 'includes/db.php'; $q=db()->prepare('SELECT expires_at FROM orders WHERE order_id=?'); $q->execute(['${featureOrderJson.order_id || ''}']); echo json_encode($q->fetchColumn());
+`));
+check('API response expiry equals the persisted expiry', storedExpiry === featureOrderJson.expires_at);
+const linkResponse = request({method:'GET',script:path.join(root,'pay.php'),query:{link:'feature-window-link'}});
+const linkExpiry = JSON.parse(php(`<?php
+require 'includes/db.php'; $q=db()->prepare("SELECT created_at,expires_at FROM orders WHERE merchant_id=? AND source='link' ORDER BY id DESC LIMIT 1"); $q->execute([${featureSeed.merchant}]); $r=$q->fetch(); echo json_encode($r ? strtotime($r['expires_at'])-strtotime($r['created_at']) : null);
+`));
+check('Payment links use the same seconds setting', linkResponse.status === 302 && linkExpiry === 45, String(linkExpiry));
+const featurePage = request({method:'GET',script:path.join(root,'pay.php'),query:{order_id:featureOrderJson.order_id}});
+check('Checkout timer is anchored to server remaining time', featurePage.body.includes('const secondsRemaining = ') && featurePage.body.includes('performance.now()'));
+check('Checkout hides payment options while waiting for authoritative expiry', featurePage.body.includes("getElementById('payment-options').hidden = true") && featurePage.body.includes('Checking payment status'));
+
+// Execute the actual inline checkout script with a controllable clock and API.
+const checkoutScript = (featurePage.body.match(/<script>\s*(\(function \(\) \{[\s\S]*?\}\)\(\);)\s*<\/script>/) || [])[1];
+const nodes = Object.fromEntries(['qr','payment-status','payment-options','expiry-label','countdown'].map(id => [id, { dataset:{upi:'upi://pay'}, textContent:'', innerHTML:'', hidden:false, className:'' }]));
+const timers = [];
+let fakeNow = 0, simulatedStatus = 'pending';
+const vm = await import('node:vm');
+if (checkoutScript) vm.runInNewContext(checkoutScript, {
+  document:{ getElementById:id=>nodes[id], querySelectorAll:()=>[] },
+  qrcode:()=>({addData(){},make(){},createSvgTag(){return '<svg></svg>'}}),
+  performance:{now:()=>fakeNow},
+  fetch:async()=>({ok:true,json:async()=>({status:simulatedStatus})}),
+  setTimeout:fn=>timers.push(fn), location:{assign(){}}, console,
+});
+await new Promise(resolve => setImmediate(resolve));
+const initialCountdown = nodes.countdown.textContent;
+fakeNow = 46000;
+const timerBeforeExpiry = timers.shift();
+if (timerBeforeExpiry) timerBeforeExpiry();
+check('Checkout countdown dynamically reaches zero and hides payment controls', (/^00:(?:[0-4][0-9])$/.test(initialCountdown) && initialCountdown !== '00:00') && nodes.countdown.textContent === '00:00' && nodes['payment-options'].hidden && nodes['payment-status'].textContent.includes('Checking'), JSON.stringify({script:!!checkoutScript,initialCountdown, countdown:nodes.countdown.textContent,status:nodes['payment-status'],timers:timers.length}));
+simulatedStatus = 'expired';
+const pollAfterExpiry = timers.shift();
+if (pollAfterExpiry) pollAfterExpiry();
+await new Promise(resolve => setImmediate(resolve));
+check('Checkout displays expiry only after the server confirms it', nodes['payment-status'].className === 'wait expired' && nodes['expiry-label'].hidden, JSON.stringify({status:nodes['payment-status'],timers:timers.length}));
+
+php(`<?php require 'includes/db.php'; db()->prepare("UPDATE orders SET expires_at=? WHERE order_id=?")->execute([db_now(-2),'${featureOrderJson.order_id}']);`);
+const expiredStatus = request({method:'GET',script:path.join(root,'api/checkout-status.php'),query:{order_id:featureOrderJson.order_id}});
+check('Status endpoint expires orders on the server', json(expiredStatus)?.status === 'expired');
+
+const signedExpiryOrder = request({method:'POST',script:path.join(root,'api/create-order.php'),headers:{'X-Api-Key':'tg_feature_test_key'},body:JSON.stringify({amount:51})});
+const signedExpiryId = json(signedExpiryOrder)?.order_id || '';
+php(`<?php require 'includes/db.php'; db()->prepare("UPDATE orders SET expires_at=? WHERE order_id=?")->execute([db_now(-2),'${signedExpiryId}']);`);
+const verifiedExpired = request({method:'GET',script:path.join(root,'api/verify-order.php'),headers:{'X-Api-Key':'tg_feature_test_key'},query:{order_id:signedExpiryId}});
+check('Authenticated verification expires stale orders without a worker or checkout visit', json(verifiedExpired)?.status === 'expired');
+
+const qrExpiryOrder = request({method:'POST',script:path.join(root,'api/create-order.php'),headers:{'X-Api-Key':'tg_feature_test_key'},body:JSON.stringify({amount:52})});
+const qrExpiryId = json(qrExpiryOrder)?.order_id || '';
+php(`<?php require 'includes/db.php'; db()->prepare("UPDATE orders SET expires_at=? WHERE order_id=?")->execute([db_now(-2),'${qrExpiryId}']);`);
+const expiredQr = request({method:'GET',script:path.join(root,'api/qr-image.php'),query:{order_id:qrExpiryId}});
+check('Expired orders no longer expose a QR or UPI intent even without a worker', expiredQr.status === 404 && !expiredQr.body.includes('upi://'));
+
+
+const activity = JSON.parse(php(`<?php require 'includes/db.php'; $q=db()->prepare('SELECT request_count FROM api_request_activity WHERE merchant_id=? AND activity_date=?'); $q->execute([${featureSeed.merchant},date('Y-m-d')]); echo json_encode((int)$q->fetchColumn());`));
+check('Authenticated API requests are recorded in activity', activity === 4, String(activity));
+const activityPage = request({method:'GET',script:path.join(root,'api-keys.php')},featureAuth.session);
+check('Activity chart shows real request count and collection limitation', activityPage.status === 200 && activityPage.body.includes(': 4 requests') && activityPage.body.includes('earlier activity is not available'));
+const invoiceList = request({method:'GET',script:path.join(root,'invoices.php')},featureAuth.session);
+const invoiceView = request({method:'GET',script:path.join(root,'billing-invoice.php'),query:{id:String(featureSeed.invoice)}},featureAuth.session);
+const foreignInvoiceView = request({method:'GET',script:path.join(root,'billing-invoice.php'),query:{id:String(featureSeed.invoice)}},profileAuth.session);
+check('Invoice list links to a printable billing record with tax included', invoiceList.body.includes('/billing-invoice.php?id='+featureSeed.invoice) && invoiceList.body.includes('118.00'));
+check('Billing record renders stored totals without claiming tax status', invoiceView.status === 200 && invoiceView.body.includes('118.00') && invoiceView.body.includes('not represented as a statutory tax invoice'));
+check('Another merchant cannot view a billing record', foreignInvoiceView.status === 404, String(foreignInvoiceView.status));
+const refundReceipt = request({method:'GET',script:path.join(root,'invoice.php'),query:{order_id:'tg_RF1'}},profileAuth.session);
+check('Fully refunded payments still have a receipt with refund history', refundReceipt.status === 200 && refundReceipt.body.includes('Fully refunded') && refundReceipt.body.includes('500.00'));
+
 section('SQL portability');
 const sqlCheck = php(`<?php
 $pdo = new PDO('sqlite:'.getenv('DB_SQLITE_PATH'));

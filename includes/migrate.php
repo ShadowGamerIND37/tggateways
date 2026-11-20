@@ -437,6 +437,18 @@ function tg_migrations(): array {
             ],
         ],
 
+
+        '2026_11_19_checkout_seconds_and_api_activity' => [
+            'mysql' => [
+                'ALTER TABLE merchants ADD COLUMN payment_timeout_seconds INT UNSIGNED NULL',
+                'CREATE TABLE IF NOT EXISTS api_request_activity (merchant_id BIGINT UNSIGNED NOT NULL, activity_date DATE NOT NULL, request_count INT UNSIGNED NOT NULL DEFAULT 0, PRIMARY KEY (merchant_id, activity_date)) ENGINE=InnoDB',
+            ],
+            'sqlite' => [
+                'ALTER TABLE merchants ADD COLUMN payment_timeout_seconds INTEGER NULL',
+                'CREATE TABLE IF NOT EXISTS api_request_activity (merchant_id INTEGER NOT NULL, activity_date TEXT NOT NULL, request_count INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (merchant_id, activity_date))',
+            ],
+        ],
+
     ];
 }
 
