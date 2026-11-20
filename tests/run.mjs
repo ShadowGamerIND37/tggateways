@@ -2201,6 +2201,177 @@ check('Every documentation section is linked from the sidebar',
   [...docs.matchAll(/<h2 id="([a-z-]+)"/g)].every((m) => docs.includes(`href="#${m[1]}"`)),
   'a section exists with no sidebar link');
 
+// ============================================================
+// Password recovery
+// ------------------------------------------------------------
+// Until this existed, login.php ended at "ask your deployment administrator"
+// and the only way back into a locked account was an operator editing the
+// database. These check the properties that make it safe to expose publicly.
+// ============================================================
+section('Password recovery');
+
+const resetBody = (sql, extra = {}) => php(`<?php
+require 'includes/password-reset.php';
+$pdo = db();
+${sql}
+`, extra);
+
+// The pages must exist and be reachable without a session.
+const forgotPage = request({ script: 'forgot-password.php', method: 'GET' });
+check('Forgot-password page loads for a signed-out visitor',
+  forgotPage.status === 200 && /Reset your password/.test(forgotPage.body || ''), String(forgotPage.status));
+check('Login page links to password recovery',
+  /forgot-password\.php/.test(String(request({ script: 'login.php' }).body || '')));
+check('Reset page rejects a missing token', (() => {
+  const r = request({ script: 'reset-password.php', method: 'GET' });
+  return r.status === 200 && /invalid, already used, or expired/.test(r.body || '');
+})(), 'got ' + String(request({ script: 'reset-password.php' }).status));
+
+// A real request must create a hashed token and never store the raw one.
+const minted = JSON.parse(resetBody(`
+$before = (int)$pdo->query('SELECT COUNT(*) FROM password_resets')->fetchColumn();
+tg_password_reset_request('merchant@example.com');
+$row = $pdo->query('SELECT * FROM password_resets ORDER BY id DESC LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+echo json_encode(['before'=>$before,'row'=>$row]);
+`));
+check('Requesting a reset stores a token', Number(minted.row?.id) > 0, JSON.stringify(minted).slice(0, 160));
+check('Stored token is a 64-char hash, not the token itself',
+  /^[a-f0-9]{64}$/.test(String(minted.row?.token_hash)) && minted.row?.token === undefined,
+  JSON.stringify(minted.row));
+
+// Unknown addresses must be indistinguishable from real ones.
+const unknown = JSON.parse(resetBody(`echo json_encode(['r'=>tg_password_reset_request('nobody@example.com'),'n'=>(int)$pdo->query('SELECT COUNT(*) FROM password_resets')->fetchColumn()]);`));
+check('Unknown address returns success without creating a token',
+  unknown.r === true && unknown.n === Number(minted.row?.id), JSON.stringify(unknown));
+
+// A second request must supersede the first, so old emails stop working.
+const supersede = JSON.parse(resetBody(`
+tg_password_reset_request('merchant@example.com');
+tg_password_reset_request('merchant@example.com');
+echo json_encode([
+  'live'=>(int)$pdo->query('SELECT COUNT(*) FROM password_resets WHERE used_at IS NULL')->fetchColumn(),
+  'used'=>(int)$pdo->query('SELECT COUNT(*) FROM password_resets WHERE used_at IS NOT NULL')->fetchColumn(),
+]);
+`));
+check('A new request invalidates the previous link',
+  supersede.live === 1 && supersede.used >= 1, JSON.stringify(supersede));
+
+// Full consume: weak rejected, good accepted, password changed, replay dead.
+const consumed = JSON.parse(resetBody(`
+$token = bin2hex(random_bytes(32));
+$pdo->prepare('UPDATE password_resets SET token_hash=? WHERE used_at IS NULL')->execute([hash('sha256',$token)]);
+$weak = tg_password_reset_consume($token, 'short');
+$good = tg_password_reset_consume($token, 'a-much-better-password');
+$hash = $pdo->query('SELECT password FROM merchants WHERE id=1')->fetchColumn();
+$replay = tg_password_reset_consume($token, 'another-password');
+echo json_encode([
+  'weak'=>$weak,'good'=>$good,
+  'verifies'=>password_verify('a-much-better-password',$hash),
+  'old_gone'=>!password_verify('correct-horse-battery',$hash),
+  'replay'=>$replay,
+]);
+`));
+check('Recovery rejects a short password', /at least 8 characters/.test(String(consumed.weak)), String(consumed.weak));
+check('Recovery accepts a valid password', consumed.good === '', String(consumed.good));
+check('Recovery actually changes the stored password',
+  consumed.verifies === true && consumed.old_gone === true, JSON.stringify(consumed));
+check('A used link cannot be replayed', /already used|invalid/.test(String(consumed.replay)), String(consumed.replay));
+
+// Expired tokens must be refused even though the hash matches.
+const expired = JSON.parse(resetBody(`
+$token = bin2hex(random_bytes(32));
+$pdo->prepare('INSERT INTO password_resets(merchant_id,token_hash,expires_at,created_at) VALUES(1,?,?,?)')
+    ->execute([hash('sha256',$token), date('Y-m-d H:i:s', time()-60), db_now()]);
+echo json_encode(['r'=>tg_password_reset_consume($token,'a-much-better-password')]);
+`));
+check('An expired link is refused', /invalid|expired/.test(String(expired.r)), String(expired.r));
+
+// Garbage and traversal attempts must not reach the database.
+const garbage = JSON.parse(resetBody(`echo json_encode(['a'=>tg_password_reset_lookup('../../etc/passwd'),'b'=>tg_password_reset_lookup(str_repeat('z',64))]);`));
+check('Malformed tokens are rejected before any query',
+  garbage.a === null && garbage.b === null, JSON.stringify(garbage));
+
+// The reset link must never be built from an attacker-controlled Host header.
+const baseUrl = JSON.parse(resetBody(`
+$_SERVER['HTTP_HOST'] = 'evil.example.com';
+echo json_encode(['url'=>tg_public_base_url()]);
+`));
+check('Reset links use APP_URL, not the request Host header',
+  String(baseUrl.url).startsWith('http://localhost:8080'), String(baseUrl.url));
+
+// ============================================================
+// Pagination
+// ------------------------------------------------------------
+// tickets.php and invoices.php loaded every row the merchant had. These check
+// the paging math and that older rows are reachable rather than just cut off.
+// ============================================================
+// ============================================================
+// API key usage tracking
+// ------------------------------------------------------------
+// `api_key_last_used_at` was in both schemas from the first commit and never
+// written, so nothing could tell a merchant whether a key was still in use.
+// ============================================================
+section('API key usage');
+
+const keyTouch = JSON.parse(php(`<?php
+$pdo = new PDO('sqlite:'.getenv('DB_SQLITE_PATH'), null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+require 'includes/db.php';
+$pdo->prepare('UPDATE merchants SET api_key_last_used_at=NULL WHERE id=1')->execute();
+$before = $pdo->query('SELECT api_key_last_used_at FROM merchants WHERE id=1')->fetchColumn();
+merchant_touch_api_key(1);
+$after = $pdo->query('SELECT api_key_last_used_at FROM merchants WHERE id=1')->fetchColumn();
+// A second call in the same process must not write again.
+$pdo->prepare('UPDATE merchants SET api_key_last_used_at=? WHERE id=1')->execute(['2020-01-01 00:00:00']);
+merchant_touch_api_key(1);
+$throttled = $pdo->query('SELECT api_key_last_used_at FROM merchants WHERE id=1')->fetchColumn();
+echo json_encode(['before'=>$before,'after'=>$after,'throttled'=>$throttled]);
+`));
+check('An unused key starts with no last-used timestamp', keyTouch.before === null, JSON.stringify(keyTouch.before));
+check('Authenticating an API call records its use', Boolean(keyTouch.after), JSON.stringify(keyTouch.after));
+check('Usage writes are throttled per request', keyTouch.throttled === '2020-01-01 00:00:00', JSON.stringify(keyTouch.throttled));
+check('The API key page shows when the key was last used',
+  /api_key_last_used_at/.test(readFileSync(path.join(root, 'api-keys.php'), 'utf8'))
+  && /tg_time_ago/.test(readFileSync(path.join(root, 'api-keys.php'), 'utf8')));
+
+section('Pagination');
+
+const pagerMath = JSON.parse(php(`<?php
+require 'includes/pager.php';
+$_GET = ['page'=>'3','per_page'=>'10'];
+$a = tg_paginate(95, 25);
+$_GET = ['page'=>'99','per_page'=>'10'];
+$b = tg_paginate(95, 25);
+$_GET = ['page'=>'0','per_page'=>'9999'];
+$c = tg_paginate(95, 25);
+echo json_encode(['a'=>$a,'b'=>$b,'c'=>$c]);
+`));
+check('Pagination clamps a page past the end', pagerMath.b?.page === pagerMath.b?.pages, JSON.stringify(pagerMath.b));
+check('Pagination rejects an absurd page size', pagerMath.c?.perPage === 25, JSON.stringify(pagerMath.c));
+// 95 rows at 10 per page is 10 pages; page 3 starts at index 20.
+check('Pagination computes the offset from the page',
+  pagerMath.a?.offset === 20 && pagerMath.a?.pages === 10, JSON.stringify(pagerMath.a));
+
+const pagerRender = php(`<?php
+require 'includes/pager.php';
+$_GET = ['page'=>'2'];
+$_SERVER['REQUEST_URI'] = '/tickets.php?status=open';
+echo tg_pager(tg_paginate(95, 25), ['status'=>'open']);
+`);
+check('Pager renders page links and keeps the filter',
+  /aria-current="page"/.test(String(pagerRender)) && /status=open/.test(String(pagerRender)),
+  String(pagerRender).slice(0, 120));
+check('Pager is hidden for a single page',
+  php(`<?php require 'includes/pager.php'; echo '['.tg_pager(tg_paginate(3, 25)).']';`) === '[]');
+
+// Both list pages must actually carry the control and a LIMIT.
+for (const page of ['tickets.php', 'invoices.php']) {
+  const body = readFileSync(path.join(root, page), 'utf8');
+  check(`${page} pages its table`, /LIMIT/.test(body) && /tg_pager\(/.test(body), 'no LIMIT or pager');
+}
+check('Invoice totals cover every invoice, not just the visible page',
+  /SELECT COUNT\(\*\) n,[\s\S]{0,300}FROM invoices/.test(readFileSync(path.join(root, 'invoices.php'), 'utf8')),
+  'totals are still computed from the fetched rows');
+
 section('Public status page');
 const statusOut = JSON.parse(php(`<?php
 require 'includes/db.php';

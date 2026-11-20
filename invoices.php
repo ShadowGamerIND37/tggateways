@@ -9,20 +9,29 @@ declare(strict_types=1);
  */
 require_once __DIR__.'/includes/merchant.php';
 require_once __DIR__.'/includes/auth.php';
+require_once __DIR__.'/includes/pager.php';
 $merchant = require_login();
 $pageTitle = 'Invoices';
 $pdo = db();
 $id = (int)$merchant['id'];
 
-$q = $pdo->prepare('SELECT * FROM invoices WHERE merchant_id=? ORDER BY issued_at DESC, id DESC');
+/* Paged. The counters and the two money totals are computed over the whole
+   table, not the visible page, otherwise "Invoices: 3" would change as you
+   paged and the billing totals would be quietly wrong. */
+$totRow = $pdo->prepare("SELECT COUNT(*) n,
+                                COALESCE(SUM(CASE WHEN status='paid' THEN amount+tax_amount ELSE 0 END),0) paid,
+                                COALESCE(SUM(CASE WHEN status<>'paid' THEN amount+tax_amount ELSE 0 END),0) unpaid
+                         FROM invoices WHERE merchant_id=?");
+$totRow->execute([$id]);
+$agg = $totRow->fetch();
+$invoiceTotal = (int)$agg['n'];
+$invoicePage = tg_paginate($invoiceTotal, 25);
+$totals = ['paid' => (float)$agg['paid'], 'unpaid' => (float)$agg['unpaid']];
+
+$q = $pdo->prepare('SELECT * FROM invoices WHERE merchant_id=? ORDER BY issued_at DESC, id DESC LIMIT '
+    .$invoicePage['perPage'].' OFFSET '.$invoicePage['offset']);
 $q->execute([$id]);
 $invoices = $q->fetchAll();
-
-$totals = ['paid' => 0.0, 'unpaid' => 0.0];
-foreach ($invoices as $inv) {
-    $amount = (float)$inv['amount'] + (float)$inv['tax_amount'];
-    $totals[($inv['status'] ?? 'paid') === 'paid' ? 'paid' : 'unpaid'] += $amount;
-}
 
 require __DIR__.'/includes/dashboard-header.php';
 ?>
@@ -32,11 +41,11 @@ require __DIR__.'/includes/dashboard-header.php';
   <p style="font-size:13px;color:var(--color-ink-mute);margin:4px 0 0">Official tax invoices, subscription billing and addon receipts.</p>
 </div>
 
-<?php if ($invoices): ?>
+<?php if ($invoiceTotal > 0): ?>
   <div class="stat-grid" style="margin-bottom:20px">
     <div class="stat-card">
       <div class="stat-card-top"><div class="stat-card-label">Invoices</div><div class="stat-card-icon blue"><?=icon('file-text', 18)?></div></div>
-      <div class="stat-card-value tnum"><?=number_format(count($invoices))?></div>
+      <div class="stat-card-value tnum"><?=number_format($invoiceTotal)?></div>
     </div>
     <div class="stat-card">
       <div class="stat-card-top"><div class="stat-card-label">Settled</div><div class="stat-card-icon green"><?=icon('check-circle', 18)?></div></div>
@@ -77,6 +86,7 @@ require __DIR__.'/includes/dashboard-header.php';
       </tbody>
     </table>
   </div>
+  <?=tg_pager($invoicePage)?>
 </div>
 
 <div class="callout callout-info" style="margin-top:20px">

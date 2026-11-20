@@ -319,6 +319,50 @@ function tg_migrations(): array {
                 )',
             ],
         ],
+        /* Self-service password recovery.
+           Until this existed the only way back into a locked account was an
+           operator editing the database by hand: login.php literally told the
+           user to "ask your deployment administrator". Tokens are stored as a
+           SHA-256 hash, never in the clear, so a database leak cannot be
+           replayed against the accounts it protects. */
+        '2026_11_18_password_reset' => [
+            'mysql' => [
+                'CREATE TABLE IF NOT EXISTS password_resets (
+                    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    merchant_id BIGINT UNSIGNED NOT NULL,
+                    token_hash CHAR(64) NOT NULL UNIQUE,
+                    requested_ip VARCHAR(64) NULL,
+                    expires_at DATETIME NOT NULL,
+                    used_at DATETIME NULL,
+                    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_reset_merchant (merchant_id, used_at)
+                ) ENGINE=InnoDB',
+            ],
+            'sqlite' => [
+                "CREATE TABLE IF NOT EXISTS password_resets (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    merchant_id INTEGER NOT NULL,
+                    token_hash TEXT NOT NULL UNIQUE,
+                    requested_ip TEXT,
+                    expires_at TEXT NOT NULL,
+                    used_at TEXT,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+                )",
+                'CREATE INDEX IF NOT EXISTS idx_reset_merchant ON password_resets(merchant_id, used_at)',
+            ],
+        ],
+        /* Indexes for the two list pages that scanned a whole table on every
+           load: tickets by owner+activity, invoices by owner+date. */
+        '2026_11_18_list_indexes' => [
+            'mysql' => [
+                'CREATE INDEX idx_ticket_merchant ON tickets(merchant_id, updated_at)',
+                'CREATE INDEX idx_invoice_merchant ON invoices(merchant_id, issued_at)',
+            ],
+            'sqlite' => [
+                'CREATE INDEX IF NOT EXISTS idx_ticket_merchant ON tickets(merchant_id, updated_at)',
+                'CREATE INDEX IF NOT EXISTS idx_invoice_merchant ON invoices(merchant_id, issued_at)',
+            ],
+        ],
 
     ];
 }
