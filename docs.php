@@ -146,6 +146,14 @@ $event = json_decode($raw, true);</pre>
 <li><strong>The link points at the wrong host</strong> — it is built from <code>APP_URL</code>, never from the request's <code>Host</code> header, precisely so a spoofed header cannot redirect a reset token. Set <code>APP_URL</code> to the address visitors actually open.</li>
 <li><strong>Reset does not fix a suspended account</strong> — suspension is checked at sign-in, not at reset.</li>
 </ul>
+<h3>Issuing a refund</h3>
+<p>This deployment collects money straight into your own UPI account, so the app cannot move money back. A refund is therefore recorded, not executed: return the money from your UPI app, then record it on the order.</p>
+<ol>
+<li>Open <a href="/transactions.php">Transactions</a> and click the order.</li>
+<li>Under <strong>Refunds</strong>, enter the amount, your refund UTR and a reason.</li>
+</ol>
+<p>What is enforced: the total refunded can never exceed what was collected, only a paid order can be refunded, and an order only becomes <strong>Refunded</strong> once the full amount is returned. A partial refund leaves it <strong>Captured</strong> with the remaining balance shown, so a half-refunded order is not mistaken for a whole one.</p>
+<div class="doc-callout"><strong>Dashboard revenue reconciles.</strong> It is collected minus refunded. When refunds exist the card shows the gross, the refunded total and the net, so money never appears to vanish.</div>
 <h3>Webhooks not firing</h3>
 <p>Only <code>payment.succeeded</code> is sent, and only once per order. A webhook URL must be HTTPS and must not resolve to a private address. Failed deliveries retry with backoff and stop after a bounded number of attempts; the admin overview counts the ones that have failed three or more times.</p>
 
