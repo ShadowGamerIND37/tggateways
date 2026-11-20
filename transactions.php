@@ -195,17 +195,23 @@ require __DIR__.'/includes/dashboard-header.php';
     </div>
   </div>
   <div class="table-container">
-    <table>
+    <table class="table claims-table">
       <thead>
-        <tr><th>Reference (UTR)</th><th>Amount</th><th>Order</th><th>Submitted</th><th style="text-align:right">Decision</th></tr>
+        <tr>
+          <th style="width:20%">Reference (UTR)</th>
+          <th style="width:11%">Amount</th>
+          <th style="width:34%">Order</th>
+          <th style="width:17%">Submitted</th>
+          <th style="text-align:right">Decision</th>
+        </tr>
       </thead>
       <tbody>
       <?php foreach ($pendingClaims as $claim): ?>
         <tr>
-          <td><code style="font-size:11.5px"><?=h((string)$claim['utr'])?></code></td>
-          <td class="tnum">₹<?=number_format((float)$claim['amount'], 2)?></td>
-          <td><span style="font-size:11px;color:var(--color-ink-mute)"><?=h((string)($claim['order_ref'] ?? '—'))?></span></td>
-          <td><span style="font-size:11px;color:var(--color-ink-mute)"><?=h(substr((string)$claim['created_at'], 0, 16))?></span></td>
+          <td data-label="Reference"><code><?=h((string)$claim['utr'])?></code></td>
+          <td class="tnum" data-label="Amount">₹<?=number_format((float)$claim['amount'], 2)?></td>
+          <td data-label="Order"><span style="font-size:11px;color:var(--color-ink-mute)"><?=h((string)($claim['order_ref'] ?? '—'))?></span></td>
+          <td data-label="Submitted"><span style="font-size:11px;color:var(--color-ink-mute)"><?=h(substr((string)$claim['created_at'], 0, 16))?></span></td>
           <td style="text-align:right">
             <div style="display:inline-flex;gap:6px">
               <form method="post" style="display:inline">
@@ -345,7 +351,7 @@ require __DIR__.'/includes/dashboard-header.php';
   </div>
 
   <div class="table-responsive" style="border-top:1px solid var(--color-hairline)">
-    <table>
+    <table class="table">
       <thead>
         <tr>
           <th>Order ID</th><th>Bank RRN</th><th>Customer detail</th><th>Created on</th>

@@ -220,7 +220,7 @@ require __DIR__.'/includes/dashboard-header.php';
     </div>
   </div>
   <div class="table-responsive" style="border-top:1px solid var(--color-hairline)">
-    <table>
+    <table class="table">
       <thead><tr><th>Ticket</th><th>Subject</th><th>Topic</th><th>Last update</th><th>Status</th><th style="text-align:right">Action</th></tr></thead>
       <tbody>
       <?php if (!$tickets): ?>
@@ -288,6 +288,19 @@ require __DIR__.'/includes/dashboard-header.php';
              accept="image/jpeg,image/png,image/webp,application/pdf">
       <span class="form-hint">JPG, PNG, WEBP or PDF, up to 5 MB each, maximum 5 files.
         Files are stored outside the web root and served only to you.</span>
+    </div>
+    <?php if ($error !== '' && !$view): ?>
+      <div class="form-group" style="grid-column:1/-1">
+        <div class="callout callout-error"><?=icon('alert-circle', 15)?><span><?=h($error)?></span></div>
+      </div>
+    <?php endif ?>
+    <!-- Without this the form was unreachable: every field could be filled in
+         and there was no control that submitted it. -->
+    <div class="form-actions" style="grid-column:1/-1;margin-top:4px">
+      <button class="btn btn-primary" type="submit">
+        <?=icon('plus', 15)?> Open ticket
+      </button>
+      <span class="form-hint" style="margin:0">A reference number is emailed to you immediately.</span>
     </div>
   </form>
 </div>

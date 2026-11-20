@@ -2121,6 +2121,86 @@ const undefinedVars = [...usedVars].filter((v) => !definedVars.has(v));
 check('Every CSS variable used is defined',
   undefinedVars.length === 0, undefinedVars.slice(0, 6).join(', '));
 
+// ============================================================
+// Reachable forms and styled tables
+// ------------------------------------------------------------
+// Two whole classes of bug that the HTTP-level tests cannot see, because
+// they POST the action directly and never look at the button a user has
+// to click:
+//   1. A form with no submit control. Every field is fillable and
+//      nothing can send it. The support ticket form shipped this way.
+//   2. A <table> with no `.table` class, so no padding, no header
+//      treatment and no `white-space: nowrap` — columns wrap and
+//      collapse into each other. Nine merchant tables shipped this way.
+// ============================================================
+section('Reachable forms and styled tables');
+
+const formShopPages = readdirSync(root).filter((f) => f.endsWith('.php'));
+const formAdminPages = readdirSync(path.join(root, 'admin')).filter((f) => f.endsWith('.php')).map((f) => `admin/${f}`);
+
+// --- 1. Every form that posts somewhere must have something to click ---
+const formless = [];
+for (const file of [...formShopPages, ...formAdminPages]) {
+  const body = readFileSync(path.join(root, file), 'utf8');
+  const forms = body.match(/<form\b[\s\S]*?<\/form>/g) || [];
+  for (const form of forms) {
+    // A form holding only hidden inputs is a programmatic action (retry,
+    // delete, toggle) and is submitted by a button in a sibling form or by
+    // JS — those are checked by the button existing *inside* the form.
+    const hasVisibleInput = /<(input|select|textarea)\b(?![^>]*type="hidden")[^>]*>/.test(form);
+    const hasSubmit = /<button\b[^>]*(?!type="button")[^>]*>/i.test(form)
+      || /type="submit"/i.test(form)
+      // A <select onchange="this.form.submit()"> submits the form without a
+      // button. It is not accessible without JS, so pages that rely on it also
+      // carry a real button; the detector accepts either.
+      || /onchange="this\.form\.submit\(\)"/i.test(form);
+    if (hasVisibleInput && !hasSubmit) {
+      formless.push(`${file}: ${form.replace(/\s+/g, ' ').slice(0, 90)}`);
+    }
+  }
+}
+check('Every form with visible fields has a submit control',
+  formless.length === 0, formless.slice(0, 3).join(' | '));
+
+// The support ticket form specifically: it is the one that regressed.
+const ticketPage = readFileSync(path.join(root, 'tickets.php'), 'utf8');
+const newTicketForm = (ticketPage.match(/<form[^>]*action" value="create"[\s\S]*?<\/form>/) || [])[0]
+  || (ticketPage.match(/<form[\s\S]*?value="create"[\s\S]*?<\/form>/) || [])[0] || '';
+check('The ticket form can actually be submitted',
+  newTicketForm !== '' && /<button[^>]*type="submit"|<button[^>]*>[\s\S]*?Open ticket/i.test(newTicketForm),
+  newTicketForm === '' ? 'form not found' : 'no submit button inside the create form');
+
+// --- 2. Tables must be styled, whether by class or by element ---
+const tableCss = readFileSync(path.join(root, 'assets/css/design-system.css'), 'utf8');
+check('Tables are styled at the element level',
+  /^table\s*\{/m.test(tableCss) && /table thead th[\s\S]{0,200}padding/.test(tableCss),
+  'no element-level table rule; a <table> without a class renders unstyled');
+check('Table cells do not wrap',
+  /table th,\s*\ntable td[\s\S]{0,120}white-space:\s*nowrap/.test(tableCss),
+  'nowrap missing, so long values wrap and collapse columns');
+
+const unclassed = [];
+for (const file of [...formShopPages, ...formAdminPages]) {
+  const body = readFileSync(path.join(root, file), 'utf8');
+  for (const tag of body.match(/<table\b[^>]*>/g) || []) {
+    if (!/class="/.test(tag)) unclassed.push(`${file}: ${tag}`);
+  }
+}
+check('No page ships an unclassed table',
+  unclassed.length === 0, unclassed.slice(0, 3).join(' | '));
+
+// --- 3. Documentation readability ---
+const docs = readFileSync(path.join(root, 'docs.php'), 'utf8');
+const bodySize = /\.docs-main p,\.docs-main li\{font-size:([\d.]+)px/.exec(docs);
+check('Documentation body copy is at least 13px',
+  bodySize && Number(bodySize[1]) >= 13, bodySize ? bodySize[1] + 'px' : 'size not found');
+const navSize = /\.docs-nav a\{[^}]*font-size:([\d.]+)px/.exec(docs);
+check('Documentation sidebar links are at least 12px',
+  navSize && Number(navSize[1]) >= 12, navSize ? navSize[1] + 'px' : 'size not found');
+check('Every documentation section is linked from the sidebar',
+  [...docs.matchAll(/<h2 id="([a-z-]+)"/g)].every((m) => docs.includes(`href="#${m[1]}"`)),
+  'a section exists with no sidebar link');
+
 section('Public status page');
 const statusOut = JSON.parse(php(`<?php
 require 'includes/db.php';

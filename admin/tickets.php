@@ -129,6 +129,7 @@ admin_flash($notice, $error !== '' ? $error : $errorLoad);
     <option value="pending"<?=$status === 'pending' ? ' selected' : ''?>>Pending</option>
     <option value="closed"<?=$status === 'closed' ? ' selected' : ''?>>Closed</option>
   </select>
+  <button class="admin-btn admin-btn-ghost" type="submit"><?=icon('search', 14)?> Filter</button>
   <a class="admin-btn admin-btn-ghost" href="/admin/tickets.php?status=">All tickets</a>
 </form>
 

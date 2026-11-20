@@ -2028,3 +2028,108 @@ input[type="file"]::file-selector-button:hover { background: #f6f8fb; }
 /* The flex row that pairs an API key with Reveal/Copy must not stretch the
    buttons to the input's new min-height. */
 .field > div { align-items: center; }
+
+/* ============================================================
+   Data tables (appended)
+   ------------------------------------------------------------
+   Nine merchant tables shipped as a bare <table> with no class, so none of
+   the `.table` rules applied: no cell padding, no header treatment, and
+   crucially no `white-space: nowrap`, so long values wrapped and columns
+   collapsed into each other. The fix is applied at the element level so a
+   page can never reintroduce it, with `.table` kept for the explicit case.
+   ============================================================ */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+table th,
+table td {
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+table thead th {
+  padding: 13px 18px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.55px;
+  text-transform: uppercase;
+  color: var(--color-ink-mute, #68758a);
+  background: var(--surface-page, #f8fafc);
+  border-bottom: 1px solid var(--color-hairline, #e7ebf2);
+}
+table tbody td {
+  padding: 16px 18px;
+  color: var(--color-ink-secondary, #4b5a72);
+  border-bottom: 1px solid var(--color-hairline, #e7ebf2);
+}
+table tbody tr:last-child td { border-bottom: none; }
+table tbody tr { transition: background var(--t-fast, 120ms); }
+table tbody tr:hover { background: var(--surface-page, #f8fafc); }
+table thead th:first-child,
+table tbody td:first-child { padding-left: 22px; }
+table thead th:last-child,
+table tbody td:last-child { padding-right: 22px; }
+
+/* A column of buttons should not wrap mid-row, and its cells should keep
+   their natural width instead of being squeezed by a long first column. */
+table td > form,
+table td > div { white-space: nowrap; }
+table .tnum,
+table td.tnum { font-variant-numeric: tabular-nums; }
+
+/* Inside a scrolling container the table must be allowed to exceed the card
+   width, otherwise nowrap text still gets compressed rather than scrolled. */
+.table-container > table,
+.table-responsive > table,
+[class*="table-"] > table { min-width: 100%; }
+
+/* Long unbroken identifiers (order ids, UTRs) are the main cause of a table
+   blowing out of its card; let them shrink with an ellipsis instead. */
+table td code {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 11.5px;
+  background: #f3f6fb;
+  border-radius: 5px;
+  padding: 2px 6px;
+  max-width: 210px;
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+/* ---- Transaction page specifics ---- */
+/* The claims table carries a reference, an amount, an order id, a timestamp
+   and two buttons. Below ~900px that is genuinely too much for one line, so
+   it becomes a stacked card per row rather than a squashed grid. */
+@media (max-width: 900px) {
+  .claims-table thead { display: none; }
+  .claims-table tr {
+    display: block;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--color-hairline, #e7ebf2);
+  }
+  .claims-table td {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 5px 0;
+    border: none;
+    white-space: normal;
+    text-align: left !important;
+  }
+  .claims-table td::before {
+    content: attr(data-label);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--color-ink-mute-2, #8b97a8);
+    flex: 0 0 auto;
+  }
+  .claims-table td:last-child { padding-top: 10px; }
+  .claims-table td:last-child::before { content: none; }
+}

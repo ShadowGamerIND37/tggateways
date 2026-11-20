@@ -51,7 +51,7 @@ require __DIR__.'/includes/dashboard-header.php';
 
 <div class="card" style="padding:0;overflow:hidden">
   <div class="table-responsive">
-    <table>
+    <table class="table">
       <thead><tr><th>Invoice</th><th>Description</th><th>Issued</th><th>Amount</th><th>GST</th><th>Status</th></tr></thead>
       <tbody>
       <?php if (!$invoices): ?>
