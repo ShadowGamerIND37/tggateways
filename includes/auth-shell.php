@@ -25,14 +25,14 @@ function tg_auth_header(string $title, string $heading, string $accent, string $
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?=h($title)?> — TG Gateways</title>
 <link rel="stylesheet" href="/assets/css/design-system.css">
-<link rel="icon" href="/assets/img/logo.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/img/tg-mark.png" type="image/png">
 <script defer src="/assets/js/main.js"></script>
 </head>
 <body>
 <div class="auth-shell">
   <aside class="auth-left">
     <a href="/" class="auth-left-brand">
-      <img src="/assets/img/logo.svg" alt="" style="height:32px;width:32px">
+      <img src="/assets/img/tg-mark.png" alt="" style="height:32px;width:32px">
       TG Gateways
     </a>
     <div style="position:relative;z-index:1">
@@ -59,7 +59,7 @@ function tg_auth_header(string $title, string $heading, string $accent, string $
   <main class="auth-right">
     <div class="auth-form-card">
       <a href="/" class="auth-form-logo" style="align-items:center;gap:10px;font-weight:700;font-size:16px;margin-bottom:22px">
-        <img src="/assets/img/logo.svg" alt="" style="height:30px;width:30px"> TG Gateways
+        <img src="/assets/img/tg-mark.png" alt="" style="height:30px;width:30px"> TG Gateways
       </a>
 <?php
 }

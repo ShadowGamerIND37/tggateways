@@ -73,7 +73,7 @@ $pageTitle = $pageTitle ?? 'Dashboard';
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?=h($pageTitle)?> — TG Gateways</title>
 <link rel="stylesheet" href="/assets/css/design-system.css">
-<link rel="icon" href="/assets/img/logo.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/img/tg-mark.png" type="image/png">
 <script defer src="/assets/js/main.js"></script>
 </head>
 <body>
@@ -82,7 +82,7 @@ $pageTitle = $pageTitle ?? 'Dashboard';
   <!-- Mobile top bar -->
   <div class="mobile-header">
     <div class="mobile-brand">
-      <a href="/dashboard.php"><img src="/assets/img/logo.svg" alt="TG Gateways" style="height:28px;width:28px;display:block"></a>
+      <a href="/dashboard.php"><img src="/assets/img/tg-mark.png" alt="TG Gateways" style="height:28px;width:28px;display:block"></a>
       <span style="font-weight:700;color:#f1f5f9;font-size:15px;margin-left:10px">TG Gateways</span>
     </div>
     <button class="mobile-menu-btn" onclick="openSidebar()" aria-label="Open navigation"><?=icon('menu',22)?></button>
@@ -94,7 +94,7 @@ $pageTitle = $pageTitle ?? 'Dashboard';
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div class="sidebar-brand">
           <a href="/dashboard.php" class="sidebar-brand-icon" style="display:flex;align-items:center;gap:10px;color:#f1f5f9;font-weight:700;font-size:15px">
-            <img src="/assets/img/logo.svg" alt="" style="height:28px;width:28px;display:block">
+            <img src="/assets/img/tg-mark.png" alt="" style="height:28px;width:28px;display:block">
             TG Gateways
           </a>
         </div>

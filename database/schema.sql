@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS merchants (
   brand_color CHAR(7) NOT NULL DEFAULT '#2563eb',
   payment_timeout_minutes SMALLINT UNSIGNED NOT NULL DEFAULT 10,
   api_key_last_used_at DATETIME NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'active',
+  suspended_reason VARCHAR(255) NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 

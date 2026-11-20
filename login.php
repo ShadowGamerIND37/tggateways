@@ -15,6 +15,9 @@ if (current_merchant()) redirect_to('/dashboard.php');
 
 $error = '';
 $step = 'password';
+if (isset($_GET['suspended'])) {
+    $error = 'This account has been suspended. Contact support if you believe this is a mistake.';
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
@@ -70,12 +73,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } else {
             try {
-                $q = db()->prepare('SELECT id,name,email,password FROM merchants WHERE email=?');
+                $q = db()->prepare('SELECT id,name,email,password,status,suspended_reason FROM merchants WHERE email=?');
                 $q->execute([$email ?: '']);
                 $m = $q->fetch();
                 if ($m && password_verify($pass, $m['password'])) {
-                    login_merchant($m);
-                    redirect_to('/dashboard.php');
+                    if (($m['status'] ?? 'active') !== 'active') {
+                        // A suspended merchant keeps their data and their API
+                        // key record, but cannot sign in. The reason is shown so
+                        // they know to contact the operator instead of assuming
+                        // the password broke.
+                        $error = 'This account is suspended.'.(($m['suspended_reason'] ?? '') !== '' ? ' '.$m['suspended_reason'] : ' Contact support.');
+                    } else {
+                        login_merchant($m);
+                        redirect_to('/dashboard.php');
+                    }
                 }
             } catch (Throwable) {
                 $error = 'Sign-in is unavailable. Check the database setup.';

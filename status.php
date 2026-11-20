@@ -32,11 +32,11 @@ if ($merchant) {
 <title>System Status &amp; Service Uptime — TG Gateways</title>
 <link rel="stylesheet" href="/assets/css/design-system.css">
 <link rel="stylesheet" href="/assets/css/marketing.css">
-<link rel="icon" href="/assets/img/logo.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/img/tg-mark.png" type="image/png">
 </head>
 <body>
 <header class="container topnav">
-  <a class="brand" href="/"><img src="/assets/img/logo.svg" alt=""><span>TG Gateways</span></a>
+  <a class="brand" href="/"><img src="/assets/img/tg-mark.png" alt=""><span>TG Gateways</span></a>
   <nav class="navlinks"><a href="/">Home</a><a href="/docs.php">Docs</a><a href="/status.php">Status</a><a href="/login.php">Sign in</a></nav>
 </header>
 <main class="container" style="padding:28px 0 60px;max-width:900px">

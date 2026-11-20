@@ -108,10 +108,21 @@ function merchant_by_api_key(?string $rawKey = null): array {
     $key = $rawKey ?? api_key_from_request();
     if (!$key || strlen($key) > 128) json_response(['error'=>'Valid API key required'], 401);
     // api_key is stored as ascii_bin / case-sensitive text, so no BINARY cast is needed.
-    $q=db()->prepare('SELECT id,name,email,api_key,webhook_url,redirect_url,discord_webhook_url,brand_color FROM merchants WHERE api_key = ?');
+    $q=db()->prepare('SELECT id,name,email,api_key,webhook_url,redirect_url,discord_webhook_url,brand_color,status,suspended_reason FROM merchants WHERE api_key = ?');
     $q->execute([$key]);
     $merchant=$q->fetch();
     if (!$merchant) json_response(['error'=>'Invalid API key'], 401);
+    // A suspended merchant keeps their key on record so restoring the account
+    // needs no re-issue, but the key must stop working the moment they are
+    // suspended. 403 (not 401) tells an integrator the key is valid but the
+    // account is not, which is the difference between "rotate your key" and
+    // "pay your invoice".
+    if (($merchant['status'] ?? 'active') !== 'active') {
+        json_response([
+            'error' => 'This merchant account is suspended.',
+            'reason' => (string)($merchant['suspended_reason'] ?? ''),
+        ], 403);
+    }
     return $merchant;
 }
 

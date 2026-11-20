@@ -44,7 +44,7 @@ function upi_intent(array $order): string {
 
 /** Fetch an order with its merchant + receiving account for public checkout. */
 function find_checkout_order(PDO $pdo, string $orderId): ?array {
-    $q = $pdo->prepare('SELECT o.order_id,o.merchant_id,o.amount,o.payable_amount,o.status,o.utr,o.paid_at,o.expires_at,o.note,m.name merchant_name,m.redirect_url merchant_redirect,COALESCE(o.redirect_url,m.redirect_url) redirect_url,m.brand_color,a.upi_id,a.payee_name FROM orders o JOIN merchants m ON m.id=o.merchant_id LEFT JOIN merchant_accounts a ON a.id=o.merchant_account_id WHERE o.order_id=? LIMIT 1');
+    $q = $pdo->prepare('SELECT o.order_id,o.merchant_id,o.merchant_account_id,o.amount,o.payable_amount,o.status,o.utr,o.paid_at,o.expires_at,o.note,m.name merchant_name,m.redirect_url merchant_redirect,COALESCE(o.redirect_url,m.redirect_url) redirect_url,m.brand_color,a.upi_id,a.payee_name FROM orders o JOIN merchants m ON m.id=o.merchant_id LEFT JOIN merchant_accounts a ON a.id=o.merchant_account_id WHERE o.order_id=? LIMIT 1');
     $q->execute([$orderId]);
     $order = $q->fetch();
     return $order ?: null;

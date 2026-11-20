@@ -30,6 +30,13 @@ $bodyFile = tempnam(sys_get_temp_dir(), 'tgbody');
 file_put_contents($bodyFile, (string)($spec['body'] ?? ''));
 putenv('TG_TEST_BODY_PATH='.$bodyFile);
 
+// Cookies the test client is carrying. The merchant session rides in the PHP
+// session file, but the admin panel deliberately uses its own cookie so that a
+// merchant session can never be mistaken for an operator, so the harness has to
+// replay it the way a browser would.
+$_COOKIE = [];
+foreach (($spec['cookies'] ?? []) as $name => $value) $_COOKIE[(string)$name] = (string)$value;
+
 $_GET = $spec['query'] ?? [];
 $_POST = $spec['post'] ?? [];
 $_REQUEST = $_GET + $_POST;

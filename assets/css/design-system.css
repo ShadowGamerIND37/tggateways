@@ -1557,3 +1557,314 @@ a.time-pill:focus-visible { outline: 2px solid #2563eb; outline-offset: 1px; }
   .tg-dialog { max-width: calc(100% - 24px); }
   .tg-steps li { padding-left: 34px; }
 }
+
+/* ============================================================
+   Addon marketplace cards
+   ------------------------------------------------------------
+   Appended. The previous cards were bare `.card` blocks with inline
+   styles, which is why they read as flat boxes: no logo well, no
+   price anchor, no alignment along a common baseline, and the
+   feature lists drifted because each card sized itself.
+   ============================================================ */
+.addon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(285px, 1fr));
+  gap: 18px;
+  align-items: stretch;
+}
+
+.addon-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--color-canvas, #fff);
+  border: 1px solid var(--color-hairline, #e7ebf2);
+  border-radius: var(--r-lg, 14px);
+  padding: 20px;
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(16, 24, 40, 0.05));
+  transition: box-shadow var(--t-mid, 180ms) var(--ease, ease), transform var(--t-mid, 180ms) var(--ease, ease);
+  position: relative;
+}
+.addon-card:hover {
+  box-shadow: var(--shadow-md, 0 6px 18px -6px rgba(16, 24, 40, 0.14));
+  transform: translateY(-1px);
+}
+/* A live gateway gets a quiet accent instead of a loud badge. */
+.addon-card-live { border-color: #bfdbfe; }
+.addon-card-live::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  border-radius: var(--r-lg, 14px) var(--r-lg, 14px) 0 0;
+  background: linear-gradient(90deg, #2563eb, #7c3aed);
+}
+/* Coming-soon cards recede: still legible, clearly not actionable. */
+.addon-card-muted { background: #fcfdff; }
+.addon-card-muted .addon-logo img { filter: grayscale(0.55); opacity: 0.8; }
+
+.addon-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.addon-logo {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--color-hairline, #e7ebf2);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.addon-logo img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  display: block;
+}
+.addon-headline { flex: 1 1 auto; min-width: 0; }
+.addon-headline h3 {
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: -0.25px;
+  margin: 0 0 5px;
+  color: var(--color-ink, #0b1329);
+  line-height: 1.3;
+}
+
+.addon-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.45px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+.addon-tag-free { background: #dcfce7; color: #15803d; }
+.addon-tag-paid { background: #ede9fe; color: #6d28d9; }
+.addon-tag-soon { background: #eef2f8; color: #5a6a85; }
+
+.addon-live-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #15803d;
+  background: #dcfce7;
+  border-radius: 999px;
+  padding: 4px 9px;
+  white-space: nowrap;
+}
+
+.addon-price {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-height: 30px;
+}
+.addon-price strong {
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  color: var(--color-ink, #0b1329);
+  line-height: 1;
+}
+.addon-price span { font-size: 12px; font-weight: 500; color: var(--color-ink-mute, #68758a); }
+.addon-price-soon {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #5a6a85;
+  letter-spacing: -0.2px;
+}
+
+.addon-blurb {
+  font-size: 12.5px;
+  line-height: 1.75;
+  color: var(--color-ink-mute, #68758a);
+  margin: 0;
+}
+
+.addon-features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.addon-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #4b5a72;
+}
+.addon-features svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: #15803d;
+}
+.addon-card-muted .addon-features svg { color: #94a3b8; }
+
+.addon-needs {
+  font-size: 11.5px;
+  color: var(--color-ink-mute-2, #8b97a8);
+  border-top: 1px dashed #e9eef6;
+  padding-top: 12px;
+  margin-top: auto;
+}
+.addon-needs strong {
+  color: var(--color-ink-mute, #68758a);
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.addon-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+.addon-actions form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  width: 100%;
+}
+.addon-actions select { max-width: 168px; }
+.addon-actions .btn { white-space: nowrap; }
+.addon-note {
+  font-size: 11px;
+  color: var(--color-ink-mute-2, #8b97a8);
+}
+
+@media (max-width: 640px) {
+  .addon-grid { grid-template-columns: 1fr; }
+  .addon-actions form { width: 100%; }
+  .addon-actions select { max-width: none; flex: 1 1 140px; }
+}
+
+/* ============================================================
+   Card & form polish (appended)
+   ------------------------------------------------------------
+   The merchant pages leaned on bare `.card` blocks with an inline
+   `margin-bottom:20px`. Stacked together they read as a column of heavy
+   boxes: every card carried the same weight, the vertical rhythm was
+   dictated by inline styles rather than the sheet, and a card containing a
+   two-field form was as tall as one containing a table.
+
+   These rules only refine spacing, elevation and the small affordances.
+   They come last, so they win on source order without any !important and
+   without rewriting the rules above.
+   ============================================================ */
+
+/* Cards: lighter ring, calmer elevation, opt-in emphasis. */
+.card {
+  border-color: #e9edf4;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+.card:hover {
+  box-shadow: 0 4px 16px -8px rgba(16, 24, 40, 0.16);
+  transform: none;
+}
+/* A card that is the page's focal point can say so. */
+.card-emphasis {
+  border-color: #cfe0ff;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 10px 30px -22px rgba(37, 99, 235, 0.5);
+}
+
+/* Card headers: one hairline under the title block instead of floating text. */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.card-header:has(.card-sub) {
+  padding-bottom: 14px;
+  border-bottom: 1px solid #f1f4f9;
+}
+
+/* Denser, more predictable forms inside a card. */
+.card .form-grid { gap: 16px 18px; }
+.card .form-group { margin-bottom: 0; }
+.card .form-input,
+.card .form-select { font-size: 13px; }
+
+/* An empty state should not look like a broken card. */
+.empty-state {
+  padding: 40px 20px;
+  text-align: center;
+}
+.empty-state-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  margin: 0 auto 14px;
+  display: grid;
+  place-items: center;
+  background: #f1f5fb;
+  color: #7c8aa0;
+}
+.empty-state-title {
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.2px;
+  color: var(--color-ink);
+  margin-bottom: 5px;
+}
+.empty-state-sub {
+  font-size: 12.5px;
+  color: var(--color-ink-mute);
+  line-height: 1.7;
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+/* Stat cards: numbers carry the weight, labels recede. */
+.stat-card {
+  border: 1px solid #e9edf4;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+.stat-card:hover {
+  box-shadow: 0 6px 20px -12px rgba(16, 24, 40, 0.2);
+  transform: none;
+}
+.stat-card-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.55px;
+  text-transform: uppercase;
+  color: var(--color-ink-mute-2);
+}
+
+/* A table inside a card should reach the card edges, not float in padding. */
+.card > .table-container:first-child { margin-top: -6px; }
+
+/* Long inline-styled margins on bare cards are the other half of the
+   "column of boxes" feeling; normalise the common ones without touching
+   markup. */
+.card[style*="margin-bottom:20px"] { margin-bottom: 16px !important; }
+
+/* Tabs and pills used across settings pages: consistent height and weight. */
+.pill {
+  font-weight: 600;
+  letter-spacing: 0.1px;
+}
+
+@media (max-width: 640px) {
+  .card-header { flex-direction: column; align-items: stretch; }
+  .card-header:has(.card-sub) { padding-bottom: 12px; }
+}

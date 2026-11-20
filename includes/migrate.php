@@ -211,6 +211,84 @@ function tg_migrations(): array {
                 'ALTER TABLE orders ADD COLUMN paid_via TEXT',
             ],
         ],
+        /* Admin panel. `admins` is deliberately a separate table from
+           `merchants`: an admin is not a merchant and must never be able to
+           take payments, and a merchant must never be able to become an admin
+           by editing their own row. The seeded account is created on first run
+           with the credential pair admin/admin and `must_change_password` set,
+           so the operator is forced to rotate it at first sign-in. */
+        '2026_11_18_admin_panel' => [
+            'mysql' => [
+                'CREATE TABLE IF NOT EXISTS admins (
+                    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(120) NOT NULL,
+                    email VARCHAR(190) NOT NULL UNIQUE,
+                    password VARCHAR(255) NOT NULL,
+                    role VARCHAR(20) NOT NULL DEFAULT \'owner\',
+                    status VARCHAR(20) NOT NULL DEFAULT \'active\',
+                    must_change_password TINYINT(1) NOT NULL DEFAULT 1,
+                    last_login_at DATETIME NULL,
+                    last_login_ip VARCHAR(64) NULL,
+                    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB',
+                'CREATE TABLE IF NOT EXISTS admin_sessions (
+                    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    admin_id BIGINT UNSIGNED NOT NULL,
+                    token_hash CHAR(64) NOT NULL UNIQUE,
+                    ip VARCHAR(64) NULL,
+                    user_agent VARCHAR(255) NULL,
+                    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    last_seen_at DATETIME NULL,
+                    revoked_at DATETIME NULL,
+                    INDEX idx_admin_session (admin_id, revoked_at)
+                ) ENGINE=InnoDB',
+                'CREATE TABLE IF NOT EXISTS admin_notes (
+                    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    merchant_id BIGINT UNSIGNED NOT NULL,
+                    admin_id BIGINT UNSIGNED NULL,
+                    note TEXT NOT NULL,
+                    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_note_merchant (merchant_id, created_at)
+                ) ENGINE=InnoDB',
+                'ALTER TABLE merchants ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT \'active\'',
+                'ALTER TABLE merchants ADD COLUMN suspended_reason VARCHAR(255) NULL',
+                'ALTER TABLE invoices ADD COLUMN paid_at DATETIME NULL',
+            ],
+            'sqlite' => [
+                "CREATE TABLE IF NOT EXISTS admins (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    email TEXT NOT NULL UNIQUE,
+                    password TEXT NOT NULL,
+                    role TEXT NOT NULL DEFAULT 'owner',
+                    status TEXT NOT NULL DEFAULT 'active',
+                    must_change_password INTEGER NOT NULL DEFAULT 1,
+                    last_login_at TEXT,
+                    last_login_ip TEXT,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+                )",
+                "CREATE TABLE IF NOT EXISTS admin_sessions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    admin_id INTEGER NOT NULL,
+                    token_hash TEXT NOT NULL UNIQUE,
+                    ip TEXT,
+                    user_agent TEXT,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    last_seen_at TEXT,
+                    revoked_at TEXT
+                )",
+                "CREATE TABLE IF NOT EXISTS admin_notes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    merchant_id INTEGER NOT NULL,
+                    admin_id INTEGER,
+                    note TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+                )",
+                "ALTER TABLE merchants ADD COLUMN status TEXT NOT NULL DEFAULT 'active'",
+                'ALTER TABLE merchants ADD COLUMN suspended_reason TEXT',
+                'ALTER TABLE invoices ADD COLUMN paid_at TEXT',
+            ],
+        ],
         '2026_11_18_ticket_attachments' => [
             'mysql' => [
                 'CREATE TABLE IF NOT EXISTS ticket_attachments (

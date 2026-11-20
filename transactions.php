@@ -12,6 +12,60 @@ $pageTitle = 'Transactions';
 $pdo = db();
 $id = (int)$merchant['id'];
 
+/**
+ * Merchant confirms or rejects a payer-submitted UTR.
+ *
+ * The checkout page records claims as `state = 'claimed'` and never settles
+ * anything, because that endpoint is unauthenticated. This is the other half:
+ * the merchant reconciles the reference against their bank statement and
+ * authorises it. Confirming re-runs the normal settlement path so the order,
+ * the duplicate check and the audit row all behave exactly as they would for
+ * an emailed receipt.
+ */
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && ($_POST['action'] ?? '') === 'claims') {
+    verify_csrf();
+    rate_limit('claims', 30, 300);
+    $claimId = (int)($_POST['claim_id'] ?? 0);
+    $decision = (string)($_POST['decision'] ?? '');
+    $q = $pdo->prepare("SELECT * FROM receipt_events WHERE id=? AND merchant_id=? AND state='claimed' LIMIT 1");
+    $q->execute([$claimId, $id]);
+    $claim = $q->fetch();
+    if (!$claim) {
+        $claimMessage = 'That claim is no longer awaiting you.';
+    } elseif (!in_array($decision, ['confirm', 'reject'], true)) {
+        $claimMessage = 'Unknown action.';
+    } elseif ($decision === 'reject') {
+        $pdo->prepare("UPDATE receipt_events SET state='rejected',detail=? WHERE id=?")
+            ->execute(['Merchant rejected this reference.', $claimId]);
+        tg_audit($id, 'payment.utr_rejected', (string)$claim['utr']);
+        $claimMessage = 'Reference rejected. The order stays open.';
+    } else {
+        require_once __DIR__.'/includes/settlement.php';
+        $acct = $pdo->prepare('SELECT * FROM merchant_accounts WHERE id=? AND merchant_id=? LIMIT 1');
+        $acct->execute([(int)$claim['merchant_account_id'], $id]);
+        $accountRow = $acct->fetch();
+        // Remove the claim marker first: settle_receipt() treats an existing
+        // receipt_events row for this UTR as a duplicate, which is correct for a
+        // replayed email but wrong when the merchant is authorising the very
+        // claim it holds.
+        $pdo->prepare('DELETE FROM receipt_events WHERE id=?')->execute([$claimId]);
+        if (!$accountRow) {
+            $claimMessage = 'That wallet no longer exists.';
+        } else {
+            $result = settle_receipt($pdo, $accountRow, [
+                'utr' => (string)$claim['utr'],
+                'amount' => (string)$claim['amount'],
+                'sender' => null,
+                'order_ref' => (string)($claim['order_ref'] ?? ''),
+            ], 'claim-confirmed:'.$claimId);
+            tg_audit($id, 'payment.utr_confirmed', (string)$claim['utr'].' → '.$result['state']);
+            $claimMessage = $result['state'] === 'matched'
+                ? 'Confirmed. The order is now marked paid and a webhook will fire.'
+                : 'Recorded, but it did not match an open order automatically ('.$result['state'].').';
+        }
+    }
+}
+
 $status = strtolower((string)($_GET['status'] ?? 'all'));
 if (!in_array($status, ['all', 'pending', 'success', 'expired'], true)) $status = 'all';
 $range = strtolower((string)($_GET['range'] ?? 'all'));
@@ -99,6 +153,16 @@ $query = function (array $overrides = []) use ($status, $range, $search, $perPag
     return '?'.http_build_query($base);
 };
 
+$pendingClaims = [];
+try {
+    $cq = $pdo->prepare("SELECT id,utr,amount,order_ref,created_at FROM receipt_events
+                         WHERE merchant_id=? AND state='claimed' ORDER BY id DESC LIMIT 25");
+    $cq->execute([$id]);
+    $pendingClaims = $cq->fetchAll();
+} catch (Throwable $e) {
+    error_log('claims: '.$e->getMessage());
+}
+
 require __DIR__.'/includes/dashboard-header.php';
 ?>
 
@@ -112,6 +176,61 @@ require __DIR__.'/includes/dashboard-header.php';
     <a class="btn btn-primary btn-sm" href="/payment-links.php"><?=icon('plus', 14)?> New payment link</a>
   </div>
 </div>
+
+<?php if (isset($claimMessage) && $claimMessage !== ''): ?>
+  <div class="callout <?=str_starts_with($claimMessage, 'Confirmed') ? 'callout-success' : 'callout-info'?>" style="margin-bottom:18px">
+    <?=icon('check-circle', 16)?><span><?=h($claimMessage)?></span>
+  </div>
+<?php endif ?>
+
+<?php if ($pendingClaims): ?>
+<div class="card card-emphasis" style="margin-bottom:20px">
+  <div class="card-header">
+    <div>
+      <div class="card-title"><?=icon('alert-circle', 16)?> Payment references awaiting your confirmation</div>
+      <div class="card-sub">
+        Customers submitted these from the checkout page. Match each one against your bank statement,
+        then confirm — confirming marks the order paid and fires the webhook.
+      </div>
+    </div>
+  </div>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr><th>Reference (UTR)</th><th>Amount</th><th>Order</th><th>Submitted</th><th style="text-align:right">Decision</th></tr>
+      </thead>
+      <tbody>
+      <?php foreach ($pendingClaims as $claim): ?>
+        <tr>
+          <td><code style="font-size:11.5px"><?=h((string)$claim['utr'])?></code></td>
+          <td class="tnum">₹<?=number_format((float)$claim['amount'], 2)?></td>
+          <td><span style="font-size:11px;color:var(--color-ink-mute)"><?=h((string)($claim['order_ref'] ?? '—'))?></span></td>
+          <td><span style="font-size:11px;color:var(--color-ink-mute)"><?=h(substr((string)$claim['created_at'], 0, 16))?></span></td>
+          <td style="text-align:right">
+            <div style="display:inline-flex;gap:6px">
+              <form method="post" style="display:inline">
+                <input type="hidden" name="csrf" value="<?=h(csrf_token())?>">
+                <input type="hidden" name="action" value="claims">
+                <input type="hidden" name="claim_id" value="<?=(int)$claim['id']?>">
+                <input type="hidden" name="decision" value="confirm">
+                <button class="btn btn-primary btn-sm" onclick="return confirm('Confirm you can see this payment in your bank statement?')">Confirm</button>
+              </form>
+              <form method="post" style="display:inline">
+                <input type="hidden" name="csrf" value="<?=h(csrf_token())?>">
+                <input type="hidden" name="action" value="claims">
+                <input type="hidden" name="claim_id" value="<?=(int)$claim['id']?>">
+                <input type="hidden" name="decision" value="reject">
+                <button class="btn btn-secondary btn-sm">Reject</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      <?php endforeach ?>
+      </tbody>
+    </table>
+  </div>
+</div>
+<?php endif ?>
 
 <div class="dashboard-bottom-grid" style="grid-template-columns:1.6fr 1fr;margin-bottom:20px">
   <div class="card">

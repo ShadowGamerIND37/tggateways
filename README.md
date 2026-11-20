@@ -85,13 +85,14 @@ minutes, which is the real end-to-end proof that receipt polling works.
 
 ## 3. First-run checklist (10 minutes)
 
-1. **Create the merchant login** at `/register.php` (12-character password minimum). You land on **Integrations**.
-2. **Add your receiving account**: account label, UPI ID (`name@bank`), receipt mailbox address, IMAP host (`imap.gmail.com`, port `993`) and the app password. Save.
-3. **Test the mailbox** with *Test mailbox connection*. It opens the mailbox read-only and reports the message count; it does not consume any mail.
-4. **Create a payment link** on **Payment Links**, open the `…/pay.php?link=…` URL in a private window, and scan the QR with a UPI app — **use ₹1 and pay yourself**.
-5. Watch the payment appear: the checkout page polls `/api/checkout-status.php`, and within one worker cycle (≈5 s plus the provider's email delay) the order flips to paid. Verify in **Transactions**.
-6. **Set your webhook endpoint** on **Webhooks** if you are integrating a backend. The signature is `sha256=HMAC_SHA256(rawBody, api_key)` in `X-TGGateway-Signature`.
-7. Confirm `/api/health.php` reports `receipt_parser: operational`.
+1. **Secure the admin panel first.** Open `/admin/login.php` and sign in with `admin` / `admin` — the first request on a fresh database creates that owner account automatically. Change the password immediately on **Administrators**; the panel keeps warning you until you do. This is a separate account system from merchant logins, so a merchant can never reach it.
+2. **Create the merchant login** at `/register.php` (12-character password minimum). You land on **Integrations**.
+3. **Add your receiving account**: account label, UPI ID (`name@bank`), receipt mailbox address, IMAP host (`imap.gmail.com`, port `993`) and the app password. Save.
+4. **Test the mailbox** with *Test mailbox connection*. It opens the mailbox read-only and reports the message count; it does not consume any mail.
+5. **Create a payment link** on **Payment Links**, open the `…/pay.php?link=…` URL in a private window, and scan the QR with a UPI app — **use ₹1 and pay yourself**.
+6. Watch the payment appear: the checkout page polls `/api/checkout-status.php`, and within one worker cycle (≈5 s plus the provider's email delay) the order flips to paid. Verify in **Transactions**.
+7. **Set your webhook endpoint** on **Webhooks** if you are integrating a backend. The signature is `sha256=HMAC_SHA256(rawBody, api_key)` in `X-TGGateway-Signature`.
+8. Confirm `/api/health.php` reports `receipt_parser: operational`.
 
 ### Behind a Cloudflare Tunnel (or any reverse proxy)
 
@@ -354,14 +355,17 @@ node tests/run.mjs                 # auto-detects php, then a php-wasm CLI
 PHP_BIN=/usr/bin/php node tests/run.mjs
 ```
 
-328 checks run against a throwaway SQLite database: receipt parsing/matching, MIME
+367 checks run against a throwaway SQLite database: receipt parsing/matching, MIME
 decoding against plain/quoted-printable/base64/forwarded samples, the IMAP protocol client
 driven by a scripted peer, AES-GCM round-trips, auth and CSRF, input validation, rate
 limits, order creation, status and verification endpoints, the hosted checkout page,
 settlement idempotency (matched → duplicate → unmatched → unparsed), worker housekeeping,
 webhook signing/queueing/retry and the SSRF URL policy. The IMAP setup suite covers
 active-wallet selection, disconnection handling, provider-failure classification and the
-refusal to delete a wallet that still has pending orders. MySQL remains the production database; SQLite exists so the
+refusal to delete a wallet that still has pending orders. The admin panel has its own
+section covering the seeded owner, the sign-in gate, role protections, CSRF, session
+revocation and the three places merchant suspension is enforced. Payer UTR claims are
+covered end to end, including the critical negative case: a claim must not settle an order. MySQL remains the production database; SQLite exists so the
 same code is testable without a database server.
 
 Webhook delivery is tested through `tests/webhook-transport.php`, which records the exact
@@ -370,7 +374,68 @@ deterministically. Production delivery always uses the HTTPS-only, DNS-pinned tr
 
 ---
 
-## 9. Production checklist — do not skip
+## 9. Admin panel
+
+A separate console at `/admin/` for whoever operates the deployment.
+
+| | |
+|---|---|
+| **URL** | `/admin/login.php` |
+| **First sign-in** | `admin` / `admin`, created automatically on first run |
+| **Change it** | **Administrators → Change your password** (10 characters minimum) |
+
+The seeded owner is flagged `must_change_password`, so the panel shows a warning banner
+until it is rotated. Seeding runs exactly once: it is a no-op once any admin exists, and it
+never resets a password that has already been changed.
+
+### Why it is a separate account system
+
+Administrators live in their own table with their own sessions. Merchant rows are created by
+anyone via `/register.php`, so if administrator status were a column on `merchants`, a
+registration or profile bug could escalate a paying customer into an operator. Two tables
+mean that privilege cannot be granted by writing to a row a merchant controls. A merchant
+cookie is not accepted by `/admin/`, and an admin cookie does nothing on `/dashboard.php`.
+
+Admin sessions are stored server-side as the SHA-256 of a random token, so a database
+leak does not hand over logins. Changing your password revokes your other sessions.
+
+### What operators can do
+
+| Page | Capability |
+|---|---|
+| Overview | merchants, collections, disconnected wallets, failing webhooks, unpaid invoices |
+| Merchants | search, suspend/restore, internal notes |
+| Orders | every order deployment-wide, read-only |
+| Addons & Billing | subscriptions, invoices, mark paid out of band |
+| Support | read and reply to tickets |
+| Audit log | admin and merchant actions in one stream |
+| Administrators | add, disable, change role, delete |
+| Deployment | preflight checks and environment summary |
+
+### Suspension is enforced in three places
+
+A "suspended" badge that stops nothing would be theatre, so suspension is checked at the
+sign-in form, on every protected page request (`require_login()` re-reads the status, then
+destroys the session), and on the API (a suspended merchant's key returns `403`, not `401`,
+so an integrator can tell "rotate your key" from "pay your invoice").
+
+### Three protections that stop one-way doors
+
+1. The last active owner cannot be demoted — otherwise nobody could ever administer the
+   deployment again without editing the database.
+2. The last active owner cannot be deleted, for the same reason.
+3. Nobody can delete their own account.
+
+Only the `owner` role can mint or demote administrators. `staff` manages merchants, billing
+and support; `viewer` is read-only.
+
+### What it deliberately does not do
+
+It does not let an operator hand-edit an order's status. Someone who can mark money as
+collected that never arrived corrupts the audit trail, and the record would blame the
+merchant. Corrections belong to the receipt pipeline and the payer-claim flow.
+
+## 10. Production checklist — do not skip
 
 - Confirm you are allowed to accept these payments with your UPI provider and follow its limits, business rules and customer-dispute process. Multiple accounts are not a way to bypass provider controls.
 - Test mailbox access, actual receipt templates, email delays, exact amounts, UTR parsing, duplicate receipts, concurrent orders and refund/chargeback handling. Email notifications are not a bank settlement API and may be delayed or changed by the provider.
