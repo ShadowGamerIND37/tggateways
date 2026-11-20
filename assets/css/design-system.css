@@ -1868,3 +1868,163 @@ a.time-pill:focus-visible { outline: 2px solid #2563eb; outline-offset: 1px; }
   .card-header { flex-direction: column; align-items: stretch; }
   .card-header:has(.card-sub) { padding-bottom: 12px; }
 }
+
+/* ============================================================
+   Text boxes: one look for every form control (appended)
+   ------------------------------------------------------------
+   Several pages were written against an older markup idiom — a `.field`
+   wrapper with a bare <input>, no `.form-input`, and no `.field` rule in
+   the sheet at all. `.field` only ever had `.field-label` / `.field-val`
+   defined, and the single global input rule set a font-family, so those
+   controls fell through to the browser default: a 1px inset border, a
+   different height from the styled inputs beside them, Arial-ish metrics,
+   and a focus ring that ignored the design system.
+
+   Rather than patch nine call sites and leave the next page free to
+   reintroduce the problem, the base element selector now carries the
+   styles. Anything with a class still wins (the class selectors below are
+   more specific), so this is purely the fallback that was missing.
+   ============================================================ */
+
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="url"],
+input[type="password"],
+input[type="search"],
+input[type="tel"],
+input[type="date"],
+input:not([type]),
+select,
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 13px;
+  border: 1px solid var(--color-hairline-input, #dfe5ee);
+  border-radius: var(--r-md, 9px);
+  background: var(--surface-input, #fff);
+  color: var(--color-ink, #0b1329);
+  font-size: 14px;
+  font-family: var(--font, inherit);
+  line-height: 1.5;
+  transition: border-color var(--t-fast, 120ms), box-shadow var(--t-fast, 120ms);
+  outline: none;
+  /* Height parity: date/number spinners and selects all land on the same
+     baseline as a text input instead of drifting by a couple of pixels. */
+  min-height: 40px;
+  vertical-align: middle;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="email"]:focus,
+input[type="url"]:focus,
+input[type="password"]:focus,
+input[type="search"]:focus,
+input[type="tel"]:focus,
+input[type="date"]:focus,
+input:not([type]):focus,
+select:focus,
+textarea:focus {
+  border-color: var(--color-primary, #2563eb);
+  box-shadow: 0 0 0 3px var(--color-primary-glow, rgba(37, 99, 235, 0.12));
+}
+
+input[type="text"]::placeholder,
+input[type="number"]::placeholder,
+input[type="email"]::placeholder,
+input[type="url"]::placeholder,
+input[type="password"]::placeholder,
+input[type="search"]::placeholder,
+input[type="tel"]::placeholder,
+textarea::placeholder {
+  color: var(--ink-200, #9aa6b8);
+}
+
+/* Selects need the native arrow plus room for it; a bare select otherwise
+   sits flush against the right edge with the caret half clipped. */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7a90' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 34px;
+  cursor: pointer;
+}
+
+textarea {
+  min-height: 84px;
+  resize: vertical;
+  line-height: 1.65;
+}
+
+/* A read-only field is still a field: keep the shape, mute the fill, so an API
+   key in a mask input does not look like a broken form control. */
+input[readonly],
+textarea[readonly] {
+  background: #f7f9fc;
+  color: #4b5a72;
+  cursor: default;
+}
+input[readonly]:focus,
+textarea[readonly]:focus {
+  border-color: var(--color-hairline-input, #dfe5ee);
+  box-shadow: none;
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: #f4f6fa;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* Labels in the older `.field` idiom had no rule either, so they inherited
+   body size and sat tight against the control. */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field > label,
+.field > .label {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: var(--color-ink, #0b1329);
+}
+.field > label:has(+ input),
+.field > label:has(+ select),
+.field > label:has(+ textarea) { margin-bottom: 0; }
+
+/* Native checkbox/radio at the design system's accent, since `.field` blocks
+   mix them in with text inputs. */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--color-primary, #2563eb);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+/* File inputs render a browser button that cannot be themed; keep it
+   consistent enough that it does not look pasted in. */
+input[type="file"] {
+  font-size: 12.5px;
+  color: var(--color-ink-mute, #68758a);
+}
+input[type="file"]::file-selector-button {
+  font-family: var(--font, inherit);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 7px 12px;
+  margin-right: 10px;
+  border: 1px solid var(--color-hairline-input, #dfe5ee);
+  border-radius: var(--r-md, 9px);
+  background: #fff;
+  color: var(--color-ink, #0b1329);
+  cursor: pointer;
+}
+input[type="file"]::file-selector-button:hover { background: #f6f8fb; }
+
+/* The flex row that pairs an API key with Reveal/Copy must not stretch the
+   buttons to the input's new min-height. */
+.field > div { align-items: center; }

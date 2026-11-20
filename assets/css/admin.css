@@ -283,9 +283,14 @@
 }
 .admin-search svg { color: var(--color-ink-mute-2, #8b97a8); flex: 0 0 auto; }
 .admin-search input {
-  border: none;
+  /* .admin-search draws the field box, so the input inside it must not draw a
+     second border. The design-system baseline now styles bare inputs; this
+     resets that inside the wrapper only. */
+  border: none !important;
+  box-shadow: none !important;
   outline: none;
   background: transparent;
+  min-height: 0 !important;
   padding: 10px 0;
   font-size: 12.5px;
   width: 100%;
