@@ -177,28 +177,52 @@ body{background:#f1f4f9}
 .wait{font-size:13px;line-height:1.5}.claim summary{font-size:13px}.claim-intro,.claim-hint{font-size:12px}.checkout-foot{font-size:11px}
 [hidden]{display:none!important}@media(max-width:480px){.checkout{margin:18px auto;padding:22px}.checkout-qr{max-width:100%}.upi-actions a{flex:1 1 40%}}
 </style>
+<link rel="stylesheet" href="/assets/css/checkout.css">
 </head>
-<body>
+<body class="checkout-page">
 <main class="checkout">
-  <a class="brand" href="/"><img src="/assets/img/tg-mark.png" alt="">TG Gateways</a>
+  <div class="checkout-top"><a class="brand" href="/"><img src="/assets/img/tg-mark.png" alt="">TG Gateways</a><span class="checkout-tag">UPI checkout</span></div>
   <?php if ($notice): ?>
     <div class="note" style="margin-top:20px"><?=h($notice)?></div>
   <?php elseif ($order): ?>
     <div class="checkout-brand">PAYING TO</div>
     <h1><?=h($order['merchant_name'])?></h1>
     <div class="checkout-total">₹<?=number_format((float)$order['payable_amount'],2)?></div>
-    <div class="checkout-meta">INR · Order <?=h($order['order_id'])?></div>
+    <div class="checkout-order">INR · Order <?=h($order['order_id'])?></div>
     <?php if ($order['status'] === 'pending'): ?>
-      <div id="payment-options"><div class="checkout-qr" id="qr" data-upi="<?=h($upi)?>" aria-label="UPI payment QR code"></div>
-      <div class="upi-actions">
-        <a href="<?=h($upi)?>" rel="noopener">▦ Open UPI app</a>
-        <a href="<?=h($upi)?>" rel="noopener">Google Pay</a>
-        <a href="<?=h($upi)?>" rel="noopener">PhonePe</a>
-        <a href="<?=h($upi)?>" rel="noopener">Paytm</a>
+      <div id="payment-options">
+        <section class="checkout-scan" aria-labelledby="scan-heading">
+          <h2 class="checkout-section-title" id="scan-heading">Scan to pay</h2>
+          <p class="checkout-section-sub">Open any UPI app and scan this QR code.</p>
+          <div class="checkout-qr" id="qr" data-upi="<?=h($upi)?>" role="img" aria-label="UPI payment QR code"></div>
+        </section>
+        <section class="payment-apps" aria-labelledby="apps-heading">
+          <h2 class="checkout-section-title" id="apps-heading">Pay with an app</h2>
+          <p class="checkout-section-sub">Choose a UPI app on your phone.</p>
+          <div class="upi-actions">
+            <a class="upi-primary" href="<?=h($upi)?>" rel="noopener">
+              <svg class="upi-generic-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"></rect><path d="M9 18h6"></path></svg>
+              <span>Open UPI app</span>
+            </a>
+            <a href="<?=h($upi)?>" rel="noopener" data-upi-package="com.google.android.apps.nbu.paisa.user">
+              <img class="upi-app-icon upi-google-icon" src="/assets/img/gateways/googlepay.svg" alt=""><span>Google Pay</span>
+            </a>
+            <a href="<?=h($upi)?>" rel="noopener" data-upi-package="com.phonepe.app">
+              <img class="upi-app-icon" src="/assets/img/gateways/phonepe.png" alt=""><span>PhonePe</span>
+            </a>
+            <a href="<?=h($upi)?>" rel="noopener" data-upi-package="net.one97.paytm">
+              <img class="upi-app-icon" src="/assets/img/gateways/paytm.png" alt=""><span>Paytm</span>
+            </a>
+          </div>
+          <p class="upi-app-note" id="app-link-note">App buttons use your device's UPI app chooser when available. Apps and support vary by device.</p>
+        </section>
+        <div class="copy-upi">
+          <div class="copy-upi-label"><span>Or pay to this UPI ID</span><code id="upi-id"><?=h($order['upi_id'] ?: '—')?></code></div>
+          <button type="button" class="btn btn-outline" data-copy-target="#upi-id">Copy UPI ID</button>
+          <div class="copy-upi-hint">Use the exact amount shown above. Include the order ID as the payment note if your app allows it.</div>
+        </div>
       </div>
-      <div class="copy-upi">or pay to <code id="upi-id"><?=h($order['upi_id'] ?: '—')?></code>
-        <button type="button" class="btn btn-outline" style="padding:4px 8px;font-size:9px" data-copy-target="#upi-id">Copy UPI ID</button>
-      </div></div><div class="wait" id="payment-status" role="status" aria-live="polite">◌ Waiting for payment…</div>
+      <div class="wait" id="payment-status" role="status" aria-live="polite">◌ Waiting for payment…</div>
       <div class="checkout-meta" style="margin-top:12px" id="expiry-label">Expires in <strong id="countdown">--:--</strong></div>
       <?php if ($claimNotice !== ''): ?>
         <div class="claim-result claim-ok"><?=h($claimNotice)?></div>
@@ -259,6 +283,21 @@ body{background:#f1f4f9}
     target.textContent = 'QR unavailable — use the UPI buttons below.';
   }
 
+  // Chrome on Android can target installed UPI apps by package. Everywhere
+  // else, retain the standard UPI link and let the device choose. If the named
+  // app is unavailable, the generic button remains available as a fallback.
+  if (typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '') &&
+      /Chrome\//i.test(navigator.userAgent || '') && !/;\s*wv\)/i.test(navigator.userAgent || '')) {
+    document.querySelectorAll('[data-upi-package]').forEach((link) => {
+      const packageName = link.dataset.upiPackage;
+      if (packageName && /^upi:\/\//i.test(upi)) {
+        link.href = upi.replace(/^upi:\/\//i, 'intent://') + '#Intent;scheme=upi;package=' + packageName + ';end';
+      }
+    });
+    const note = document.getElementById('app-link-note');
+    if (note) note.textContent = 'On supported Android browsers, app buttons try to open the named app. If unavailable, use Open UPI app.';
+  }
+
   document.querySelectorAll('[data-copy-target]').forEach((button) => {
     button.addEventListener('click', async () => {
       const node = document.querySelector(button.dataset.copyTarget);
@@ -275,7 +314,7 @@ body{background:#f1f4f9}
   const orderId = <?=json_encode($order['order_id'])?>;
   const secondsRemaining = <?=json_encode(max(0, $deadline - time()))?>;
   const deadline = performance.now() + secondsRemaining * 1000;
-  const redirect = <?=json_encode($redirect)?>;
+  const redirect = <?=json_encode($redirect, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)?>;
   const statusBox = document.getElementById('payment-status');
   let done = false;
 

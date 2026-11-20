@@ -2942,9 +2942,46 @@ if (pollAfterExpiry) pollAfterExpiry();
 await new Promise(resolve => setImmediate(resolve));
 check('Checkout displays expiry only after the server confirms it', nodes['payment-status'].className === 'wait expired' && nodes['expiry-label'].hidden, JSON.stringify({status:nodes['payment-status'],timers:timers.length}));
 
+check('Checkout displays local icons for all four payment options',
+  featurePage.body.includes('upi-generic-icon') && featurePage.body.includes('/assets/img/gateways/googlepay.svg')
+  && featurePage.body.includes('/assets/img/gateways/phonepe.png') && featurePage.body.includes('/assets/img/gateways/paytm.png')
+  && ['Open UPI app', 'Google Pay', 'PhonePe', 'Paytm'].every(name => featurePage.body.includes(name)));
+check('Checkout has scan, app and manual payment guidance',
+  featurePage.body.includes('Scan to pay') && featurePage.body.includes('Pay with an app')
+  && featurePage.body.includes('Use the exact amount') && featurePage.body.includes('not automatic proof of payment'));
+check('Google Pay icon is included locally', existsSync(path.join(root,'assets/img/gateways/googlepay.svg')));
+
+function simulateCheckoutLinks(userAgent) {
+  const upi = 'upi://pay?pa=merchant%40upi&am=50.00&tn=tg_TEST';
+  const packages = ['com.google.android.apps.nbu.paisa.user','com.phonepe.app','net.one97.paytm'];
+  const links = packages.map(upiPackage => ({ dataset: { upiPackage }, href: upi }));
+  const elements = Object.fromEntries(['qr','payment-status','payment-options','expiry-label','countdown','app-link-note'].map(id => [id, {dataset:{upi},textContent:'',hidden:false}]));
+  if (checkoutScript) vm.runInNewContext(checkoutScript, {
+    document: {getElementById:id=>elements[id],querySelectorAll:selector=>selector === '[data-upi-package]' ? links : []},
+    navigator:{userAgent},
+    qrcode:()=>({addData(){},make(){},createSvgTag(){return '<svg></svg>'}}),
+    performance:{now:()=>0}, fetch:async()=>({ok:true,json:async()=>({status:'pending'})}),
+    setTimeout:()=>{}, location:{assign(){}}, console,
+  });
+  return {links,upi,note:elements['app-link-note'].textContent};
+}
+const androidLinks = simulateCheckoutLinks('Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/128.0 Mobile Safari/537.36');
+check('Android Chrome app buttons target the corresponding packages without changing payment details',
+  androidLinks.links.every(link => link.href === androidLinks.upi.replace('upi://','intent://') + '#Intent;scheme=upi;package=' + link.dataset.upiPackage + ';end')
+  && androidLinks.note.includes('If unavailable'));
+const iphoneLinks = simulateCheckoutLinks('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Version/17.0 Mobile Safari/604.1');
+const webviewLinks = simulateCheckoutLinks('Mozilla/5.0 (Linux; Android 14; Pixel 7; wv) AppleWebKit/537.36 Chrome/128.0 Mobile Safari/537.36');
+check('Other devices and Android WebViews retain the generic UPI links',
+  iphoneLinks.links.every(link=>link.href === iphoneLinks.upi) && webviewLinks.links.every(link=>link.href === webviewLinks.upi));
+
+
 php(`<?php require 'includes/db.php'; db()->prepare("UPDATE orders SET expires_at=? WHERE order_id=?")->execute([db_now(-2),'${featureOrderJson.order_id}']);`);
 const expiredStatus = request({method:'GET',script:path.join(root,'api/checkout-status.php'),query:{order_id:featureOrderJson.order_id}});
 check('Status endpoint expires orders on the server', json(expiredStatus)?.status === 'expired');
+
+const expiredCheckout = request({method:'GET',script:path.join(root,'pay.php'),query:{order_id:featureOrderJson.order_id}});
+check('Expired checkout does not display payment-app buttons', expiredCheckout.status === 200 && !expiredCheckout.body.includes('data-upi-package=') && !expiredCheckout.body.includes('id="payment-options"'));
+
 
 const signedExpiryOrder = request({method:'POST',script:path.join(root,'api/create-order.php'),headers:{'X-Api-Key':'tg_feature_test_key'},body:JSON.stringify({amount:51})});
 const signedExpiryId = json(signedExpiryOrder)?.order_id || '';
