@@ -64,6 +64,9 @@ function tg_status_badge(string $status): string {
         'pending' => ['pending', 'Created'],
         'expired' => ['expired', 'Expired'],
         'failed'  => ['failed', 'Failed'],
+        // Fully returned to the customer. Distinct from 'success' so a refunded
+        // order can never be mistaken for one that still holds money.
+        'refunded' => ['refunded', 'Refunded'],
         // Payment-link states reuse the same pill styling with their own labels.
         'active'   => ['success', 'Active'],
         'inactive' => ['expired', 'Inactive'],

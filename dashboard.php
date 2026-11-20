@@ -12,17 +12,39 @@ $pageTitle = 'Dashboard';
 $pdo = db();
 $id = (int)$merchant['id'];
 
+/* Revenue is *collected minus refunded*, not just collected.
+   Before refunds existed the two were the same number. Once an order can be
+   returned, counting only status='success' would make money disappear from the
+   dashboard the moment a customer was refunded, with nothing on screen to
+   explain it. Refunded orders are counted as captured revenue and then
+   subtracted, so gross, refunds and net all reconcile. */
 $stats = $pdo->prepare(
     "SELECT COUNT(*) total,
             COALESCE(SUM(CASE WHEN status='success' THEN 1 ELSE 0 END),0) success,
             COALESCE(SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END),0) pending,
             COALESCE(SUM(CASE WHEN status='expired' THEN 1 ELSE 0 END),0) expired,
+            COALESCE(SUM(CASE WHEN status='refunded' THEN 1 ELSE 0 END),0) refunded,
+            COALESCE(SUM(CASE WHEN status IN ('success','refunded') THEN amount ELSE 0 END),0) gross,
             COALESCE(SUM(CASE WHEN status='success' THEN amount ELSE 0 END),0) revenue
        FROM orders WHERE merchant_id=?"
 );
 $stats->execute([$id]);
 $stats = $stats->fetch();
 $failed = (int)$stats['expired'];
+
+/* What has actually been handed back, including partial refunds against orders
+   that are still 'success'. */
+$refundTotals = ['total' => 0.0, 'count' => 0];
+try {
+    $rt = $pdo->prepare('SELECT COALESCE(SUM(amount),0) total, COUNT(*) n FROM refunds WHERE merchant_id=?');
+    $rt->execute([$id]);
+    $row = $rt->fetch() ?: ['total' => 0, 'n' => 0];
+    $refundTotals = ['total' => (float)$row['total'], 'count' => (int)$row['n']];
+} catch (Throwable $e) {
+    // Older database without the refunds table: report zero rather than failing.
+    error_log('dashboard refunds: '.$e->getMessage());
+}
+$stats['net'] = max(0.0, round((float)$stats['gross'] - $refundTotals['total'], 2));
 
 $recentStmt = $pdo->prepare(
     'SELECT order_id, utr, customer_name, customer_phone, amount, status, created_at
@@ -114,7 +136,14 @@ require __DIR__.'/includes/dashboard-header.php';
       <div class="stat-card-label">Total Revenue</div>
       <div class="stat-card-icon green"><?=icon('trending-up', 18)?></div>
     </div>
-    <div class="stat-card-value tnum" style="color:#10b981">₹<?=number_format((float)$stats['revenue'], 2)?></div>
+    <div class="stat-card-value tnum" style="color:#10b981">₹<?=number_format((float)$stats['net'], 2)?></div>
+    <?php if ($refundTotals['count'] > 0): ?>
+      <div class="stat-card-note">
+        ₹<?=number_format((float)$stats['gross'], 2)?> collected
+        &minus; ₹<?=number_format($refundTotals['total'], 2)?> refunded
+        (<?=(int)$refundTotals['count']?>)
+      </div>
+    <?php endif ?>
   </div>
   <div class="stat-card">
     <div class="stat-card-top">

@@ -363,6 +363,79 @@ function tg_migrations(): array {
                 'CREATE INDEX IF NOT EXISTS idx_invoice_merchant ON invoices(merchant_id, issued_at)',
             ],
         ],
+        /* Idempotent order creation.
+           A merchant server that times out and retries POST /api/create-order.php
+           used to get a second order for one intended charge. The key is scoped
+           per merchant and stores the exact response body, so a replay returns
+           the original order rather than creating another one. */
+        '2026_11_18_idempotency' => [
+            'mysql' => [
+                'CREATE TABLE IF NOT EXISTS idempotency_keys (
+                    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    merchant_id BIGINT UNSIGNED NOT NULL,
+                    idem_key VARCHAR(190) NOT NULL,
+                    request_hash CHAR(64) NOT NULL,
+                    response_body MEDIUMTEXT NULL,
+                    response_code INT NULL,
+                    order_id VARCHAR(64) NULL,
+                    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY uniq_idem (merchant_id, idem_key),
+                    INDEX idx_idem_created (created_at)
+                ) ENGINE=InnoDB',
+            ],
+            'sqlite' => [
+                "CREATE TABLE IF NOT EXISTS idempotency_keys (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    merchant_id INTEGER NOT NULL,
+                    idem_key TEXT NOT NULL,
+                    request_hash TEXT NOT NULL,
+                    response_body TEXT,
+                    response_code INTEGER,
+                    order_id TEXT,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+                )",
+                'CREATE UNIQUE INDEX IF NOT EXISTS uniq_idem ON idempotency_keys(merchant_id, idem_key)',
+                'CREATE INDEX IF NOT EXISTS idx_idem_created ON idempotency_keys(created_at)',
+            ],
+        ],
+        /* Refunds.
+           The gateway could take money and never give it back: no refund table,
+           no status, no event. A direct-UPI merchant refunds out of band (they
+           send money back from their own UPI app), so the honest thing to model
+           is a *record* of that refund plus the proof, not a claim to have moved
+           the money. `utr` is the refund's own bank reference. */
+        '2026_11_18_refunds' => [
+            'mysql' => [
+                'CREATE TABLE IF NOT EXISTS refunds (
+                    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    order_id VARCHAR(64) NOT NULL,
+                    merchant_id BIGINT UNSIGNED NOT NULL,
+                    refund_id VARCHAR(64) NOT NULL UNIQUE,
+                    amount DECIMAL(12,2) NOT NULL,
+                    reason VARCHAR(255) NULL,
+                    refunded_by VARCHAR(190) NULL,
+                    utr VARCHAR(64) NULL,
+                    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_refund_order (order_id),
+                    INDEX idx_refund_merchant (merchant_id, created_at)
+                ) ENGINE=InnoDB',
+            ],
+            'sqlite' => [
+                "CREATE TABLE IF NOT EXISTS refunds (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    order_id TEXT NOT NULL,
+                    merchant_id INTEGER NOT NULL,
+                    refund_id TEXT NOT NULL UNIQUE,
+                    amount NUMERIC NOT NULL,
+                    reason TEXT,
+                    refunded_by TEXT,
+                    utr TEXT,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+                )",
+                'CREATE INDEX IF NOT EXISTS idx_refund_order ON refunds(order_id)',
+                'CREATE INDEX IF NOT EXISTS idx_refund_merchant ON refunds(merchant_id, created_at)',
+            ],
+        ],
 
     ];
 }

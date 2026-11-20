@@ -1404,6 +1404,9 @@ input, button, textarea, select { font-family: var(--font); }
 .status-pending { background: #fefce8; color: #854d0e; border-color: #fef08a; }
 .status-failed  { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
 .status-expired { background: #f8fafc; color: #475569; border-color: #e2e8f0; }
+/* Violet, not green or grey: a refunded order is settled but no longer holds
+   money, and it must not read as either "captured" or "expired". */
+.status-refunded { background: #f5f3ff; color: #5b21b6; border-color: #ddd6fe; }
 
 /* Header merchant-id chip */
 .mid-badge-btn {
@@ -2179,3 +2182,68 @@ table td code {
   font-weight: 600;
 }
 .pager span.pager-gap { border-color: transparent; }
+
+/* ============================================================
+   Refund panel in the transaction drawer (appended)
+   ============================================================ */
+.refund-block {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-hairline, #e7ebf2);
+}
+.refund-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.refund-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.2px;
+  color: var(--color-ink, #16233a);
+}
+.refund-balance {
+  display: flex;
+  gap: 14px;
+  font-size: 11.5px;
+  color: var(--color-ink-mute, #68758a);
+  white-space: nowrap;
+}
+.refund-balance strong {
+  color: var(--color-ink, #16233a);
+  font-weight: 650;
+}
+.refund-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px 16px;
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--surface-page, #f8fafc);
+  border: 1px solid var(--color-hairline, #e7ebf2);
+  border-radius: 12px;
+}
+.refund-form .form-group { margin: 0; }
+.refund-form .form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+@media (max-width: 640px) {
+  .refund-form { grid-template-columns: 1fr; }
+  .refund-balance { flex-direction: column; gap: 2px; }
+}
+
+/* Small explanatory line under a stat card value. */
+.stat-card-note {
+  margin-top: 6px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--color-ink-mute-2, #8b97a8);
+}

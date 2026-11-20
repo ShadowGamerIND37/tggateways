@@ -438,7 +438,7 @@ merchant. Corrections belong to the receipt pipeline and the payer-claim flow.
 ## 10. Production checklist — do not skip
 
 - Confirm you are allowed to accept these payments with your UPI provider and follow its limits, business rules and customer-dispute process. Multiple accounts are not a way to bypass provider controls.
-- Test mailbox access, actual receipt templates, email delays, exact amounts, UTR parsing, duplicate receipts, concurrent orders and refund/chargeback handling. Email notifications are not a bank settlement API and may be delayed or changed by the provider.
+- Test mailbox access, actual receipt templates, email delays, exact amounts, UTR parsing, duplicate receipts and concurrent orders. Refunds are recorded (amount, bank UTR, reason, issuer) with the sum capped at what was collected; chargeback handling is still yours to operate. Email notifications are not a bank settlement API and may be delayed or changed by the provider.
 - Confirm `SMTP_HOST` and `APP_URL` are set: self-service password recovery (`/forgot-password.php`) needs both, and reset links are built from `APP_URL` so a spoofed `Host` header cannot redirect a token.
 - Add email verification, a proper privacy notice, data-retention/deletion controls and alerting. Audit trails and password recovery are implemented; recovery is single-use, expires hourly and stores only token hashes.
 - Use a dedicated mailbox; the app password grants full access to that mailbox. Protect the encryption key and database separately and rotate/revoke credentials promptly.
