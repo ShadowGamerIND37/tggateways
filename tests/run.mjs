@@ -1980,6 +1980,50 @@ check('ai-prompt.txt gives both HMAC snippets',
 check('ai-prompt.txt warns about idempotency', /delivered more than once/.test(promptText));
 check('ai-prompt.txt maps the key files', promptText.includes('includes/settlement.php'));
 
+check('AI prompt uses the configured deployment URL and explains order creation',
+  promptText.includes('https://gate.example.com') && promptText.includes('POST /api/create-order.php')
+  && promptText.includes('payable_amount') && promptText.includes('1,000,000'));
+check('AI prompt documents real webhook signature prefix and duplicate handling',
+  promptText.includes("'sha256=' + hmac.new") && promptText.includes("'sha256=' . hash_hmac")
+  && promptText.includes('delivered more than once') && promptText.includes('raw HTTP body'));
+check('AI prompt explains idempotency limitations rather than promising exactly once',
+  promptText.includes('not one atomic transaction') && /do not\s+assume every 4xx/i.test(promptText));
+check('AI prompt distinguishes manual refunds from nonexistent API and events',
+  promptText.includes('does not transfer funds') && promptText.includes('no refund API or payment.refunded webhook'));
+check('Text endpoint lists actual link and transaction parameters',
+  !docText.includes('create|list|update|delete') && !docText.includes('custom slug')
+  && docText.includes('limit: 1–100') && docText.includes('search: order ID or UTR'));
+check('Text endpoint specifies sha256= webhook signature prefix', docText.includes('sha256= followed by hex hmac_sha256'));
+
+// Exercise the actual PHP code printed in the prompt, not a second hand-written copy.
+const phpVerifyExample = promptText.match(/PHP signature check[^\n]*:\n([\s\S]*?)\n\nOTHER IMPLEMENTED ROUTES/);
+const exampleBody = '{"order_id":"tg_TEST1234"}';
+const signedExample = 'sha256=' + crypto.createHmac('sha256', 'example-key').update(exampleBody).digest('hex');
+const phpExampleResult = phpVerifyExample && JSON.parse(php(`<?php
+$rawBody = '${exampleBody}'; $apiKey = 'example-key';
+$_SERVER['HTTP_X_TGGATEWAY_SIGNATURE'] = '${signedExample}';
+${phpVerifyExample[1]}
+$good = $valid;
+$_SERVER['HTTP_X_TGGATEWAY_SIGNATURE'] = 'sha256=bad';
+${phpVerifyExample[1]}
+echo json_encode([$good, $valid]);
+`));
+check('Published PHP webhook snippet accepts a real signature and rejects a bad one',
+  phpExampleResult && phpExampleResult[0] === true && phpExampleResult[1] === false);
+
+const pythonVerifyExample = promptText.match(/Python signature check[^\n]*:\n([\s\S]*?)\n\nPHP signature check/);
+let pythonExampleResult = '';
+if (pythonVerifyExample) {
+  const snippet = pythonVerifyExample[1].split('\n').map(line => line.replace(/^  /, '')).join('\n');
+  pythonExampleResult = execFileSync('python3', ['-c',
+    `api_key = 'example-key'\nraw_body = b'${exampleBody}'\nsupplied = '${signedExample}'\n${snippet}\nprint(valid)\nsupplied = 'sha256=bad'\n${snippet}\nprint(valid)`
+  ], { encoding: 'utf8' }).trim();
+}
+check('Published Python webhook snippet accepts a real signature and rejects a bad one',
+  pythonExampleResult === 'True\nFalse');
+
+
+
 // Served over HTTP with the right content type.
 steps = requests([
   { method: 'GET', script: path.join(root, 'docs.txt.php') },
@@ -1991,6 +2035,22 @@ check('Text endpoints are public and serve text/plain',
   steps.map((r) => r.status).join(','));
 check('Text endpoints expose no merchant secrets',
   steps.every((r) => !(r.body || '').includes(apiKey)));
+
+const docsPage = request({ method: 'GET', script: path.join(root, 'docs.php') });
+const htmlPrompt = (docsPage.body.match(/<pre id="ai-prompt">([\s\S]*?)<\/pre>/) || [])[1] || '';
+const decodedPrompt = htmlPrompt.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+  .replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&amp;/g, '&');
+check('Copyable HTML prompt matches the public text endpoint',
+  docsPage.status === 200 && decodedPrompt === steps[2].body);
+check('Dedicated prompt copy block is not modified with an embedded copy button',
+  docsPage.body.includes("pre.id === 'ai-prompt'"));
+
+check('Prompt copy button uses the selector handler, not the literal-value handler',
+  docsPage.body.includes('data-copy-target="#ai-prompt"')
+  && !docsPage.body.includes('data-copy="#ai-prompt"')
+  && readFileSync(path.join(root, 'assets/js/main.js'), 'utf8').includes("querySelectorAll('[data-copy-target]')"));
+
+
 
 section('Layout and stylesheets');
 

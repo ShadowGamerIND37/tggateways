@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);?><!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Developer docs — TG Gateways</title><link rel="stylesheet" href="/assets/css/design-system.css"><link rel="stylesheet" href="/assets/css/marketing.css"><style>
+<?php declare(strict_types=1); require_once __DIR__.'/includes/apidoc.php'; ?><!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Developer docs — TG Gateways</title><link rel="stylesheet" href="/assets/css/design-system.css"><link rel="stylesheet" href="/assets/css/marketing.css"><style>
 /* Documentation layout. The previous sheet set body copy at 12px, sidebar
    links at 10px and code at 10px — below the readable floor on any display,
    and the 220px fixed sidebar left the article column narrow enough that
@@ -62,13 +62,13 @@
     <a href="#troubleshooting">Troubleshooting</a>
     <a href="#admin">Admin panel</a>
     <a href="#security">Security notes</a>
-  </nav><article class="docs-main"><div class="eyebrow">DEVELOPER DOCUMENTATION</div><h1>Build payments into your product.</h1><p>Integrate direct-to-merchant UPI checkout, then receive a status update from your configured payment-receipt workflow.</p><span class="pill pill-blue">API v1 · Starter implementation</span> <span class="pill pill-green"><i class="dot"></i> Deployment-dependent</span><div style="display:flex;gap:12px;flex-wrap:wrap;margin:22px 0"><code id="install">pip install -e ./sdk/python-sdk</code><button class="btn btn-outline" data-copy="#install">Copy</button><a class="btn btn-outline" href="https://pypi.org/project/tggateways/">PyPI page (if published) ↗</a><a class="btn btn-outline" href="https://github.com/ShadowGamerIND37/tggateways">GitHub source ↗</a><a class="btn btn-outline" href="/openapi.json">OpenAPI JSON ↗</a><a class="btn btn-outline" href="/docs.txt">Plain-text reference ↗</a><a class="btn btn-outline" href="/llms.txt">llms.txt ↗</a><a class="btn btn-outline" href="/ai-prompt.txt">AI prompt ↗</a></div>
+  </nav><article class="docs-main"><div class="eyebrow">DEVELOPER DOCUMENTATION</div><h1>Build payments into your product.</h1><p>Integrate direct-to-merchant UPI checkout, then receive a status update from your configured payment-receipt workflow.</p><span class="pill pill-blue">API v1 · Starter implementation</span> <span class="pill pill-green"><i class="dot"></i> Deployment-dependent</span><div style="display:flex;gap:12px;flex-wrap:wrap;margin:22px 0"><code id="install">pip install -e ./sdk/python-sdk</code><button class="btn btn-outline" data-copy-target="#install">Copy</button><a class="btn btn-outline" href="https://pypi.org/project/tggateways/">PyPI page (if published) ↗</a><a class="btn btn-outline" href="https://github.com/ShadowGamerIND37/tggateways">GitHub source ↗</a><a class="btn btn-outline" href="/openapi.json">OpenAPI JSON ↗</a><a class="btn btn-outline" href="/docs.txt">Plain-text reference ↗</a><a class="btn btn-outline" href="/llms.txt">llms.txt ↗</a><a class="btn btn-outline" href="/ai-prompt.txt">AI prompt ↗</a></div>
 <div class="doc-callout">The code shown here is a self-hosted application and is not a payment aggregator. Merchant eligibility, account setup, settlement, provider fees, tax treatment and privacy obligations are determined by your providers and applicable law. Test in a controlled environment before production use.</div>
 <h2 id="quickstart">Quick start</h2><ol><li>Deploy PHP 8.1+ with PDO MySQL, OpenSSL, cURL and Composer dependencies.</li><li>Import <code>database/schema.sql</code>; configure secrets in a private <code>.env</code>.</li><li>Sign in at <code>/admin/login.php</code> with <code>admin</code>/<code>admin</code> and change that password immediately.</li><li>Provision an authenticated merchant and configure an active UPI account.</li><li>Send a server-side create-order request with your API key, then present the hosted checkout URL.</li><li>Set up and verify your receipt mailbox parser only after testing provider email formats. Configure a private cron.</li></ol><pre>composer install
 mysql -u tggateways -p tggateways &lt; database/schema.sql
 cp .env.example .env
 # set APP_URL, DB_*, and a random 32-byte APP_ENCRYPTION_KEY</pre>
-<h2 id="ai-context">Master AI agent context</h2><p>Copy this project-specific context into your coding assistant before asking it to extend the integration.</p><pre id="ai-prompt">You are helping integrate TG Gateways, a self-hosted PHP/MySQL application for direct-to-merchant UPI checkout. Do not claim it is a payment aggregator or that it holds funds. Use the configured API base URL and send the merchant API key only from a trusted server via X-Api-Key. Create an order with POST /api/create-order JSON {"amount":499.00,"customer_name":"Asha","redirect_url":"https://merchant.example/paid"}. Render checkout_url for the customer. Check status using GET /api/verify-order.php?order_id=... with server-side API-key auth. The public checkout-status endpoint is for display only and is not authoritative fulfillment proof. Verify the exact raw webhook request body using HMAC-SHA256 with the merchant API key and compare digests in constant time. Fulfill only once after signature verification and a successful payment event. The receipt IMAP parser is opt-in, depends on provider-specific receipt formats, and must be tested; never assume an email alone proves settlement unless validated. Keep all credentials server-side, store secrets encrypted, use HTTPS, respect UPI provider terms and limits, and consult qualified experts about applicable privacy, tax, consumer and payment rules. Database schema and routes live in this repository. Current API routes are documented in docs.php.</pre><button class="btn" data-copy="#ai-prompt">Copy Complete AI Prompt</button>
+<h2 id="ai-context">Master AI agent context</h2><p>Copy this project-specific context into your coding assistant before asking it to extend the integration.</p><pre id="ai-prompt"><?=htmlspecialchars(tg_doc_ai_prompt(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')?></pre><button class="btn" data-copy-target="#ai-prompt">Copy Complete AI Prompt</button>
 <h2 id="auth">Base URL & authentication</h2><p>Set your deployment's base URL. The example production domain shown in product copy is <code>https://tggateways.in</code>; use your actual HTTPS deployment URL.</p><pre>POST /api/create-order
 X-Api-Key: tg_your_secret_key
 Content-Type: application/json
@@ -78,7 +78,7 @@ Authorization: Bearer tg_your_secret_key</pre><p>API keys are merchant secrets. 
 <h2 id="api">Core API endpoints</h2><h3>1. Create order · POST /api/create-order</h3><pre>curl -X POST https://your-host.example/api/create-order \\
   -H 'X-Api-Key: tg_your_secret_key' -H 'Content-Type: application/json' \\
   -d '{"amount":499.00,"customer_name":"Asha","customer_email":"asha@example.com"}'</pre><pre>{"order_id":"tg_A1B2C3D4","qr_url":"https://your-deployment/api/qr-image.php?order_id=tg_A1B2C3D4","qr_path":"/api/qr-image.php?order_id=tg_A1B2C3D4","checkout_url":"https://your-deployment/pay.php?order_id=tg_A1B2C3D4","upi_intent":"upi://pay?...","payable_amount":"499.00","currency":"INR","status":"pending","expires_in_seconds":600}</pre><h3>Retry safety · Idempotency-Key</h3>
-<p>Any client that retries on a timeout has to know whether the first attempt created an order. Send a unique <code>Idempotency-Key</code> header and the server guarantees the request happens at most once.</p>
+<p>Any client that retries on a timeout has to know whether the first attempt created an order. Send a unique <code>Idempotency-Key</code> header to reduce duplicate orders on retries. It is not an exactly-once guarantee: a crash or persistence failure can leave an ambiguous result, so reconcile before creating a replacement order.</p>
 <pre>curl -X POST https://your-host.example/api/create-order \\
   -H 'X-Api-Key: tg_your_secret_key' \\
   -H 'Idempotency-Key: b1c2d3e4-5f60-4718-9a2b-3c4d5e6f7081' \\
@@ -88,9 +88,9 @@ Authorization: Bearer tg_your_secret_key</pre><p>API keys are merchant secrets. 
 <li><strong>Same key, same body</strong> — the original response comes back byte for byte, with the original status code and <code>Idempotent-Replay: true</code>. No second order is created.</li>
 <li><strong>Same key, different body</strong> — <code>409</code>. Silently honouring either request would be worse than refusing; use a fresh key.</li>
 <li><strong>Key still in flight</strong> — <code>409</code> with <code>Retry-After: 1</code>. Retry the same request shortly.</li>
-<li><strong>Failed validation</strong> — a <code>4xx</code> does not consume the key, so you can fix the body and retry with the same one.</li>
+<li><strong>Failed validation</strong> — explicit order validation failures release the key, so you can fix the body and retry. Other errors may leave a reservation temporarily in flight.</li>
 </ul>
-<p>The key body comparison ignores JSON key order and whitespace, so a re-serialised retry still replays. Keys are scoped per merchant and replayable for 24 hours. Omitting the header keeps the old behaviour: every request creates an order.</p>
+<p>The key body comparison ignores JSON key order and whitespace, so a re-serialised retry still replays. Keys are scoped per merchant; the retention setting defaults to 24 hours, with opportunistic cleanup. Do not rely on exact expiry or reuse old keys. Omitting the header keeps the old behaviour: every request creates an order.</p>
 <h3>2. Public checkout status · GET /api/checkout-status.php?order_id=…</h3><p>Returns display-safe order status and amount, with UTR hidden until success. Do not use this public route as your fulfillment authority.</p><h3>3. Server verification · GET /api/verify-order.php?order_id=…</h3><p>Requires API-key authentication; call from a trusted server.</p><h3>4. Hosted checkout · GET /pay.php?order_id=…</h3><p>Displays the QR, UPI-app intent shortcuts, countdown and status poller. Reusable links use <code>/pay.php?link=SLUG</code>.</p><h3>5. QR image · GET /api/qr-image.php?order_id=…</h3><p>Returns a PNG when Composer dependencies are installed. The image encodes a UPI payment intent for the configured active merchant account.</p><h3>6. Payment links · POST /api/manage-links.php</h3><pre>{"title":"Consultation","amount":499,"description":"Optional details"}</pre><p>GET on the same route lists the authenticated merchant's links.</p><h3>7. Transaction history · GET /api/get-transactions.php?status=success&amp;page=1&amp;limit=25</h3><p>Optional filters: <code>status</code> (pending, success, expired), <code>search</code> (order ID or UTR), <code>page</code> and <code>limit</code> (max 100).</p>
 <h2 id="webhooks">Webhooks & HMAC-SHA256</h2><p>Events are sent as JSON. The signature is <code>sha256=hex(HMAC-SHA256(raw_body, merchant_api_key))</code> in <code>X-TGGateway-Signature</code>. Retry scheduling starts at approximately 5, 10 and 15 minutes, followed by a final bounded attempt. Make handlers idempotent by order ID.</p><pre>{"event":"payment.succeeded","order_id":"tg_A1B2C3D4","amount":499,"payable_amount":499,"status":"success","utr":"123456789012","transaction_id":"123456789012","paid_at":"2026-01-01 12:00:00"}</pre>
 <h2 id="examples">Polyglot reference snippets</h2><h3>Python · SDK / requests</h3><pre>from tggateways import TGGateway
@@ -233,13 +233,17 @@ Password: admin</pre>
   // Copy buttons on every code block: reading a snippet is one step, getting
   // it into an editor is the step that actually matters.
   document.querySelectorAll('.docs-main pre').forEach(function (pre) {
-    if (pre.querySelector('.copy-code')) return;
+    // This block has a dedicated copy button; keep it free of injected text.
+    if (pre.id === 'ai-prompt' || pre.querySelector('.copy-code')) return;
     var btn = document.createElement('button');
     btn.className = 'copy-code';
     btn.type = 'button';
     btn.textContent = 'Copy';
     btn.addEventListener('click', function () {
-      var text = pre.innerText;
+      var clone = pre.cloneNode(true);
+      var copyButton = clone.querySelector('.copy-code');
+      if (copyButton) copyButton.remove();
+      var text = clone.textContent;
       var done = function () {
         btn.textContent = 'Copied';
         setTimeout(function () { btn.textContent = 'Copy'; }, 1600);

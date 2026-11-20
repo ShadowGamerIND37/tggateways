@@ -3,9 +3,9 @@ declare(strict_types=1);
 /**
  * The API described once, rendered four ways.
  *
- * docs.php, docs.txt, llms.txt and ai-prompt.txt all read from this file, so a
- * route cannot drift between the HTML docs and the machine-readable ones. The
- * reference product ships the same trio and LLM tooling depends on it.
+ * Shared endpoint summaries and AI integration guidance for the text references
+ * and the copyable prompt on docs.php. Verify these descriptions against the
+ * endpoint implementations when the API changes.
  */
 require_once __DIR__.'/db.php';
 
@@ -39,7 +39,7 @@ function tg_doc_endpoints(): array {
             'method' => 'GET', 'path' => '/api/checkout-status.php', 'auth' => 'None (public)',
             'summary' => 'Poll the display status of an order from the checkout page or a bot.',
             'params' => ['order_id' => 'required'],
-            'returns' => 'status (pending|success|expired), amount, utr and transaction_id once paid',
+            'returns' => 'status (pending|success|expired|refunded), payable_amount, expires_at and payment details when successful',
         ],
         [
             'method' => 'GET', 'path' => '/api/verify-order.php', 'auth' => 'API key',
@@ -55,21 +55,19 @@ function tg_doc_endpoints(): array {
         ],
         [
             'method' => 'GET|POST', 'path' => '/api/manage-links.php', 'auth' => 'API key',
-            'summary' => 'Create, list, update or deactivate reusable payment links.',
+            'summary' => 'List or create reusable payment links.',
             'params' => [
-                'action' => 'create|list|update|delete',
-                'title' => 'create — link name', 'amount' => 'create/update — fixed amount',
-                'slug' => 'optional — custom slug', 'expires_at' => 'optional — ISO timestamp',
+                'title' => 'POST — required link name', 'amount' => 'POST — required fixed amount',
+                'description' => 'POST — optional description', 'redirect_url' => 'POST — optional HTTPS URL',
             ],
-            'returns' => 'the link row, including its public /pay/<slug> URL',
+            'returns' => 'GET: links; POST: slug, title, amount and public URL',
         ],
         [
             'method' => 'GET', 'path' => '/api/get-transactions.php', 'auth' => 'API key',
             'summary' => 'Paginated transaction history with the same filters as the dashboard.',
             'params' => [
-                'filter' => 'all|success|pending|expired',
-                'date' => 'today|yesterday|7days|30days|this_month|all',
-                'limit' => '1–25', 'page' => 'page number',
+                'status' => 'success|pending|expired', 'search' => 'order ID or UTR',
+                'limit' => '1–100', 'page' => 'page number',
             ],
             'returns' => 'rows plus total and page metadata',
         ],
@@ -87,7 +85,7 @@ function tg_doc_webhook(): array {
     return [
         'event' => 'payment.succeeded',
         'signature_header' => 'X-TGGateway-Signature',
-        'signature_rule' => 'hmac_sha256(raw_request_body, merchant_api_key), hex encoded, compared in constant time',
+        'signature_rule' => 'sha256= followed by hex hmac_sha256(raw_request_body, merchant_api_key), compared in constant time',
         'retries' => 'exponential backoff from WEBHOOK_BACKOFF_SECONDS (default 300s), up to WEBHOOK_MAX_ATTEMPTS (default 5)',
         'body' => [
             'order_id' => 'tg_XXXXXXXX', 'amount' => '199.00', 'payable_amount' => '199.00',
@@ -175,65 +173,163 @@ function tg_doc_llms(): string {
         . "## Files\n\n"
         . "- [OpenAPI specification]($base/openapi.json)\n"
         . "- [Plain-text API reference]($base/docs.txt)\n"
+        . "- [AI integration prompt]($base/ai-prompt.txt)\n"
         . "- [Human documentation]($base/docs.php)\n"
         . "- [Service status]($base/status.php)\n";
     return $out;
 }
 
-/**
- * Master prompt for AI coding assistants (ai-prompt.txt).
- *
- * Deliberately short and factual. The upstream product ships a very long
- * marketing prompt; what actually helps an assistant is the contract, the
- * safety rule and the file map.
- */
+/** Detailed, copyable integration brief for AI coding assistants. */
 function tg_doc_ai_prompt(): string {
     $base = tg_doc_base_url();
-    $out = "You are integrating TG Gateways, a self-hosted non-custodial UPI payment gateway.\n\n"
-        . "BASE URL\n  $base\n\n"
-        . "AUTH\n  X-Api-Key: <merchant api key>  (or Authorization: Bearer <key>)\n"
-        . "  The key is server-side only. Never put it in browser code.\n\n"
-        . "HAPPY PATH\n"
-        . "  1. POST /api/create-order with {\"amount\": 199.00}\n"
-        . "     -> order_id, checkout_url, qr_url, upi_intent\n"
-        . "  2. Send the customer to checkout_url, or render qr_url.\n"
-        . "  3. Fulfil on the signed webhook, or on GET /api/verify-order.php?order_id=...\n"
-        . "     Do NOT fulfil from /api/checkout-status.php — it is display state only.\n\n"
-        . "WEBHOOK VERIFICATION (python)\n"
-        . "  expected = hmac.new(api_key.encode(), raw_body, hashlib.sha256).hexdigest()\n"
-        . "  hmac.compare_digest(expected, headers['X-TGGateway-Signature'])\n\n"
-        . "WEBHOOK VERIFICATION (php)\n"
-        . "  \$expected = hash_hmac('sha256', \$rawBody, \$apiKey);\n"
-        . "  hash_equals(\$expected, \$_SERVER['HTTP_X_TGGATEWAY_SIGNATURE']);\n\n"
-        . "IDEMPOTENCY\n"
-        . "  Webhooks may be delivered more than once. Key your fulfilment on order_id\n"
-        . "  and treat a repeat as a no-op.\n\n"
-        . "  POST /api/create-order.php accepts an Idempotency-Key header. Send a unique\n"
-        . "  string and a retry with the same body returns the original order (with\n"
-        . "  Idempotent-Replay: true) instead of creating a second one. The same key with\n"
-        . "  a different body is a 409. A 4xx validation failure does not consume the\n"
-        . "  key. Keys are per merchant and replayable for 24 hours.\n\n"
-        . "REFUNDS\n"
-        . "  Money lands in the merchant's own UPI account, so the API cannot move\n"
-        . "  it back. Refunds are recorded in the dashboard (transactions.php) as an\n"
-        . "  audit trail: amount, the refund's own bank UTR, reason and issuer. The\n"
-        . "  sum can never exceed what was collected, and an order becomes 'refunded'\n"
-        . "  only when the full amount is returned. Revenue on the dashboard is\n"
-        . "  collected minus refunded.\n\n"
-        . "FILES IN THIS REPOSITORY\n"
-        . "  api/create-order.php        order creation + rate limiting\n"
-        . "  api/verify-order.php        authoritative status\n"
-        . "  api/checkout-status.php     public display status\n"
-        . "  api/qr-image.php            PNG QR stream\n"
-        . "  api/manage-links.php        reusable payment links\n"
-        . "  api/get-transactions.php    history with filters\n"
-        . "  includes/settlement.php     receipt -> paid order, atomic\n"
-        . "  includes/receipt.php        UTR/amount extraction from bank mail\n"
-        . "  includes/webhook.php        signing, retry queue, SSRF policy\n"
-        . "  openapi.json                OpenAPI 3.1 contract\n\n"
-        . "CONSTRAINTS\n"
-        . "  - Amounts are INR with two decimals.\n"
-        . "  - Orders expire after the merchant's payment window (default 10 minutes).\n"
-        . "  - An order is payable for its exact payable_amount; never round it.\n";
-    return $out;
+    return "TG GATEWAYS — AI INTEGRATION BRIEF\n\nConfigured base URL: $base\n\n" . <<<'PROMPT'
+ROLE AND WORKING METHOD
+You are a coding assistant helping the user integrate or extend TG Gateways.
+First inspect the actual project and deployed API version. Ask for missing
+requirements (stack, desired checkout flow, and deployment URL) rather than
+inventing credentials or endpoints. Reuse the project's conventions and explain
+any assumptions. Implement and test real behavior; label examples, limitations,
+and unimplemented features clearly. Do not access or print secrets.
+
+PRODUCT AND PREREQUISITES
+TG Gateways is a self-hosted, non-custodial UPI checkout application: the
+customer pays the merchant's UPI account directly. The application does not
+hold, transfer, or refund money. Payment confirmation depends on the configured
+receipt email, IMAP worker and matching rules; provider email formats and delays
+vary. Test them with authorized examples, monitor the private worker, and do not
+promise instant or guaranteed settlement. Merchants must have an active UPI
+account configured before creating an order. Obtain the API key through the
+merchant dashboard. Use the actual deployment's HTTPS base URL in production;
+the configured URL above is deployment-specific, not a public service promise.
+
+AUTHENTICATION AND SECURITY
+- Send X-Api-Key: <merchant_api_key> or Authorization: Bearer <merchant_api_key>
+  from a trusted server only. Never embed the key in client-side code, checkout
+  URLs, logs, screenshots, or example output. Use environment variables or a
+  secret manager. Use TLS, least privilege, and validate external inputs.
+- API-key rotation also affects webhook verification. Plan rotation and queued
+  webhook handling; do not assume a separate webhook signing secret exists.
+- Treat redirect URLs, customer inputs, and browser-reported success as untrusted.
+  A customer returning to a redirect URL is not proof of payment.
+
+ORDER CREATION: BACKEND FIRST
+POST /api/create-order.php with Content-Type: application/json and API-key auth.
+The rewrite alias /api/create-order is available when server routing is set up.
+Example request body (replace sample data, never include an actual secret):
+  {"amount":499.00,"customer_name":"Asha","customer_email":"asha@example.com",
+   "note":"cart-123","redirect_url":"https://merchant.example/paid",
+   "webhook_url":"https://merchant.example/webhooks/tg"}
+amount is INR 1 to 1,000,000 with at most two decimal places. The other fields
+shown are optional; customer_phone is also supported. URLs must pass server URL
+validation; use HTTPS. webhook_url overrides the merchant default for this order.
+A 201 JSON response includes order_id, status=pending, currency, amount,
+payable_amount, checkout_url, checkout_path, qr_url, qr_path, upi_intent,
+upi_id, expires_at and expires_in_seconds. Use the exact payable_amount; store
+and compare monetary values in integer paise or a decimal type, not binary float.
+Persist order_id alongside the merchant's internal cart or purchase, expected
+amount and currency. Show checkout_url to the customer or use qr_url/upi_intent.
+The configured APP_URL must be correct for absolute URLs. The default payment
+window is 10 minutes; expiry alone does not prove whether money arrived late.
+
+RETRIES AND IDEMPOTENCY
+Generate and persist one unique Idempotency-Key for each intended order before
+sending the first request; use the same key and body for retries. Keys are
+merchant-scoped, up to 190 printable ASCII characters without spaces. A completed
+same-body replay returns the stored response and Idempotent-Replay: true; different
+content returns 409. An in-flight request returns 409 and Retry-After: 1. Inspect
+the error before deciding to retry. JSON object key order and whitespace are
+normalized. Explicit input validation failures release the reservation; do not
+assume every 4xx does so. Without a key, retries can create additional orders.
+Retention is deployment-configurable (IDEMPOTENCY_TTL defaults to 86400 seconds)
+and cleanup is opportunistic; do not assume exact expiry or reuse old keys.
+IMPORTANT: reservations can be reclaimed after a stale timeout and order creation
+and recording the response are not one atomic transaction. Crashes or storage
+failures can therefore still create ambiguity or duplicates. Do not promise
+exactly-once charging; reconcile uncertain attempts before issuing a new order.
+Handle 400/422 input errors, 401 bad/missing key, 403 suspended account,
+404 unknown order, 409 conflicts or missing active account, 429 rate limiting,
+and transient network/5xx errors without exposing secrets. Back off on retries.
+
+PAYMENT CONFIRMATION AND FULFILLMENT
+GET /api/checkout-status.php?order_id=... is public display state only; never
+fulfill solely from that response, a QR scan, browser redirect, or UPI app claim.
+GET /api/verify-order.php?order_id=... uses API-key auth and returns the merchant's
+order, status, amount, payable_amount, utr, transaction_id and timestamps.
+The authenticated lookup or a verified payment.succeeded webhook can inform
+fulfillment. Match order_id to a locally known purchase and check expected amount,
+currency as applicable, event and status before fulfilling. Treat unknown orders,
+mismatches, pending, expired and refunded statuses as not currently payable.
+A full refund changes order status to refunded; partial refunds leave success.
+A delayed success event may describe an order since refunded: check the current
+order before fulfilling and reconcile manually when necessary.
+The verify and public-status responses do not expose a refund amount. Do not
+assume success means no partial refund. Treat late or ambiguous payments as a
+manual reconciliation case instead of automatically charging or fulfilling again.
+
+WEBHOOKS: VERIFY THE EXACT BYTES
+The implemented event is payment.succeeded. X-TGGateway-Signature is exactly
+"sha256=" followed by the lowercase hex HMAC-SHA256 of the raw HTTP body, keyed
+by the merchant API key. Compare in constant time. Capture raw bytes before JSON
+parsing; reserializing JSON changes the signature. Reject missing/invalid
+signatures. Process only known event types and matching orders and amounts.
+Webhooks may be delivered more than once. Use durable deduplication keyed by
+order_id, with a unique constraint and transactional or otherwise recoverable
+fulfillment. Return 2xx only after durable acceptance; duplicate accepted events
+should return 2xx. Do not mark fulfilled before the durable operation succeeds.
+Non-2xx and transport errors can be retried by the worker, with bounded attempts;
+monitor failures and reconcile missed notifications. Signatures have no timestamp
+freshness check, so deduplication and order validation are essential.
+
+Python signature check (raw_body is bytes; supplied is the header value):
+  import hashlib, hmac
+  expected = 'sha256=' + hmac.new(api_key.encode('utf-8'), raw_body, hashlib.sha256).hexdigest()
+  valid = hmac.compare_digest(expected, supplied or '')
+
+PHP signature check (obtain $rawBody using file_get_contents('php://input')):
+  $expected = 'sha256=' . hash_hmac('sha256', $rawBody, $apiKey);
+  $valid = hash_equals($expected, $_SERVER['HTTP_X_TGGATEWAY_SIGNATURE'] ?? '');
+
+OTHER IMPLEMENTED ROUTES
+- GET /api/qr-image.php?order_id=...: public PNG QR image; dependencies required.
+- GET /api/manage-links.php: authenticated list; POST: create a fixed-amount
+  link using title, amount, and optional description and redirect_url. Do not
+  invent update/delete actions or custom slugs for this API.
+- GET /api/get-transactions.php: authenticated history; status accepts pending,
+  success or expired; search matches order ID/UTR; page and limit (1–100).
+- GET /api/health.php: public deployment health; not payment confirmation.
+
+REFUNDS AND LIMITATIONS
+Refunds are manual records in the Transactions dashboard: the merchant must
+return funds separately using their UPI/bank app, then record the amount, optional
+bank reference and reason. The application does not transfer funds. It caps
+recorded refunds to the collected amount; only a full refund sets status to
+refunded. There is no refund API or payment.refunded webhook in this version.
+Do not claim that a refund button executes a transfer, or that an integration
+will automatically receive refund notifications. Check current code before
+assuming a newer capability.
+
+IMPLEMENTATION CHECKLIST
+1. Establish the user's stack and requirements; never copy placeholder secrets.
+2. Create orders server-side, persist the local mapping and idempotency key, and
+   send the customer to the hosted checkout. Do not trust prices from browsers.
+3. Build a raw-body verified webhook and/or authenticated verification flow;
+   validate the mapped order and amounts, and make fulfillment durable and safe
+   against duplicates and crashes. Separate payment state from fulfillment state.
+4. Test invalid signatures, modified bodies, unknown/mismatched orders, duplicate
+   delivery, pending/expired/refunded states, timeouts, retry conflicts, and worker
+   or database failures. Use controlled test accounts and authorized receipts.
+5. Explain setup, environment variables, how to run tests, reconciliation and
+   remaining production risks. Distinguish tested behavior from assumptions.
+
+SOURCE MAP AND REFERENCES
+api/create-order.php       Order creation and validation
+includes/idempotency.php   Request retry behavior and its limitations
+api/verify-order.php       Authenticated lookup
+api/checkout-status.php    Public display status (public-status.php)
+includes/settlement.php    Receipt matching and atomic settlement
+includes/receipt.php       Receipt extraction and matching rules
+includes/webhook.php       Event payload, signing and delivery retries
+includes/refund.php        Manual refund records
+openapi.json, docs.php     API reference; cross-check against implementation
+PROMPT;
 }
