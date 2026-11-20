@@ -449,6 +449,12 @@ function tg_migrations(): array {
             ],
         ],
 
+
+        '2026_11_20_payment_window_display_unit' => [
+            'mysql' => ['ALTER TABLE merchants ADD COLUMN payment_timeout_display_unit VARCHAR(10) NULL'],
+            'sqlite' => ['ALTER TABLE merchants ADD COLUMN payment_timeout_display_unit TEXT NULL'],
+        ],
+
     ];
 }
 

@@ -61,8 +61,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ->execute([$redirect ?: null, $webhook ?: null, max(2, (int)ceil($seconds / 60)), $note ?: null, db_now(), $id]);
                 // Keep the legacy columns on `merchants` in step: the API reads
                 // them when an order does not override the value.
-                $pdo->prepare('UPDATE merchants SET redirect_url=?, webhook_url=?, payment_timeout_minutes=?, payment_timeout_seconds=? WHERE id=?')
-                    ->execute([$redirect ?: null, $webhook ?: null, max(2, (int)ceil($seconds / 60)), $seconds, $id]);
+                $pdo->prepare('UPDATE merchants SET redirect_url=?, webhook_url=?, payment_timeout_minutes=?, payment_timeout_seconds=?, payment_timeout_display_unit=? WHERE id=?')
+                    ->execute([$redirect ?: null, $webhook ?: null, max(2, (int)ceil($seconds / 60)), $seconds, $unit, $id]);
                 $pdo->commit();
                 tg_audit($id, 'settings.general', 'payment defaults updated');
                 $notice = 'Payment defaults saved.';
@@ -84,11 +84,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $settings = tg_settings_row($pdo, $id);
-$windowQuery = $pdo->prepare('SELECT payment_timeout_minutes,payment_timeout_seconds FROM merchants WHERE id=?');
+$windowQuery = $pdo->prepare('SELECT payment_timeout_minutes,payment_timeout_seconds,payment_timeout_display_unit FROM merchants WHERE id=?');
 $windowQuery->execute([$id]);
 $windowRow = $windowQuery->fetch() ?: [];
 $windowSeconds = payment_window_seconds($windowRow);
-$windowUnit = $windowSeconds >= 120 && $windowSeconds % 60 === 0 ? 'minutes' : 'seconds';
+// Legacy rows did not preserve the chosen display unit; infer it until saved.
+$windowUnit = $windowRow['payment_timeout_display_unit'] ?? null;
+if (!in_array($windowUnit, ['seconds', 'minutes'], true) || ($windowUnit === 'minutes' && $windowSeconds % 60 !== 0)) {
+    $windowUnit = $windowSeconds >= 120 && $windowSeconds % 60 === 0 ? 'minutes' : 'seconds';
+}
 $windowValue = $windowUnit === 'minutes' ? intdiv($windowSeconds, 60) : $windowSeconds;
 $tzRow = $pdo->prepare('SELECT timezone FROM merchant_profiles WHERE merchant_id=?');
 $tzRow->execute([$id]);
@@ -134,7 +138,7 @@ require __DIR__.'/includes/dashboard-header.php';
           <option value="seconds" <?=$windowUnit === 'seconds' ? 'selected' : ''?>>Seconds</option>
         </select>
       </div>
-      <span class="form-hint">Enter 2–60 minutes or 1–3600 seconds. Applies to new orders; short windows may expire before a payment is confirmed.</span>
+      <span class="form-hint">Enter 2–60 minutes or 1–3600 seconds. This is the countdown for each new checkout. Existing orders keep their expiry; short windows may expire before payment is confirmed.</span>
     </div>
     <div class="form-group">
       <label class="form-label">Checkout note</label>

@@ -14,6 +14,7 @@ $pdo = db();
 $id = (int)$merchant['id'];
 $notice = '';
 $noticeType = 'success';
+$linkForm = ['title'=>'', 'amount'=>'', 'slug'=>'', 'expiry_days'=>'0', 'expiry_value'=>'', 'redirect_url'=>'', 'description'=>''];
 
 $configured = tg_has_active_account($id);
 
@@ -38,10 +39,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $title = mb_substr(trim((string)($_POST['title'] ?? '')), 0, 160);
         $amount = filter_var($_POST['amount'] ?? null, FILTER_VALIDATE_FLOAT);
-        $days = (int)($_POST['expiry_days'] ?? 0);
+        $expiryChoice = is_scalar($_POST['expiry_days'] ?? '0') ? (string)($_POST['expiry_days'] ?? '0') : '';
+        $expiryValue = is_scalar($_POST['expiry_value'] ?? '') ? trim((string)($_POST['expiry_value'] ?? '')) : '';
+        $expirySeconds = null;
+        $expiryProblem = null;
+        if (in_array($expiryChoice, ['0', '1', '7', '30'], true)) {
+            $expirySeconds = (int)$expiryChoice * 86400;
+        } elseif (in_array($expiryChoice, ['custom_seconds', 'custom_minutes'], true)) {
+            $max = $expiryChoice === 'custom_seconds' ? 604800 : 10080;
+            if (!preg_match('/^[0-9]+$/', $expiryValue) || (int)$expiryValue < 1 || (int)$expiryValue > $max) {
+                $expiryProblem = $expiryChoice === 'custom_seconds'
+                    ? 'Enter a whole number from 1 to 604800 seconds for link expiry.'
+                    : 'Enter a whole number from 1 to 10080 minutes for link expiry.';
+            } else {
+                $expirySeconds = (int)$expiryValue * ($expiryChoice === 'custom_minutes' ? 60 : 1);
+            }
+        } else {
+            $expiryProblem = 'Choose one of the offered expiry windows.';
+        }
         $redirect = trim((string)($_POST['redirect_url'] ?? ''));
         $description = mb_substr(trim((string)($_POST['description'] ?? '')), 0, 1500);
         $custom = strtolower(trim((string)($_POST['slug'] ?? '')));
+        $linkForm = ['title'=>$title, 'amount'=>(string)($_POST['amount'] ?? ''), 'slug'=>$custom,
+            'expiry_days'=>$expiryChoice, 'expiry_value'=>$expiryValue, 'redirect_url'=>$redirect, 'description'=>$description];
 
         $problem = null;
         if (!$configured) {
@@ -50,8 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $problem = 'Give the link a title so you can recognise it later.';
         } elseif ($amount === false || $amount < 1 || $amount > 1000000) {
             $problem = 'Enter an amount between ₹1 and ₹10,00,000.';
-        } elseif (!in_array($days, [0, 1, 7, 30], true)) {
-            $problem = 'Choose one of the offered expiry windows.';
+        } elseif ($expiryProblem !== null) {
+            $problem = $expiryProblem;
         } elseif ($redirect !== '' && !valid_http_url($redirect)) {
             $problem = 'The redirect URL must be a valid HTTPS address.';
         } elseif ($custom !== '' && !preg_match('/^[a-z0-9][a-z0-9-]{2,60}$/', $custom)) {
@@ -69,13 +89,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $notice = 'That slug is already taken. Pick another.';
                 $noticeType = 'error';
             } else {
-                $expires = $days > 0 ? date('Y-m-d H:i:s', time() + $days * 86400) : null;
+                $createdAt = time();
+                $expires = $expirySeconds > 0 ? date('Y-m-d H:i:s', $createdAt + $expirySeconds) : null;
                 $q = $pdo->prepare('INSERT INTO payment_links(merchant_id,slug,title,amount,description,redirect_url,is_active,expires_at,created_at)
                                     VALUES(?,?,?,?,?,?,1,?,?)');
                 $q->execute([$id, $slug, $title, number_format((float)$amount, 2, '.', ''), $description ?: null,
-                    $redirect ?: null, $expires, date('Y-m-d H:i:s')]);
+                    $redirect ?: null, $expires, date('Y-m-d H:i:s', $createdAt)]);
                 $notice = 'Payment link created. Share it with your customer.';
                 tg_audit($id, 'link.created', $slug.' ₹'.number_format((float)$amount, 2));
+                $linkForm = ['title'=>'', 'amount'=>'', 'slug'=>'', 'expiry_days'=>'0', 'expiry_value'=>'', 'redirect_url'=>'', 'description'=>''];
             }
         }
     }
@@ -94,7 +116,7 @@ $linkUrl = function (string $slug): string {
 
 /** Derived display state: expired beats inactive beats active. */
 $linkState = function (array $link): string {
-    if ($link['expires_at'] && strtotime((string)$link['expires_at']) < time()) return 'Expired';
+    if ($link['expires_at'] && strtotime((string)$link['expires_at']) <= time()) return 'Expired';
     if (!(int)$link['is_active']) return 'Inactive';
     return 'Active';
 };
@@ -139,35 +161,46 @@ require __DIR__.'/includes/dashboard-header.php';
       <input type="hidden" name="action" value="create">
       <div class="form-group">
         <label for="link-title">Link title</label>
-        <input class="form-input" id="link-title" name="title" maxlength="160" placeholder="e.g. Design consultation" required>
+        <input class="form-input" id="link-title" name="title" maxlength="160" placeholder="e.g. Design consultation" value="<?=h($linkForm['title'])?>" required>
       </div>
       <div class="form-group">
         <label for="link-amount">Amount (INR)</label>
-        <input class="form-input" id="link-amount" type="number" min="1" max="1000000" step="0.01" name="amount" placeholder="499.00" required>
+        <input class="form-input" id="link-amount" type="number" min="1" max="1000000" step="0.01" name="amount" placeholder="499.00" value="<?=h($linkForm['amount'])?>" required>
       </div>
       <div class="form-group">
         <label for="link-slug">Custom slug <span class="form-hint" style="display:inline">(optional)</span></label>
         <input class="form-input" id="link-slug" name="slug" maxlength="61" pattern="[a-z0-9][a-z0-9\-]{2,60}"
-               placeholder="leave blank for a random id">
+               placeholder="leave blank for a random id" value="<?=h($linkForm['slug'])?>">
         <span class="form-hint">Your URL becomes <code>/pay.php?link=&lt;slug&gt;</code>.</span>
       </div>
       <div class="form-group">
-        <label for="link-expiry">Expiry</label>
-        <select class="form-input" id="link-expiry" name="expiry_days">
-          <option value="0">No expiry</option>
-          <option value="1">1 day</option>
-          <option value="7">7 days</option>
-          <option value="30">30 days</option>
+        <label for="link-expiry">Link expiry</label>
+        <select class="form-input" id="link-expiry" name="expiry_days" aria-describedby="link-expiry-help">
+          <option value="0" <?=$linkForm['expiry_days'] === '0' ? 'selected' : ''?>>No expiry</option>
+          <option value="1" <?=$linkForm['expiry_days'] === '1' ? 'selected' : ''?>>1 day</option>
+          <option value="7" <?=$linkForm['expiry_days'] === '7' ? 'selected' : ''?>>7 days</option>
+          <option value="30" <?=$linkForm['expiry_days'] === '30' ? 'selected' : ''?>>30 days</option>
+          <option value="custom_seconds" <?=$linkForm['expiry_days'] === 'custom_seconds' ? 'selected' : ''?>>Custom seconds</option>
+          <option value="custom_minutes" <?=$linkForm['expiry_days'] === 'custom_minutes' ? 'selected' : ''?>>Custom minutes</option>
         </select>
+        <span class="form-hint" id="link-expiry-help">How long this reusable link can create new checkouts.</span>
+      </div>
+      <div class="form-group link-expiry-custom" id="link-expiry-custom">
+        <label for="link-expiry-value" id="link-expiry-value-label">Custom expiry amount</label>
+        <input class="form-input" id="link-expiry-value" type="number" name="expiry_value" min="1" max="604800" step="1" inputmode="numeric" value="<?=h($linkForm['expiry_value'])?>" aria-describedby="link-expiry-value-help">
+        <span class="form-hint" id="link-expiry-value-help">Only used for custom expiry. Maximum: 7 days.</span>
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <span class="form-hint">Each checkout has its own payment countdown, configured separately in <a href="/settings.php">Settings</a>. A link expiring does not cancel a checkout already opened.</span>
       </div>
       <div class="form-group" style="grid-column:1/-1">
         <label for="link-redirect">Post-payment redirect URL <span class="form-hint" style="display:inline">(optional)</span></label>
-        <input class="form-input" id="link-redirect" type="url" name="redirect_url" placeholder="https://your-site.example/thank-you">
+        <input class="form-input" id="link-redirect" type="url" name="redirect_url" placeholder="https://your-site.example/thank-you" value="<?=h($linkForm['redirect_url'])?>">
       </div>
       <div class="form-group" style="grid-column:1/-1">
         <label for="link-desc">Description <span class="form-hint" style="display:inline">(optional)</span></label>
         <textarea class="form-input" id="link-desc" name="description" rows="2" maxlength="1500"
-                  placeholder="Shown to your customer on the checkout page"></textarea>
+                  placeholder="Shown to your customer on the checkout page"><?=h($linkForm['description'])?></textarea>
       </div>
       <div class="form-actions" style="grid-column:1/-1">
         <button class="btn btn-primary" <?=$configured ? '' : 'disabled title="Configure a receiving account first"'?>>
@@ -182,7 +215,7 @@ require __DIR__.'/includes/dashboard-header.php';
     <div class="card-header" style="padding:22px 24px;border-bottom:1px solid var(--color-hairline)">
       <div>
         <div class="card-title"><?=icon('list', 16)?> My Payment Links</div>
-        <div class="card-sub">Manage your active and expired payment links.</div>
+        <div class="card-sub">Manage your active and expired payment links. Times use the server timezone (<?=h(date_default_timezone_get())?>).</div>
       </div>
       <span class="badge badge-neutral"><?=count($links)?> total</span>
     </div>
@@ -215,7 +248,7 @@ require __DIR__.'/includes/dashboard-header.php';
               <td style="font-variant-numeric:tabular-nums">₹<?=number_format((float)$l['amount'], 2)?></td>
               <td><?=tg_status_badge(strtolower($state))?></td>
               <td class="form-hint"><?=h(date('d M Y', strtotime((string)$l['created_at'])))?></td>
-              <td class="form-hint"><?=h($l['expires_at'] ? date('d M Y', strtotime((string)$l['expires_at'])) : 'Never')?></td>
+              <td class="form-hint"><?=h($l['expires_at'] ? date('d M Y, H:i:s', strtotime((string)$l['expires_at'])) : 'Never')?></td>
               <td style="text-align:right;white-space:nowrap">
                 <?php if ($state === 'Active'): ?>
                   <button class="btn btn-secondary btn-sm" type="button"
@@ -241,4 +274,5 @@ require __DIR__.'/includes/dashboard-header.php';
   </div>
 </div>
 
+<script src="/assets/js/payment-link-expiry.js" defer></script>
 <?php require __DIR__.'/includes/dashboard-footer.php'; ?>

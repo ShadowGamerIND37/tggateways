@@ -2256,3 +2256,6 @@ table td code {
 .api-activity-bar { width: 100%; background: var(--color-primary, #2563eb); border-radius: 6px 6px 0 0; }
 .api-activity-value, .api-activity-label { font-size: 11px; color: var(--color-ink-mute, #68758a); font-variant-numeric: tabular-nums; }
 .api-activity-hint { margin: 14px 0 0; color: var(--color-ink-mute, #68758a); font-size: 12px; line-height: 1.6; }
+
+/* Hide the custom link-expiry field when a preset is selected. */
+.link-expiry-custom[hidden] { display: none; }

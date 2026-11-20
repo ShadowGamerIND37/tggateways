@@ -2895,6 +2895,12 @@ $pdo->prepare('INSERT INTO invoices(merchant_id,invoice_no,description,amount,ta
 echo json_encode(['merchant'=>$id, 'invoice'=>(int)$pdo->lastInsertId()]);
 `));
 const featureAuth = signIn('expiry@example.com', 'expiry-test-pass');
+const sameSecondsSetting = request({method:'POST', script:path.join(root,'settings.php'), post:{csrf:featureAuth.csrf, action:'general', payment_timeout_minutes:'120', payment_timeout_unit:'seconds'}},featureAuth.session);
+const sameSecondsForm = request({method:'GET', script:path.join(root,'settings.php')},featureAuth.session);
+check('Settings preserves seconds even when divisible by 60', sameSecondsSetting.body.includes('Payment defaults saved.') && /value="120"/.test(sameSecondsForm.body) && /value="seconds" selected/.test(sameSecondsForm.body));
+const sameMinutesSetting = request({method:'POST', script:path.join(root,'settings.php'), post:{csrf:featureAuth.csrf, action:'general', payment_timeout_minutes:'2', payment_timeout_unit:'minutes'}},featureAuth.session);
+const sameMinutesForm = request({method:'GET', script:path.join(root,'settings.php')},featureAuth.session);
+check('Settings also preserves a minutes selection', sameMinutesSetting.body.includes('Payment defaults saved.') && /value="2"/.test(sameMinutesForm.body) && /value="minutes" selected/.test(sameMinutesForm.body));
 const windowSet = request({method:'POST', script:path.join(root,'settings.php'), post:{csrf:featureAuth.csrf, action:'general', payment_timeout_minutes:'45', payment_timeout_unit:'seconds'}},featureAuth.session);
 check('Settings saves a seconds payment window', windowSet.status === 200 && windowSet.body.includes('Payment defaults saved.'));
 const windowForm = request({method:'GET',script:path.join(root,'settings.php')},featureAuth.session);
@@ -2915,6 +2921,9 @@ require 'includes/db.php'; $q=db()->prepare("SELECT created_at,expires_at FROM o
 check('Payment links use the same seconds setting', linkResponse.status === 302 && linkExpiry === 45, String(linkExpiry));
 const featurePage = request({method:'GET',script:path.join(root,'pay.php'),query:{order_id:featureOrderJson.order_id}});
 check('Checkout timer is anchored to server remaining time', featurePage.body.includes('const secondsRemaining = ') && featurePage.body.includes('performance.now()'));
+
+check('Checkout initially renders its timer and labels the seconds', /id="countdown">[0-9]{2}:[0-9]{2}<\/strong>/.test(featurePage.body) && featurePage.body.includes('(min:sec)'));
+
 check('Checkout hides payment options while waiting for authoritative expiry', featurePage.body.includes("getElementById('payment-options').hidden = true") && featurePage.body.includes('Checking payment status'));
 
 // Execute the actual inline checkout script with a controllable clock and API.
@@ -2973,6 +2982,44 @@ const iphoneLinks = simulateCheckoutLinks('Mozilla/5.0 (iPhone; CPU iPhone OS 17
 const webviewLinks = simulateCheckoutLinks('Mozilla/5.0 (Linux; Android 14; Pixel 7; wv) AppleWebKit/537.36 Chrome/128.0 Mobile Safari/537.36');
 check('Other devices and Android WebViews retain the generic UPI links',
   iphoneLinks.links.every(link=>link.href === iphoneLinks.upi) && webviewLinks.links.every(link=>link.href === webviewLinks.upi));
+// Reusable link lifetime and per-checkout countdown are separate controls.
+const linkSettingsPage = request({method:'GET', script:path.join(root,'payment-links.php')}, featureAuth.session);
+check('Payment link expiry offers custom seconds and explains checkout countdowns',
+  linkSettingsPage.body.includes('value="custom_seconds"') && linkSettingsPage.body.includes('name="expiry_value"')
+  && linkSettingsPage.body.includes('Each checkout has its own payment countdown'));
+const expiryUiScript = readFileSync(path.join(root,'assets/js/payment-link-expiry.js'),'utf8');
+const expiryUiNodes = {
+  'link-expiry': {value:'0',addEventListener(event,cb){this.onchange=cb;}},
+  'link-expiry-custom': {hidden:false}, 'link-expiry-value': {},
+  'link-expiry-value-label': {}, 'link-expiry-value-help': {},
+};
+vm.runInNewContext(expiryUiScript,{document:{getElementById:id=>expiryUiNodes[id]}});
+const hiddenOnPreset = expiryUiNodes['link-expiry-custom'].hidden && expiryUiNodes['link-expiry-value'].disabled;
+expiryUiNodes['link-expiry'].value = 'custom_seconds'; expiryUiNodes['link-expiry'].onchange();
+const secondsInputVisible = !expiryUiNodes['link-expiry-custom'].hidden && expiryUiNodes['link-expiry-value'].required && expiryUiNodes['link-expiry-value-label'].textContent === 'Expiry in seconds';
+expiryUiNodes['link-expiry'].value = 'custom_minutes'; expiryUiNodes['link-expiry'].onchange();
+check('Choosing custom seconds exposes a required numeric field', hiddenOnPreset && secondsInputVisible && expiryUiNodes['link-expiry-value'].max === '10080');
+const secondsLink = request({method:'POST',script:path.join(root,'payment-links.php'),post:{csrf:featureAuth.csrf,action:'create',title:'Seconds expiry',amount:'50',slug:'seconds-lifetime',expiry_days:'custom_seconds',expiry_value:'120'}}, featureAuth.session);
+const customLinkTimes = JSON.parse(php(`<?php require 'includes/db.php'; $q=db()->prepare('SELECT created_at,expires_at FROM payment_links WHERE merchant_id=? AND slug=?'); $q->execute([${featureSeed.merchant},'seconds-lifetime']); $r=$q->fetch(); echo json_encode($r ? ['seconds'=>strtotime($r['expires_at'])-strtotime($r['created_at']),'formatted'=>date('d M Y, H:i:s',strtotime($r['expires_at']))] : null);`));
+check('A custom seconds expiry is saved precisely', secondsLink.body.includes('Payment link created') && customLinkTimes?.seconds === 120, JSON.stringify(customLinkTimes));
+check('Payment links show expiry time to the second', secondsLink.body.includes(customLinkTimes?.formatted || 'NOT FOUND') && secondsLink.body.includes('server timezone'));
+const customLinkOpen = request({method:'GET',script:path.join(root,'pay.php'),query:{link:'seconds-lifetime'}});
+check('A seconds-lifetime link opens before it expires', customLinkOpen.status === 302, String(customLinkOpen.status));
+const openedLinkOrder = JSON.parse(php(`<?php require 'includes/db.php'; $q=db()->prepare("SELECT o.order_id FROM orders o JOIN payment_links l ON l.id=o.payment_link_id WHERE l.slug=? ORDER BY o.id DESC LIMIT 1"); $q->execute(['seconds-lifetime']); echo json_encode($q->fetchColumn());`));
+php(`<?php require 'includes/db.php'; db()->prepare('UPDATE payment_links SET expires_at=? WHERE slug=?')->execute([db_now(-1),'seconds-lifetime']);`);
+const expiredLinkOpen = request({method:'GET',script:path.join(root,'pay.php'),query:{link:'seconds-lifetime'}});
+const linkOrderCount = JSON.parse(php(`<?php require 'includes/db.php'; $q=db()->prepare("SELECT COUNT(*) FROM orders o JOIN payment_links l ON l.id=o.payment_link_id WHERE l.slug=?"); $q->execute(['seconds-lifetime']); echo json_encode((int)$q->fetchColumn());`));
+check('An expired reusable link cannot create another checkout', expiredLinkOpen.body.includes('unavailable or has expired') && linkOrderCount === 1, String(linkOrderCount));
+const previouslyOpened = request({method:'GET',script:path.join(root,'pay.php'),query:{order_id:openedLinkOrder}});
+check('A checkout opened before link expiry keeps its own payment window', previouslyOpened.status === 200 && previouslyOpened.body.includes('id="payment-options"'));
+const invalidCustoms = ['','0','-1','1.5','604801'];
+const badCustomResults = invalidCustoms.map((value,i)=>request({method:'POST',script:path.join(root,'payment-links.php'),post:{csrf:featureAuth.csrf,action:'create',title:'Invalid seconds',amount:'10',slug:'invalid-sec-'+i,expiry_days:'custom_seconds',expiry_value:value}},featureAuth.session));
+check('Missing, zero, negative, fractional and excessive seconds are rejected', badCustomResults.every(r=>r.body.includes('Enter a whole number from 1 to 604800 seconds')));
+check('Invalid expiry keeps the selected unit and other form values', badCustomResults[3].body.includes('value="custom_seconds" selected') && badCustomResults[3].body.includes('value="1.5"') && badCustomResults[3].body.includes('value="Invalid seconds"'));
+const minutesLink = request({method:'POST',script:path.join(root,'payment-links.php'),post:{csrf:featureAuth.csrf,action:'create',title:'Minutes expiry',amount:'50',slug:'minutes-lifetime',expiry_days:'custom_minutes',expiry_value:'3'}},featureAuth.session);
+const minuteDiff = JSON.parse(php(`<?php require 'includes/db.php'; $q=db()->prepare('SELECT created_at,expires_at FROM payment_links WHERE slug=?'); $q->execute(['minutes-lifetime']); $r=$q->fetch(); echo json_encode($r ? strtotime($r['expires_at'])-strtotime($r['created_at']) : null);`));
+check('Custom minutes are also applied precisely', minutesLink.body.includes('Payment link created') && minuteDiff === 180, String(minuteDiff));
+
 
 
 php(`<?php require 'includes/db.php'; db()->prepare("UPDATE orders SET expires_at=? WHERE order_id=?")->execute([db_now(-2),'${featureOrderJson.order_id}']);`);
