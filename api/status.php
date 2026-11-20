@@ -25,6 +25,18 @@ $q->execute([$merchant['id'], $value]);
 $order = $q->fetch();
 if (!$order) json_response(['error'=>'Order not found'], 404);
 
+// An authenticated lookup should not depend on a checkout page or cron visit
+// to transition an already-expired pending order. Re-read after the guarded
+// update so concurrent settlement is never reported as expired by mistake.
+if ($order['status'] === 'pending' && strtotime((string)$order['expires_at']) <= time()) {
+    db()->prepare("UPDATE orders SET status='expired' WHERE merchant_id=? AND order_id=? AND status='pending' AND expires_at<=?")
+        ->execute([$merchant['id'], $order['order_id'], db_now()]);
+    $q->execute([$merchant['id'], $value]);
+    $order = $q->fetch();
+    if (!$order) json_response(['error'=>'Order not found'], 404);
+}
+
+
 $order['amount'] = (float)$order['amount'];
 $order['payable_amount'] = (float)$order['payable_amount'];
 $order['paid'] = $order['status'] === 'success';

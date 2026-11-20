@@ -8,6 +8,10 @@ $orderId = (string)($_GET['order_id'] ?? '');
 if (!preg_match('/^tg_[A-Z0-9]{8,40}$/', $orderId)) { http_response_code(422); exit('Invalid order_id'); }
 
 $order = find_checkout_order(db(), $orderId);
+if ($order && $order['status'] === 'pending' && strtotime((string)$order['expires_at']) <= time()) {
+    db()->prepare("UPDATE orders SET status='expired' WHERE order_id=? AND status='pending' AND expires_at<=?")->execute([$orderId, db_now()]);
+    $order = find_checkout_order(db(), $orderId);
+}
 if (!$order || $order['status'] !== 'pending') { http_response_code(404); exit('QR unavailable'); }
 
 $upi = upi_intent($order);

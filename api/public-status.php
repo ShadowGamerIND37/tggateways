@@ -19,8 +19,9 @@ $o = $q->fetch();
 if (!$o) json_response(['error'=>'Order not found'], 404);
 
 if ($o['status'] === 'pending' && strtotime((string)$o['expires_at']) <= time()) {
-    $pdo->prepare("UPDATE orders SET status='expired' WHERE order_id=? AND status='pending'")->execute([$orderId]);
-    $o['status'] = 'expired';
+    $pdo->prepare("UPDATE orders SET status='expired' WHERE order_id=? AND status='pending' AND expires_at<=?")->execute([$orderId, db_now()]);
+    $q->execute([$orderId]);
+    $o = $q->fetch();
 }
 json_response([
     'order_id' => $o['order_id'],

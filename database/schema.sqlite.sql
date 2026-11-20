@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS merchants (
   discord_webhook_url TEXT,
   brand_color TEXT NOT NULL DEFAULT '#2563eb',
   payment_timeout_minutes INTEGER NOT NULL DEFAULT 10,
+  payment_timeout_seconds INTEGER NULL,
   api_key_last_used_at TEXT,
   status TEXT NOT NULL DEFAULT 'active',
   suspended_reason TEXT,
@@ -225,3 +226,5 @@ CREATE TABLE IF NOT EXISTS status_days (
   ok INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (day, component)
 );
+
+CREATE TABLE IF NOT EXISTS api_request_activity (merchant_id INTEGER NOT NULL, activity_date TEXT NOT NULL, request_count INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (merchant_id, activity_date));

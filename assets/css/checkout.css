@@ -1,0 +1,56 @@
+/* Hosted checkout enhancements; uses the existing design-system palette. */
+body.checkout-page {
+  min-height: 100vh;
+  background: radial-gradient(ellipse at 50% 0, #eaf1ff 0%, #f1f4f9 56%);
+  padding: 1px 0 32px;
+}
+.checkout-page .checkout {
+  width: min(500px, calc(100% - 28px));
+  margin: 40px auto 0;
+  padding: 30px;
+  text-align: center;
+}
+.checkout-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; }
+.checkout-page .checkout .brand { margin: 0; color: #15213b; }
+.checkout-tag { border: 1px solid #e3eaf7; background: #f6f9ff; color: #536988; border-radius: 99px; padding: 6px 10px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.checkout-page .checkout-brand { margin-top: 32px; color: #7b899e; font-size: 10px; font-weight: 700; letter-spacing: .13em; }
+.checkout-page .checkout h1 { margin: 8px 0 0; font-size: 21px; overflow-wrap: anywhere; }
+.checkout-page .checkout-total { margin: 14px 0 5px; color: #14213c; font-size: 40px; line-height: 1.15; }
+.checkout-order { color: #718199; font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+.checkout-section-title { color: #263750; font-size: 13px; font-weight: 700; margin: 0; }
+.checkout-section-sub { color: #748299; font-size: 11.5px; line-height: 1.55; margin: 5px 0 0; }
+.checkout-scan { margin-top: 24px; padding: 20px 16px 18px; border: 1px solid #e8eef7; border-radius: 18px; background: #f8faff; }
+.checkout-page .checkout-qr { width: min(226px, 100%); height: auto; aspect-ratio: 1; margin: 14px auto 0; padding: 9px; border: 1px solid #e8edf4; box-shadow: 0 7px 20px #1b35540b; }
+.checkout-qr svg { display: block; width: 100%; height: 100%; }
+.payment-apps { text-align: left; margin-top: 24px; }
+.checkout-page .upi-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin-top: 12px; }
+.checkout-page .upi-actions a { position: relative; min-width: 0; min-height: 68px; padding: 10px 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; background: #fff; border: 1px solid #e2e9f3; border-radius: 12px; color: #25334b; font-size: 11px; font-weight: 650; line-height: 1.25; transition: transform .15s, border-color .15s, box-shadow .15s; }
+.checkout-page .upi-actions a:hover { transform: translateY(-2px); border-color: var(--brand); box-shadow: 0 6px 16px #1f3f7314; }
+.checkout-page .upi-actions a:focus-visible, .checkout-page button:focus-visible, .checkout-page summary:focus-visible { outline: 3px solid #93b5ff; outline-offset: 3px; }
+.checkout-page .upi-actions .upi-primary { grid-column: 1 / -1; min-height: 52px; flex-direction: row; gap: 10px; background: #2563eb; border-color: #2563eb; color: #fff; font-size: 13px; }
+.checkout-page .upi-actions .upi-primary:hover { color: #fff; filter: brightness(.94); }
+.upi-app-icon { width: 27px; height: 27px; object-fit: contain; border-radius: 7px; flex: 0 0 auto; }
+.upi-google-icon { padding: 2px; background: #f1f4f9; }
+.upi-generic-icon { width: 21px; height: 21px; flex: 0 0 auto; }
+.upi-app-note { margin: 10px 0 0; color: #748299; font-size: 11px; line-height: 1.6; }
+.checkout-page .copy-upi { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: space-between; margin-top: 18px; padding: 12px; border: 1px solid #e8edf4; border-radius: 12px; background: #fafbfd; color: #64748b; font-size: 11px; text-align: left; }
+.copy-upi-label { flex: 1 1 130px; min-width: 0; }
+.copy-upi-label span { display: block; color: #8390a2; font-size: 10px; margin-bottom: 3px; }
+.checkout-page .copy-upi code { display: inline-block; max-width: 100%; overflow-wrap: anywhere; padding: 0; border: 0; background: none; color: #23314d; font-size: 12px; }
+.copy-upi-hint { flex-basis: 100%; line-height: 1.5; color: #7a889d; }
+.checkout-page .wait { margin-top: 20px; border: 1px solid #e0eafd; border-radius: 12px; }
+.checkout-page .wait.expired { border-color: #f9dacf; }
+.checkout-page .wait.success { border-color: #c5efdc; }
+.checkout-page #expiry-label { margin-top: 10px; font-size: 12px; }
+.checkout-page #countdown { color: #304763; font-variant-numeric: tabular-nums; }
+.checkout-page .claim { margin-top: 20px; padding-top: 16px; }
+.checkout-page .checkout-foot { margin-top: 22px; }
+@media (max-width: 480px) {
+  .checkout-page .checkout { margin-top: 14px; padding: 21px 19px; }
+  .checkout-page .checkout-brand { margin-top: 26px; }
+  .checkout-page .checkout-total { font-size: 36px; }
+  .checkout-page .upi-actions a { min-height: 66px; }
+  .claim-row { flex-wrap: wrap; }
+  .claim-row .form-input { min-width: 130px; }
+}
+@media (prefers-reduced-motion: reduce) { .checkout-page .upi-actions a { transition: none; } }
