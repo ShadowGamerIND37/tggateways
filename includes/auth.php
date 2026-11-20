@@ -33,6 +33,20 @@ function start_session(): void {
     if (PHP_SAPI !== 'cli') ini_set('session.use_strict_mode', '1');
     ini_set('session.use_only_cookies', '1');
     ini_set('session.gc_maxlifetime', (string)max(1440, (int)envv('SESSION_LIFETIME', '86400')));
+    // A configured session directory that does not exist yet makes every
+    // session_start() emit a warning and silently drop the session: nobody can
+    // stay signed in, and the cause is a one-line filesystem problem. Create it
+    // when we own the path, and warn only about the real failure.
+    $savePath = trim((string)envv('SESSION_PATH', ''));
+    if ($savePath !== '' && !is_dir($savePath)) {
+        if (!@mkdir($savePath, 0700, true) && !is_dir($savePath)) {
+            error_log('start_session: cannot create SESSION_PATH '.$savePath);
+        } else {
+            session_save_path($savePath);
+        }
+    } elseif ($savePath !== '') {
+        session_save_path($savePath);
+    }
     session_start();
 }
 start_session();

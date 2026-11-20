@@ -234,11 +234,21 @@ function tg_smtp_send(string $to, string $subject, string $body): bool {
     $headers = 'From: '.$from."\r\n".'To: '.$to."\r\n".'Subject: '.$subject."\r\n"
         .'MIME-Version: 1.0'."\r\n".'Content-Type: text/plain; charset=UTF-8'."\r\n";
     $data = $headers."\r\n".str_replace("\n.", "\n..", $body);
-    $ok = str_starts_with($cmd('MAIL FROM:<'.$from.'>'), '250')
-        && str_starts_with($cmd('RCPT TO:<'.$to.'>'), '250')
-        && str_starts_with($cmd('DATA'), '354')
-        && str_starts_with($cmd($data."\r\n."), '250');
-    $cmd('QUIT');
-    fclose($fp);
+    // A socket that drops mid-conversation makes fwrite() raise a PHP notice
+    // ("Send of N bytes failed") that ends up in the page the user is looking
+    // at, on every send attempt. The failure is already reported by the false
+    // return value and the error_log() call below, so the notice is noise.
+    set_error_handler(static fn (): bool => true);
+    try {
+        $ok = str_starts_with($cmd('MAIL FROM:<'.$from.'>'), '250')
+            && str_starts_with($cmd('RCPT TO:<'.$to.'>'), '250')
+            && str_starts_with($cmd('DATA'), '354')
+            && str_starts_with($cmd($data."\r\n."), '250');
+        $cmd('QUIT');
+    } finally {
+        restore_error_handler();
+        if (is_resource($fp)) fclose($fp);
+    }
+    if (!$ok) error_log('tg_smtp_send: delivery rejected for '.$to);
     return $ok;
 }

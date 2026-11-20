@@ -155,7 +155,9 @@ tg_auth_header(
       <input class="form-input" id="password" type="password" name="password" required autocomplete="current-password" placeholder="••••••••••••">
     </div>
     <div style="display:flex;justify-content:flex-end">
-      <span style="font-size:12px;color:var(--color-ink-mute)">Forgot password? Ask your deployment administrator.</span>
+      <a href="/forgot-password.php" style="font-size:12px;color:var(--color-ink-mute);text-decoration:none">
+        Forgot password?
+      </a>
     </div>
     <button class="btn btn-primary" type="submit" style="width:100%">Sign In <?=icon('arrow-right', 15)?></button>
   </form>

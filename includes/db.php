@@ -123,7 +123,32 @@ function merchant_by_api_key(?string $rawKey = null): array {
             'reason' => (string)($merchant['suspended_reason'] ?? ''),
         ], 403);
     }
+    merchant_touch_api_key((int)$merchant['id']);
     return $merchant;
+}
+
+/**
+ * Record that an API key was just used.
+ *
+ * `api_key_last_used_at` has existed in both schemas since the first commit and
+ * was never written, so the key screen could not answer the one question that
+ * matters when a key is suspected of leaking: is anything still using it?
+ *
+ * Deliberately coarse — one update per minute per merchant-equivalent. An
+ * accurate timestamp is not worth a write on every single API call.
+ */
+function merchant_touch_api_key(int $merchantId): void {
+    static $touched = [];
+    if (isset($touched[$merchantId])) return;
+    $touched[$merchantId] = true;
+    try {
+        db()->prepare('UPDATE merchants SET api_key_last_used_at=? WHERE id=? AND (api_key_last_used_at IS NULL OR api_key_last_used_at<?)')
+            ->execute([db_now(), $merchantId, db_now(-60)]);
+    } catch (Throwable $e) {
+        // Never fail a payment API call because a bookkeeping column is absent
+        // on a database that has not run the migration yet.
+        error_log('merchant_touch_api_key: '.$e->getMessage());
+    }
 }
 
 function require_method(string ...$methods): void {

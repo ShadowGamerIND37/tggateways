@@ -14,6 +14,7 @@ require_once __DIR__.'/includes/merchant.php';
 require_once __DIR__.'/includes/attachments.php';
 require_once __DIR__.'/includes/auth.php';
 require_once __DIR__.'/includes/notify.php';
+require_once __DIR__.'/includes/pager.php';
 $merchant = require_login();
 $pageTitle = 'Support Tickets';
 $pdo = db();
@@ -104,7 +105,17 @@ $counts = tg_ticket_counts($pdo, $id);
 $status = (string)($_GET['status'] ?? 'all');
 if (!in_array($status, ['all', 'open', 'in_progress', 'awaiting_reply', 'resolved'], true)) $status = 'all';
 
-$listSql = 'SELECT * FROM tickets WHERE merchant_id=?'.($status === 'all' ? '' : ' AND status=?').' ORDER BY COALESCE(updated_at, created_at) DESC';
+/* Unbounded before: every ticket the merchant had ever opened was fetched and
+   rendered on one page. Counted, then paged. */
+$countSql = 'SELECT COUNT(*) FROM tickets WHERE merchant_id=?'.($status === 'all' ? '' : ' AND status=?');
+$countStmt = $pdo->prepare($countSql);
+$countStmt->execute($status === 'all' ? [$id] : [$id, $status]);
+$ticketTotal = (int)$countStmt->fetchColumn();
+$ticketPage = tg_paginate($ticketTotal, 25);
+
+$listSql = 'SELECT * FROM tickets WHERE merchant_id=?'.($status === 'all' ? '' : ' AND status=?')
+    .' ORDER BY COALESCE(updated_at, created_at) DESC, id DESC LIMIT '.$ticketPage['perPage']
+    .' OFFSET '.$ticketPage['offset'];
 $listStmt = $pdo->prepare($listSql);
 $listStmt->execute($status === 'all' ? [$id] : [$id, $status]);
 $tickets = $listStmt->fetchAll();
@@ -252,6 +263,7 @@ require __DIR__.'/includes/dashboard-header.php';
       </tbody>
     </table>
   </div>
+  <?=tg_pager($ticketPage, ['status' => $status])?>
 </div>
 
 <div class="card" id="new-ticket" style="margin-top:20px">

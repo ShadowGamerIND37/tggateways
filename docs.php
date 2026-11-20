@@ -125,6 +125,13 @@ $event = json_decode($raw, true);</pre>
 <li><strong>Two-factor code never arrives</strong> — with <code>SMTP_HOST</code> empty the app skips the second factor entirely rather than showing a dead end. Set SMTP to enable it.</li>
 <li><strong>A wallet will not delete</strong> — it still has pending orders. Deleting it would orphan them, so removal is refused until they settle or expire.</li>
 </ul>
+<h3>Locked out of an account</h3>
+<p>Merchants recover their own password at <a href="/forgot-password.php">/forgot-password.php</a>. The link is emailed, works once, expires after an hour, and is stored only as a hash &mdash; a database leak cannot be replayed into account access. Requesting a second link invalidates the first.</p>
+<ul>
+<li><strong>No email arrives</strong> — recovery needs a mail transport. Set <code>SMTP_HOST</code> and <code>APP_URL</code>; the page says so explicitly rather than pretending the mail was sent. Without SMTP, an operator has to reset the password directly.</li>
+<li><strong>The link points at the wrong host</strong> — it is built from <code>APP_URL</code>, never from the request's <code>Host</code> header, precisely so a spoofed header cannot redirect a reset token. Set <code>APP_URL</code> to the address visitors actually open.</li>
+<li><strong>Reset does not fix a suspended account</strong> — suspension is checked at sign-in, not at reset.</li>
+</ul>
 <h3>Webhooks not firing</h3>
 <p>Only <code>payment.succeeded</code> is sent, and only once per order. A webhook URL must be HTTPS and must not resolve to a private address. Failed deliveries retry with backoff and stop after a bounded number of attempts; the admin overview counts the ones that have failed three or more times.</p>
 
